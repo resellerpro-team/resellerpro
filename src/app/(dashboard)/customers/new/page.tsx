@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,11 +12,19 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { SmartPasteDialog } from '@/components/customers/SmartPasteDialog'
 import type { ParsedCustomerData } from '@/lib/utils/whatsapp-parser'
+import { useFormState } from 'react-dom'
+import { createCustomer } from '../action'
 
 export default function NewCustomerPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+
+    const [state, formAction] = useFormState(createCustomer, {
+    success: false,
+    message: '',
+  })
+
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -54,38 +62,21 @@ export default function NewCustomerPage() {
     })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!formData.name || !formData.phone) {
-      toast({
-        title: 'Missing required fields',
-        description: 'Please fill Name and Phone number',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
+  useEffect(() => {
+    if (state.success) {
       toast({
         title: 'Customer Added! ✅',
-        description: `${formData.name} is now in your customer list.`,
+        description: state.message,
       })
       router.push('/customers')
-    } catch (error) {
+    } else if (state.message && !state.success) {
       toast({
         title: 'Error',
-        description: 'Failed to add customer. Please try again.',
+        description: state.message,
         variant: 'destructive',
       })
-    } finally {
-      setIsLoading(false)
     }
-  }
+  }, [state, router, toast])
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -111,7 +102,7 @@ export default function NewCustomerPage() {
           <SmartPasteDialog onDataConfirmed={handleSmartPaste} />
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form action={formAction} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>

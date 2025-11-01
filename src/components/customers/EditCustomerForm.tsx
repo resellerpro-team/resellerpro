@@ -1,0 +1,202 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useActionState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/use-toast'
+import { Save } from 'lucide-react'
+import Link from 'next/link'
+import { updateCustomer } from '@/app/(dashboard)/customers/action'
+
+interface Customer {
+  id: string
+  name: string
+  phone: string
+  whatsapp: string | null
+  email: string | null
+  address_line1: string | null
+  address_line2: string | null
+  city: string | null
+  state: string | null
+  pincode: string | null
+  notes: string | null
+}
+
+interface EditCustomerFormProps {
+  customer: Customer
+  customerId: string
+}
+
+export default function EditCustomerForm({ customer, customerId }: EditCustomerFormProps) {
+  const router = useRouter()
+  const { toast } = useToast()
+
+  const [state, formAction, isPending] = useActionState(updateCustomer, {
+    success: false,
+    message: '',
+  })
+
+  useEffect(() => {
+    if (state.success) {
+      toast({
+        title: 'Customer Updated! ✅',
+        description: state.message,
+      })
+      router.push(`/customers/${customerId}`)
+    } else if (state.message && !state.success) {
+      toast({
+        title: 'Error',
+        description: state.message,
+        variant: 'destructive',
+      })
+    }
+  }, [state, router, toast, customerId])
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Customer Information</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="space-y-6">
+          {/* Hidden ID field */}
+          <input type="hidden" name="id" value={customerId} />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Full Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                name="name"
+                defaultValue={customer.name}
+                placeholder="e.g., Rahul Sharma"
+                required
+              />
+              {state.errors?.name && (
+                <p className="text-sm text-red-600">{state.errors.name[0]}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">
+                Phone Number <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                defaultValue={customer.phone}
+                placeholder="10-digit mobile number"
+                required
+              />
+              {state.errors?.phone && (
+                <p className="text-sm text-red-600">{state.errors.phone[0]}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp">WhatsApp Number</Label>
+              <Input
+                id="whatsapp"
+                name="whatsapp"
+                defaultValue={customer.whatsapp || ''}
+                placeholder="Same as phone (optional)"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email (Optional)</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                defaultValue={customer.email || ''}
+                placeholder="e.g., email@example.com"
+              />
+              {state.errors?.email && (
+                <p className="text-sm text-red-600">{state.errors.email[0]}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="text-lg font-medium">Shipping Address</h3>
+            <div className="space-y-2">
+              <Label htmlFor="addressLine1">Address Line 1</Label>
+              <Input
+                id="addressLine1"
+                name="addressLine1"
+                defaultValue={customer.address_line1 || ''}
+                placeholder="House no, Building, Street"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="addressLine2">Address Line 2</Label>
+              <Input
+                id="addressLine2"
+                name="addressLine2"
+                defaultValue={customer.address_line2 || ''}
+                placeholder="Area, Landmark"
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  name="city"
+                  defaultValue={customer.city || ''}
+                  placeholder="e.g., Noida"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  name="state"
+                  defaultValue={customer.state || ''}
+                  placeholder="e.g., Uttar Pradesh"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pincode">Pincode</Label>
+                <Input
+                  id="pincode"
+                  name="pincode"
+                  defaultValue={customer.pincode || ''}
+                  placeholder="e.g., 201301"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-4 border-t">
+            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Textarea
+              id="notes"
+              name="notes"
+              defaultValue={customer.notes || ''}
+              placeholder="Any specific notes about this customer..."
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" asChild type="button">
+              <Link href={`/customers/${customerId}`}>Cancel</Link>
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              <Save className="mr-2 h-4 w-4" />
+              {isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}

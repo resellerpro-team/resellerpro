@@ -5,13 +5,35 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Plus, Search, Filter, Users, TrendingUp, DollarSign, Phone, Mail } from 'lucide-react'
 import Link from 'next/link'
+import { getCustomers } from './action'
+import CustomerCard from '@/components/customers/CustomerCard'
 
 export const metadata = {
   title: 'Customers - ResellerPro',
   description: 'Manage your customers',
 }
 
-export default function CustomersPage() {
+export default async function CustomersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string }>
+}) {
+  const params = await searchParams
+  const { customers, stats } = await getCustomers(params.search)
+
+  // Calculate additional stats
+  const repeatCustomers = customers.filter((c) => (c.total_orders ?? 0) > 1).length
+  const retentionRate = customers.length > 0 ? ((repeatCustomers / customers.length) * 100).toFixed(0) : 0
+  const newThisMonth = customers.filter((c) => {
+    if (!c.created_at) return false
+    const createdDate = new Date(c.created_at)
+    const now = new Date()
+    return (
+      createdDate.getMonth() === now.getMonth() &&
+      createdDate.getFullYear() === now.getFullYear()
+    )
+  }).length
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -36,8 +58,8 @@ export default function CustomersPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">156</div>
-            <p className="text-xs text-muted-foreground">+12 new this month</p>
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">+{newThisMonth} new this month</p>
           </CardContent>
         </Card>
 
@@ -47,8 +69,8 @@ export default function CustomersPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">64</div>
-            <p className="text-xs text-muted-foreground">41% retention rate</p>
+            <div className="text-2xl font-bold">{repeatCustomers}</div>
+            <p className="text-xs text-muted-foreground">{retentionRate}% retention rate</p>
           </CardContent>
         </Card>
 
@@ -58,166 +80,69 @@ export default function CustomersPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹3,245</div>
+            <div className="text-2xl font-bold">
+              ₹{stats.total > 0 ? Math.round(stats.totalSpent / stats.total).toLocaleString() : 0}
+            </div>
             <p className="text-xs text-muted-foreground">Lifetime value</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Search & Filter */}
-      <div className="flex items-center gap-4">
+      <form className="flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search customers by name or phone..." className="pl-10" />
+          <Input
+            name="search"
+            placeholder="Search customers by name or phone..."
+            className="pl-10"
+            defaultValue={params.search}
+          />
         </div>
-        <Button variant="outline">
+        <Button variant="outline" type="submit">
           <Filter className="mr-2 h-4 w-4" />
           Filter
         </Button>
-      </div>
+      </form>
 
       {/* Customers Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <CustomerCard
-          name="Rahul Sharma"
-          phone="9876543210"
-          email="rahul@example.com"
-          orders={15}
-          totalSpent={18750}
-          lastOrder="2 days ago"
-          type="vip"
-        />
-        <CustomerCard
-          name="Priya Singh"
-          phone="9988776655"
-          email="priya@example.com"
-          orders={8}
-          totalSpent={12340}
-          lastOrder="5 days ago"
-          type="active"
-        />
-        <CustomerCard
-          name="Amit Kumar"
-          phone="9123456789"
-          email="amit@example.com"
-          orders={3}
-          totalSpent={4560}
-          lastOrder="1 week ago"
-          type="active"
-        />
-        <CustomerCard
-          name="Sneha Patel"
-          phone="9876501234"
-          email="sneha@example.com"
-          orders={12}
-          totalSpent={15890}
-          lastOrder="1 day ago"
-          type="vip"
-        />
-        <CustomerCard
-          name="Karan Mehta"
-          phone="9998887776"
-          email="karan@example.com"
-          orders={1}
-          totalSpent={1299}
-          lastOrder="2 months ago"
-          type="inactive"
-        />
-        <CustomerCard
-          name="Divya Reddy"
-          phone="9123459876"
-          email="divya@example.com"
-          orders={6}
-          totalSpent={8970}
-          lastOrder="3 days ago"
-          type="active"
-        />
-      </div>
+      {customers.length === 0 ? (
+        <Card className="p-12">
+          <div className="text-center space-y-3">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground" />
+            <h3 className="text-lg font-semibold">No customers found</h3>
+            <p className="text-muted-foreground">
+              {params.search
+                ? 'Try adjusting your search'
+                : 'Get started by adding your first customer'}
+            </p>
+            {!params.search && (
+              <Button asChild>
+                <Link href="/customers/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Customer
+                </Link>
+              </Button>
+            )}
+          </div>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {customers.map((customer) => (
+            <CustomerCard
+              key={customer.id}
+              id={customer.id}
+              name={customer.name}
+              phone={customer.phone}
+              email={customer.email || 'N/A'}
+              orders={customer.total_orders ?? 0}
+              totalSpent={customer.total_spent ?? 0}
+              lastOrder={customer.last_order_date}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
-function CustomerCard({
-  name,
-  phone,
-  email,
-  orders,
-  totalSpent,
-  lastOrder,
-  type,
-}: {
-  name: string
-  phone: string
-  email: string
-  orders: number
-  totalSpent: number
-  lastOrder: string
-  type: 'vip' | 'active' | 'inactive'
-}) {
-  const typeConfig = {
-    vip: { label: 'VIP', color: 'bg-purple-500' },
-    active: { label: 'Active', color: 'bg-green-500' },
-    inactive: { label: 'Inactive', color: 'bg-gray-400' },
-  }
-
-  const initials = name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-
-  return (
-    <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-semibold">{name}</h3>
-              <p className="text-xs text-muted-foreground">{lastOrder}</p>
-            </div>
-          </div>
-          <Badge className={`${typeConfig[type].color} text-white border-0`}>
-            {typeConfig[type].label}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm">
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            <span>{phone}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <span className="truncate">{email}</span>
-          </div>
-        </div>
-
-        <div className="pt-3 border-t grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs text-muted-foreground">Orders</p>
-            <p className="text-lg font-bold">{orders}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Total Spent</p>
-            <p className="text-lg font-bold text-green-600">₹{totalSpent.toLocaleString()}</p>
-          </div>
-        </div>
-
-        <div className="flex gap-2 pt-2">
-          <Button size="sm" variant="outline" className="flex-1" asChild>
-            <Link href={`/customers/${name}`}>View Details</Link>
-          </Button>
-          <Button size="sm" className="flex-1" asChild>
-            <Link href={`/orders/new?customer=${name}`}>New Order</Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
