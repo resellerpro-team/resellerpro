@@ -11,7 +11,7 @@ const nextConfig = {
   // This is the corrected format for enabling server actions
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb', // Optional: Increase body size limit if needed
+      bodySizeLimit: '10mb', // Optional: Increase body size limit if needed
     },
   },
 }
