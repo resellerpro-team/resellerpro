@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { Plus, Trash2, Save, Loader2, Package } from 'lucide-react'
+// Update the import path to the correct location of your server action
+import { createOrder } from '@/app/(dashboard)/orders/actions' // ✅ Import server action
 
 type Customer = {
   id: string
@@ -65,7 +67,6 @@ export function NewOrderForm({
     const product = products.find((p) => p.id === productId)
     if (!product) return
 
-    // Check if product already added
     const existingItem = orderItems.find((item) => item.productId === productId)
     if (existingItem) {
       toast({
@@ -88,7 +89,6 @@ export function NewOrderForm({
     setOrderItems([...orderItems, newItem])
   }
 
-  // Update item quantity
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
     if (quantity < 1) return
     setOrderItems(
@@ -98,7 +98,6 @@ export function NewOrderForm({
     )
   }
 
-  // Update item price
   const handleUpdatePrice = (itemId: string, price: number) => {
     if (price < 0) return
     setOrderItems(
@@ -108,7 +107,6 @@ export function NewOrderForm({
     )
   }
 
-  // Remove item
   const handleRemoveItem = (itemId: string) => {
     setOrderItems(orderItems.filter((item) => item.id !== itemId))
   }
@@ -125,7 +123,7 @@ export function NewOrderForm({
   const total = subtotal + shippingCost - discount
   const profit = total - totalCost
 
-  // Submit order
+  // ✅ FIXED Submit handler with Server Action
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -148,44 +146,31 @@ export function NewOrderForm({
     }
 
     startTransition(async () => {
-      try {
-        const response = await fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customerId: selectedCustomerId,
-            items: orderItems,
-            paymentStatus,
-            paymentMethod,
-            discount,
-            shippingCost,
-            notes,
-            subtotal,
-            totalAmount: total,
-            totalCost,
-          }),
+      const formData = new FormData()
+      formData.append('customerId', selectedCustomerId)
+      formData.append('items', JSON.stringify(orderItems))
+      formData.append('paymentStatus', paymentStatus)
+      formData.append('paymentMethod', paymentMethod)
+      formData.append('discount', discount.toString())
+      formData.append('shippingCost', shippingCost.toString())
+      formData.append('notes', notes)
+      formData.append('subtotal', subtotal.toString())
+      formData.append('totalAmount', total.toString())
+      formData.append('totalCost', totalCost.toString())
+
+      const result = await createOrder({ success: false, message: '' }, formData)
+
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: result.message,
         })
-
-        const data = await response.json()
-
-        if (data.success) {
-          toast({
-            title: 'Success',
-            description: `Order ${data.orderNumber} created successfully!`,
-          })
-          router.push(`/orders/${data.orderId}`)
-          router.refresh()
-        } else {
-          toast({
-            title: 'Error',
-            description: data.message,
-            variant: 'destructive',
-          })
-        }
-      } catch (error) {
+        router.push(`/orders/${result.orderId}`)
+        router.refresh()
+      } else {
         toast({
           title: 'Error',
-          description: 'Something went wrong',
+          description: result.message,
           variant: 'destructive',
         })
       }
