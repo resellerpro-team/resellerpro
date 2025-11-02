@@ -6,15 +6,20 @@ import { z } from 'zod'
 
 const CustomerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits.').regex(/^[0-9]{10,15}$/, 'Invalid phone number format.'),
-  whatsapp: z.string().optional(),
+  phone: z.string()
+    .min(10, 'Phone number must be at least 10 digits.')
+    .transform(val => val.replace(/\s+/g, '')) // Remove all spaces
+    .pipe(z.string().regex(/^[0-9]{10,15}$/, 'Invalid phone number format.')),
+  whatsapp: z.string()
+    .transform(val => val ? val.replace(/\s+/g, '') : val)
+    .optional(),
   email: z.string().email('Invalid email address.').optional().or(z.literal('')),
-  address_line1: z.string().optional(),
-  address_line2: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  pincode: z.string().optional(),
-  notes: z.string().optional(),
+  address_line1: z.string().optional().or(z.literal('')),
+  address_line2: z.string().optional().or(z.literal('')),
+  city: z.string().optional().or(z.literal('')),
+  state: z.string().optional().or(z.literal('')),
+  pincode: z.string().optional().or(z.literal('')),
+  notes: z.string().optional().or(z.literal('')),
 })
 
 export type FormState = {
@@ -42,8 +47,8 @@ export async function createCustomer(
     phone: formData.get('phone'),
     whatsapp: formData.get('whatsapp'),
     email: formData.get('email'),
-    address_line1: formData.get('addressLine1'),
-    address_line2: formData.get('addressLine2'),
+    address_line1: formData.get('addressLine1') || formData.get('address_line1'),
+    address_line2: formData.get('addressLine2') || formData.get('address_line2'),
     city: formData.get('city'),
     state: formData.get('state'),
     pincode: formData.get('pincode'),
@@ -51,6 +56,7 @@ export async function createCustomer(
   })
 
   if (!validatedFields.success) {
+    console.error('Validation errors:', validatedFields.error.flatten())
     return {
       success: false,
       message: 'Invalid form data. Please fix errors.',
@@ -147,8 +153,8 @@ export async function updateCustomer(
     phone: formData.get('phone'),
     whatsapp: formData.get('whatsapp'),
     email: formData.get('email'),
-    address_line1: formData.get('addressLine1'),
-    address_line2: formData.get('addressLine2'),
+    address_line1: formData.get('addressLine1') || formData.get('address_line1'),
+    address_line2: formData.get('addressLine2') || formData.get('address_line2'),
     city: formData.get('city'),
     state: formData.get('state'),
     pincode: formData.get('pincode'),

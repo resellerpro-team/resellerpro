@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,18 +12,13 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { SmartPasteDialog } from '@/components/customers/SmartPasteDialog'
 import type { ParsedCustomerData } from '@/lib/utils/whatsapp-parser'
-import { useFormState } from 'react-dom'
 import { createCustomer } from '../action'
 
 export default function NewCustomerPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const [isLoading, setIsLoading] = useState(false)
-
-    const [state, formAction] = useFormState(createCustomer, {
-    success: false,
-    message: '',
-  })
+  const formRef = useRef<HTMLFormElement>(null)
+  const [isPending, startTransition] = useTransition()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -38,9 +33,26 @@ export default function NewCustomerPage() {
     notes: '',
   })
 
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    setErrors(prev => ({ ...prev, [name]: '' })) // clear specific field error when typing
+  }
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.name.trim()) newErrors.name = 'Full name is required.'
+    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required.'
+    else if (!/^\d{10}$/.test(formData.phone)) newErrors.phone = 'Enter a valid 10-digit number.'
+    if (!formData.addressLine1.trim()) newErrors.addressLine1 = 'Address Line 1 is required.'
+    if (!formData.city.trim()) newErrors.city = 'City is required.'
+    if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required.'
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSmartPaste = (data: ParsedCustomerData) => {
@@ -62,21 +74,70 @@ export default function NewCustomerPage() {
     })
   }
 
-  useEffect(() => {
-    if (state.success) {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    // ✅ Client-side validation before submitting
+    if (!validateForm()) {
       toast({
-        title: 'Customer Added! ✅',
-        description: state.message,
-      })
-      router.push('/customers')
-    } else if (state.message && !state.success) {
-      toast({
-        title: 'Error',
-        description: state.message,
+        title: 'Validation Error',
+        description: 'Please fix the highlighted fields before submitting.',
         variant: 'destructive',
+        duration: 4000,
       })
+      return
     }
-  }, [state, router, toast])
+
+    const formDataObj = new FormData(e.currentTarget)
+
+    startTransition(async () => {
+      try {
+        const result = await createCustomer(
+          { success: false, message: '' },
+          formDataObj
+        )
+
+        if (result.success) {
+          toast({
+            title: 'Customer Added! ✅',
+            description: result.message,
+            duration: 3000,
+          })
+          setTimeout(() => {
+            router.push('/customers')
+            router.refresh()
+          }, 500)
+        } else {
+          if (result.errors) {
+            const errorMessages = Object.entries(result.errors)
+              .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+              .join('\n')
+            toast({
+              title: 'Validation Error',
+              description: errorMessages,
+              variant: 'destructive',
+              duration: 5000,
+            })
+          } else {
+            toast({
+              title: 'Error',
+              description: result.message || 'Failed to create customer',
+              variant: 'destructive',
+              duration: 5000,
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Submit error:', error)
+        toast({
+          title: 'Error',
+          description: 'An unexpected error occurred',
+          variant: 'destructive',
+          duration: 5000,
+        })
+      }
+    })
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -102,15 +163,17 @@ export default function NewCustomerPage() {
           <SmartPasteDialog onDataConfirmed={handleSmartPaste} />
         </CardHeader>
         <CardContent>
-          <form action={formAction} className="space-y-6">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
                 <Input id="name" name="name" value={formData.name} onChange={handleInputChange} placeholder="e.g., Rahul Sharma" required />
+                {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number <span className="text-red-500">*</span></Label>
                 <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="10-digit mobile number" required />
+                {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp Number</Label>
@@ -125,8 +188,9 @@ export default function NewCustomerPage() {
             <div className="space-y-4 pt-4 border-t">
               <h3 className="text-lg font-medium">Shipping Address</h3>
               <div className="space-y-2">
-                <Label htmlFor="addressLine1">Address Line 1</Label>
+                <Label htmlFor="addressLine1">Address Line 1 <span className="text-red-500">*</span></Label>
                 <Input id="addressLine1" name="addressLine1" value={formData.addressLine1} onChange={handleInputChange} placeholder="House no, Building, Street" />
+                {errors.addressLine1 && <p className="text-sm text-red-500">{errors.addressLine1}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="addressLine2">Address Line 2</Label>
@@ -134,20 +198,22 @@ export default function NewCustomerPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input id="city" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g., Noida" />
+                  <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
+                  <Input id="city" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g., Kochi" />
+                  {errors.city && <p className="text-sm text-red-500">{errors.city}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="state">State</Label>
-                  <Input id="state" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g., Uttar Pradesh" />
+                  <Input id="state" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g., Kerala" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pincode">Pincode</Label>
+                  <Label htmlFor="pincode">Pincode <span className="text-red-500">*</span></Label>
                   <Input id="pincode" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="e.g., 201301" />
+                  {errors.pincode && <p className="text-sm text-red-500">{errors.pincode}</p>}
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-2 pt-4 border-t">
               <Label htmlFor="notes">Notes (Optional)</Label>
               <Textarea id="notes" name="notes" value={formData.notes} onChange={handleInputChange} placeholder="Any specific notes about this customer..." />
@@ -157,8 +223,8 @@ export default function NewCustomerPage() {
               <Button variant="outline" asChild>
                 <Link href="/customers">Cancel</Link>
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" disabled={isPending}>
+                {isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
