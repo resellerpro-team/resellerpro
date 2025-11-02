@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge' // ✅ Add Badge import
 import {
   Select,
   SelectContent,
@@ -16,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Trash2, Save, Loader2, Package } from 'lucide-react'
+import { Plus, Trash2, Save, Loader2, Package, AlertTriangle } from 'lucide-react' // ✅ Add AlertTriangle
 import { createOrder } from '@/app/(dashboard)/orders/actions'
 
 type Customer = {
@@ -31,6 +32,7 @@ type Product = {
   selling_price: number
   cost_price: number
   stock_status: string
+  stock_quantity?: number // ✅ Add optional stock_quantity
 }
 
 type OrderItem = {
@@ -40,6 +42,7 @@ type OrderItem = {
   quantity: number
   unitPrice: number
   unitCost: number
+  stockStatus?: string // ✅ Add stock status to item
 }
 
 export function NewOrderForm({
@@ -77,6 +80,20 @@ export function NewOrderForm({
     }
   }, [preSelectedCustomerId, customers, toast])
 
+  // ✅ Helper function to get stock status badge
+  const getStockBadge = (status: string) => {
+    switch (status) {
+      case 'in_stock':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">In Stock</Badge>
+      case 'low_stock':
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Low Stock</Badge>
+      case 'out_of_stock':
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Out of Stock</Badge>
+      default:
+        return null
+    }
+  }
+
   // Add product to order
   const handleAddProduct = (productId: string) => {
     const product = products.find((p) => p.id === productId)
@@ -99,6 +116,7 @@ export function NewOrderForm({
       quantity: 1,
       unitPrice: product.selling_price,
       unitCost: product.cost_price,
+      stockStatus: product.stock_status, // ✅ Store stock status
     }
 
     setOrderItems([...orderItems, newItem])
@@ -238,21 +256,42 @@ export function NewOrderForm({
         {/* Product Selection */}
         <Card>
           <CardHeader>
-            <CardTitle>Add Products</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Add Products</CardTitle>
+              {/* ✅ Show product count */}
+              <span className="text-sm text-muted-foreground">
+                {products.length} product(s) available
+              </span>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Select Product</Label>
-              <Select onValueChange={handleAddProduct}>
+              <Select onValueChange={handleAddProduct} value="">
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a product to add..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {products.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name} - ₹{product.selling_price}
-                    </SelectItem>
-                  ))}
+                  {products.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No products available.{' '}
+                      <Link href="/products/new" className="text-primary underline">
+                        Add a product
+                      </Link>
+                    </div>
+                  ) : (
+                    products.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        <div className="flex items-center justify-between w-full gap-2">
+                          <span>{product.name} - ₹{product.selling_price}</span>
+                          {/* ✅ Show stock indicator */}
+                          {product.stock_status === 'low_stock' && (
+                            <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -266,7 +305,11 @@ export function NewOrderForm({
                     className="flex items-center gap-3 p-3 border rounded-lg"
                   >
                     <div className="flex-1">
-                      <p className="font-medium">{item.productName}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{item.productName}</p>
+                        {/* ✅ Show stock status badge */}
+                        {item.stockStatus && getStockBadge(item.stockStatus)}
+                      </div>
                       <p className="text-sm text-muted-foreground">
                         Cost: ₹{item.unitCost}
                       </p>
