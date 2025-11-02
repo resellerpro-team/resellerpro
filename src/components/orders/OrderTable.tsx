@@ -10,18 +10,18 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Eye, Edit } from 'lucide-react'
+import { Eye } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 
 type Order = {
   id: string
-  order_number: string
+  order_number: number
   created_at: string
   status: string
   payment_status: string
   total_amount: number
-  profit: number
+  total_profit: number // ✅ Changed from 'profit' to 'total_profit'
   customers: {
     id: string
     name: string
@@ -55,7 +55,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
   const getPaymentColor = (status: string) => {
     const colors: Record<string, string> = {
       paid: 'bg-green-500',
-      unpaid: 'bg-yellow-500',
+      pending: 'bg-yellow-500', // ✅ Changed from 'unpaid' to 'pending'
       cod: 'bg-orange-500',
       refunded: 'bg-red-500',
     }
@@ -80,7 +80,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
         <TableBody>
           {orders.map((order) => (
             <TableRow key={order.id}>
-              <TableCell className="font-medium">{order.order_number}</TableCell>
+              <TableCell className="font-medium">#{order.order_number}</TableCell>
               <TableCell>
                 {order.customers ? (
                   <div>
@@ -99,7 +99,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                 })}
               </TableCell>
               <TableCell>
-                <Badge className={`${getStatusColor(order.status)} text-white`}>
+                <Badge className={`${getStatusColor(order.status)} text-white border-0`}>
                   {order.status}
                 </Badge>
               </TableCell>
@@ -112,10 +112,11 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                 </Badge>
               </TableCell>
               <TableCell className="text-right font-semibold">
-                ₹{order.total_amount.toFixed(2)}
+                ₹{Number(order.total_amount || 0).toFixed(2)}
               </TableCell>
               <TableCell className="text-right font-semibold text-green-600">
-                ₹{order.profit.toFixed(2)}
+                {/* ✅ Changed from order.profit to order.total_profit */}
+                ₹{Number(order.total_profit || 0).toFixed(2)}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">

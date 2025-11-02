@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { Plus, Trash2, Save, Loader2, Package } from 'lucide-react'
+import { createOrder, OrderFormState } from '@/app/(dashboard)/orders/actions'
 
 type Customer = {
   id: string
@@ -50,22 +51,44 @@ export function NewOrderForm({
 }) {
   const router = useRouter()
   const { toast } = useToast()
-  const [isPending, startTransition] = useTransition()
+
+  const initialState: OrderFormState = {
+    success: false,
+    message: '',
+  }
+
+  const [state, formAction, isPending] = useActionState(createOrder, initialState)
 
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
-  const [paymentStatus, setPaymentStatus] = useState('unpaid')
+  const [paymentStatus, setPaymentStatus] = useState('pending')
   const [paymentMethod, setPaymentMethod] = useState('')
   const [discount, setDiscount] = useState(0)
   const [shippingCost, setShippingCost] = useState(0)
   const [notes, setNotes] = useState('')
+
+  // Handle success/error
+  useEffect(() => {
+    if (state.success && state.orderId) {
+      toast({
+        title: 'Order Created! ✅',
+        description: state.message,
+      })
+      router.push(`/orders/${state.orderId}`)
+    } else if (state.message && !state.success) {
+      toast({
+        title: 'Error',
+        description: state.message,
+        variant: 'destructive',
+      })
+    }
+  }, [state, router, toast])
 
   // Add product to order
   const handleAddProduct = (productId: string) => {
     const product = products.find((p) => p.id === productId)
     if (!product) return
 
-    // Check if product already added
     const existingItem = orderItems.find((item) => item.productId === productId)
     if (existingItem) {
       toast({
@@ -125,11 +148,10 @@ export function NewOrderForm({
   const total = subtotal + shippingCost - discount
   const profit = total - totalCost
 
-  // Submit order
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  // Validate before submit
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     if (!selectedCustomerId) {
+      e.preventDefault()
       toast({
         title: 'Error',
         description: 'Please select a customer',
@@ -139,6 +161,7 @@ export function NewOrderForm({
     }
 
     if (orderItems.length === 0) {
+      e.preventDefault()
       toast({
         title: 'Error',
         description: 'Please add at least one product',
@@ -146,54 +169,19 @@ export function NewOrderForm({
       })
       return
     }
-
-    startTransition(async () => {
-      try {
-        const response = await fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customerId: selectedCustomerId,
-            items: orderItems,
-            paymentStatus,
-            paymentMethod,
-            discount,
-            shippingCost,
-            notes,
-            subtotal,
-            totalAmount: total,
-            totalCost,
-          }),
-        })
-
-        const data = await response.json()
-
-        if (data.success) {
-          toast({
-            title: 'Success',
-            description: `Order ${data.orderNumber} created successfully!`,
-          })
-          router.push(`/orders/${data.orderId}`)
-          router.refresh()
-        } else {
-          toast({
-            title: 'Error',
-            description: data.message,
-            variant: 'destructive',
-          })
-        }
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Something went wrong',
-          variant: 'destructive',
-        })
-      }
-    })
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <form action={formAction} onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Hidden fields for server action */}
+      <input type="hidden" name="customerId" value={selectedCustomerId} />
+      <input type="hidden" name="items" value={JSON.stringify(orderItems)} />
+      <input type="hidden" name="paymentStatus" value={paymentStatus} />
+      <input type="hidden" name="paymentMethod" value={paymentMethod} />
+      <input type="hidden" name="discount" value={discount} />
+      <input type="hidden" name="shippingCost" value={shippingCost} />
+      <input type="hidden" name="notes" value={notes} />
+
       <div className="lg:col-span-2 space-y-6">
         {/* Customer Selection */}
         <Card>
@@ -355,7 +343,7 @@ export function NewOrderForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unpaid">Unpaid</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="cod">Cash on Delivery</SelectItem>
                   </SelectContent>
