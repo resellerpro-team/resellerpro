@@ -7,7 +7,15 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { NewOrderForm } from '@/components/orders/NewOrderForm'
 
-export default async function NewOrderPage() {
+export default async function NewOrderPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ customerId?: string }>
+}) {
+  // Await searchParams for Next.js 15
+  const params = await searchParams
+  const preSelectedCustomerId = params.customerId
+
   const supabase = await createClient()
 
   // Fetch customers for selection
@@ -41,7 +49,11 @@ export default async function NewOrderPage() {
         </div>
       </div>
 
-      <NewOrderForm customers={customers || []} products={products || []} />
+      <NewOrderForm 
+        customers={customers || []} 
+        products={products || []}
+        preSelectedCustomerId={preSelectedCustomerId}
+      />
     </div>
   )
 }

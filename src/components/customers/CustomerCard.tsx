@@ -1,4 +1,4 @@
-import { Mail, Phone } from "lucide-react"
+import { Mail, Phone, Plus } from "lucide-react"
 import { Avatar, AvatarFallback } from "../ui/avatar"
 import { Badge } from "../ui/badge"
 import { Card, CardContent, CardHeader } from "../ui/card"
@@ -109,7 +109,10 @@ const CustomerCard = ({
             <Link href={`/customers/${id}`}>View Details</Link>
           </Button>
           <Button size="sm" className="flex-1" asChild>
-            <Link href={`/orders/new?customer=${id}`}>New Order</Link>
+            <Link href={`/orders/new?customerId=${id}`}>
+              <Plus className="mr-1 h-3 w-3" />
+              New Order
+            </Link>
           </Button>
         </div>
       </CardContent>

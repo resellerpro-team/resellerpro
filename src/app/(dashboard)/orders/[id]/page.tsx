@@ -341,12 +341,14 @@ export default async function OrderDetailsPage({
               <Separator />
               
               <OrderStatusUpdate 
-                orderId={order.id} 
-                currentStatus={order.status}
-                orderNumber={order.order_number}
-                customerName={order.customers?.name}
-                customerPhone={order.customers?.phone}
-              />
+  orderId={order.id} 
+  currentStatus={order.status}
+  orderNumber={order.order_number}
+  customerName={order.customers?.name}
+  customerPhone={order.customers?.phone}
+  orderItems={order.order_items?.map((item: any) => item.product_name) || []}
+  totalAmount={parseFloat(order.total_amount)}
+/>
             </CardContent>
           </Card>
         </div>

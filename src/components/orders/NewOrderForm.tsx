@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,8 +17,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { Plus, Trash2, Save, Loader2, Package } from 'lucide-react'
-// Update the import path to the correct location of your server action
-import { createOrder } from '@/app/(dashboard)/orders/actions' // ✅ Import server action
+import { createOrder } from '@/app/(dashboard)/orders/actions'
 
 type Customer = {
   id: string
@@ -46,21 +45,37 @@ type OrderItem = {
 export function NewOrderForm({
   customers,
   products,
+  preSelectedCustomerId,
 }: {
   customers: Customer[]
   products: Product[]
+  preSelectedCustomerId?: string
 }) {
   const router = useRouter()
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
 
-  const [selectedCustomerId, setSelectedCustomerId] = useState('')
+  const [selectedCustomerId, setSelectedCustomerId] = useState(preSelectedCustomerId || '')
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [paymentStatus, setPaymentStatus] = useState('unpaid')
   const [paymentMethod, setPaymentMethod] = useState('')
   const [discount, setDiscount] = useState(0)
   const [shippingCost, setShippingCost] = useState(0)
   const [notes, setNotes] = useState('')
+
+  // Set pre-selected customer when it changes
+  useEffect(() => {
+    if (preSelectedCustomerId) {
+      setSelectedCustomerId(preSelectedCustomerId)
+      const customer = customers.find(c => c.id === preSelectedCustomerId)
+      if (customer) {
+        toast({
+          title: 'Customer Selected',
+          description: `Creating order for ${customer.name}`,
+        })
+      }
+    }
+  }, [preSelectedCustomerId, customers, toast])
 
   // Add product to order
   const handleAddProduct = (productId: string) => {
@@ -123,7 +138,6 @@ export function NewOrderForm({
   const total = subtotal + shippingCost - discount
   const profit = total - totalCost
 
-  // ✅ FIXED Submit handler with Server Action
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -177,6 +191,8 @@ export function NewOrderForm({
     })
   }
 
+  const selectedCustomer = customers.find(c => c.id === selectedCustomerId)
+
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
@@ -207,6 +223,13 @@ export function NewOrderForm({
                     Add one first
                   </Link>
                 </p>
+              )}
+              {preSelectedCustomerId && selectedCustomer && (
+                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm text-green-700">
+                    ✓ Creating order for: <strong>{selectedCustomer.name}</strong>
+                  </p>
+                </div>
               )}
             </div>
           </CardContent>
