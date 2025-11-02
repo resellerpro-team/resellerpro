@@ -30,6 +30,7 @@ export default async function NewOrderPage({
     .select('id, name, selling_price, cost_price, stock_status')
     .eq('stock_status', 'in_stock')
     .order('name')
+      console.log("prodicuts------1",products);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">

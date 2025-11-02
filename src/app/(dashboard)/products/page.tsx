@@ -46,7 +46,8 @@ export default async function ProductsPage(props: {
   query = query.order(sortField, { ascending: !sortOrder })
 
   const { data: products, error } = await query
-
+   console.log("products-------2",products);
+   
   if (error) {
     console.error('Error fetching products:', error)
     return <div>Error loading products</div>
