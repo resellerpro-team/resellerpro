@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { canCreateOrder } from '../settings/subscription/actions';
 
 // ========================================================
 // SERVER ACTION: CREATE A NEW ORDER
@@ -13,6 +14,14 @@ export async function createOrder(p0: { success: boolean; message: string }, for
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return { success: false, message: 'Authentication required.' }
+  }
+
+  const { allowed, reason } = await canCreateOrder()
+  if (!allowed) {
+    return { 
+      success: false, 
+      message: reason || 'Cannot create order. Please check your subscription.' 
+    }
   }
 
   try {
