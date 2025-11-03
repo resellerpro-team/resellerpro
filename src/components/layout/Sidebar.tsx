@@ -14,8 +14,8 @@ import {
   Menu,
   X,
   Sparkles,
-  LogOut,
   ChevronDown,
+  User,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -30,7 +30,14 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { LogoutButton } from './LogoutButton'
 
-const navigation = [
+type NavItem = {
+  name: string
+  href: string
+  icon: any
+  badge?: string | number
+}
+
+const navigation: NavItem[] = [
   {
     name: 'Dashboard',
     href: '/dashboard',
@@ -40,7 +47,6 @@ const navigation = [
     name: 'Products',
     href: '/products',
     icon: Package,
-    badge: 'New',
   },
   {
     name: 'Customers',
@@ -51,7 +57,6 @@ const navigation = [
     name: 'Orders',
     href: '/orders',
     icon: ShoppingCart,
-    badge: '5',
   },
   {
     name: 'Analytics',
@@ -65,9 +70,32 @@ const navigation = [
   },
 ]
 
-export default function Sidebar() {
+type UserData = {
+  name?: string | null
+  email?: string | null
+  avatarUrl?: string | null
+} | null
+
+export default function Sidebar({ user }: { user: UserData }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+
+  // Get user initials for avatar fallback
+  const getInitials = (name?: string | null) => {
+    if (!name) return 'U'
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  // Get display name
+  const displayName = user?.name || user?.email?.split('@')[0] || 'User'
+  
+  // Get user initials
+  const initials = getInitials(user?.name)
 
   return (
     <>
@@ -155,13 +183,15 @@ export default function Sidebar() {
             <DropdownMenuTrigger asChild>
               <button className="flex w-full items-center gap-3 rounded-lg p-2 text-sm hover:bg-accent transition-colors">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src="/avatar.png" alt="User" />
+                  <AvatarImage src={user?.avatarUrl || undefined} alt={displayName} />
                   <AvatarFallback className="bg-primary text-primary-foreground">
-                    RK
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-1 flex-col items-start text-left">
-                  <span className="font-medium">Rahul Kumar</span>
+                  <span className="font-medium truncate max-w-[140px]">
+                    {displayName}
+                  </span>
                   <span className="text-xs text-muted-foreground">Free Plan</span>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -171,7 +201,10 @@ export default function Sidebar() {
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/settings/profile">Profile Settings</Link>
+                <Link href="/settings/profile">
+                  <User className="mr-2 h-4 w-4" />
+                  Profile Settings
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/settings/subscription">
