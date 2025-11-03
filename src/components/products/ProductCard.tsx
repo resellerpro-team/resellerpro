@@ -1,6 +1,7 @@
+// components/products/ProductCard.tsx
 import Link from 'next/link'
 import Image from 'next/image'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,17 +12,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Edit, Eye, Trash, Copy, Package } from 'lucide-react'
+import { WhatsAppShare } from './WhatsAppShare'
 
 type Product = {
   id: string
   name: string
+  description?: string
   image_url: string | null
+  images?: string[]
   cost_price: number
   selling_price: number
   stock_quantity?: number
-  stock_status: string
+  stock_status: 'in_stock' | 'low_stock' | 'out_of_stock'
   category?: string
   sku?: string
+  created_at?: string
 }
 
 export function ProductCard({ product }: { product: Product }) {
@@ -174,6 +179,11 @@ export function ProductCard({ product }: { product: Product }) {
           </div>
         </Link>
       </CardContent>
+
+      {/* WhatsApp Share Button */}
+      <CardFooter className="p-4 pt-0">
+        <WhatsAppShare product={product} variant="default" size="default" />
+      </CardFooter>
     </Card>
   )
 }

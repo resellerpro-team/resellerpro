@@ -1,3 +1,4 @@
+// components/products/ProductRow.tsx
 import Link from 'next/link'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
@@ -10,17 +11,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Edit, Eye, Trash, Package } from 'lucide-react'
+import { WhatsAppShare } from './WhatsAppShare'
 
 type Product = {
   id: string
   name: string
+  description?: string
   image_url: string | null
+  images?: string[]
   cost_price: number
   selling_price: number
   stock_quantity?: number
-  stock_status: string
+  stock_status: 'in_stock' | 'low_stock' | 'out_of_stock'
   category?: string
   sku?: string
+  created_at?: string
 }
 
 export function ProductRow({ product }: { product: Product }) {
@@ -108,6 +113,11 @@ export function ProductRow({ product }: { product: Product }) {
             {product.stock_quantity} units
           </span>
         )}
+      </div>
+
+      {/* WhatsApp Share Button */}
+      <div className="flex-shrink-0">
+        <WhatsAppShare product={product} variant="outline" size="sm" />
       </div>
 
       {/* Actions */}
