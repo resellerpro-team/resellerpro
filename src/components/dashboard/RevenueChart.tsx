@@ -41,9 +41,29 @@ export function RevenueChart({ data }: RevenueChartProps) {
 
   const chartData = data && data.length > 0 ? data : fallbackData
 
-  // ✅ Auto Y-axis scale based on highest revenue
+  // ✅ Auto Y-axis scale with exactly 5 ticks
   const maxRevenue = Math.max(...chartData.map((d) => d.revenue))
-  const roundedMax = Math.ceil(maxRevenue / 1000) * 1000 || 1000
+  
+  const getNiceInterval = (maxValue: number): number => {
+    if (maxValue === 0) return 200 // Default interval when no data
+    
+    const roughInterval = maxValue / 5
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughInterval)))
+    const fraction = roughInterval / magnitude
+    
+    let niceFraction
+    if (fraction <= 1) niceFraction = 1
+    else if (fraction <= 2) niceFraction = 2
+    else if (fraction <= 2.5) niceFraction = 2.5
+    else if (fraction <= 5) niceFraction = 5
+    else niceFraction = 10
+    
+    return niceFraction * magnitude
+  }
+  
+  const interval = getNiceInterval(maxRevenue)
+  const yAxisMax = interval * 5
+  const yAxisTicks = [interval, interval * 2, interval * 3, interval * 4, interval * 5]
 
   // Calculate total revenue for the period
   const totalRevenue = chartData.reduce((sum, item) => sum + item.revenue, 0)
@@ -62,14 +82,14 @@ export function RevenueChart({ data }: RevenueChartProps) {
         <AreaChart
           accessibilityLayer
           data={chartData}
-          margin={{ top: 12, left: -15, right: 0, bottom: 0 }}
+          margin={{ top: 12, left: -10, right: 0, bottom: 0 }}
         >
           <CartesianGrid vertical={false} />
 
-          {/* ✅ Dynamic Y Axis */}
+          {/* ✅ Dynamic Y Axis with exactly 5 ticks */}
           <YAxis
-            domain={[0, roundedMax]}
-             ticks={Array.from({ length: roundedMax / 100 + 1 }, (_, i) => i * 100)}
+            domain={[0, yAxisMax]}
+            ticks={yAxisTicks}
           />
 
           <XAxis
@@ -104,11 +124,11 @@ export function RevenueChart({ data }: RevenueChartProps) {
         <div className="flex gap-2 leading-none font-medium text-black  mt-10">
           {totalRevenue > 0 ? (
             <div className="flex flex-nowrap">
-              Trending {Number(weeklyGrowth) >= 0 ? 'up' : 'down'} by{" "}
-              <span className={Number(weeklyGrowth) >= 0 ? "text-green-600" : "text-red-600"}>
-                {Math.abs(Number(weeklyGrowth))}%
-              </span>{" "}
-              this week{" "}
+              Trending {Number(weeklyGrowth) >= 0 ? 'up' : 'down'} by {" "}
+              <span className={Number(weeklyGrowth) >= 0 ? "text-green-600 px-1" : "text-red-600 px-1"}>
+                 {Math.abs(Number(weeklyGrowth))}%
+              </span> {" "}
+               this week {" "}
               <TrendingUp className={`h-4 w-4 ${Number(weeklyGrowth) >= 0 ? 'text-green-600' : 'text-red-600'}`} />
             </div>
           ) : (
