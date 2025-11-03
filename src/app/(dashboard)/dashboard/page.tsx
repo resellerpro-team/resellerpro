@@ -1,5 +1,7 @@
+import { Suspense } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   TrendingUp,
   TrendingDown,
@@ -14,13 +16,14 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { RevenueChart } from '@/components/dashboard/RevenueChart'
+// import { TopProductsCard } from '@/components/dashboard/TopProductsCard'
 import {
   getDashboardStats,
   getRevenueChartData,
   getRecentOrders,
-  getTopProducts,
   getDashboardAlerts,
 } from './action'
+import { TopProductsCard } from '@/components/dashboard/TopProducts'
 
 export const metadata = {
   title: 'Dashboard - ResellerPro',
@@ -29,11 +32,10 @@ export const metadata = {
 
 export default async function DashboardPage() {
   // Fetch all data in parallel for better performance
-  const [stats, revenueData, recentOrders, topProducts, alerts] = await Promise.all([
+  const [stats, revenueData, recentOrders, alerts] = await Promise.all([
     getDashboardStats(),
     getRevenueChartData(),
     getRecentOrders(),
-    getTopProducts(),
     getDashboardAlerts(),
   ])
 
@@ -41,8 +43,8 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Dashboard</h1>
+        <p className="text-muted-foreground text-[13px] sm:text-[15px]">
           Welcome back! Here's what's happening with your business today.
         </p>
       </div>
@@ -200,36 +202,36 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Top Products */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Top Selling Products</CardTitle>
-          <CardDescription>Best performers this month</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {topProducts.length > 0 ? (
-            <div className="space-y-4">
-              {topProducts.map((product) => (
-                <TopProductItem
-                  key={product.id}
-                  name={product.name}
-                  sold={product.sold}
-                  revenue={`₹${product.revenue.toLocaleString('en-IN')}`}
-                  profit={`₹${product.profit.toLocaleString('en-IN')}`}
-                  trend={product.trend}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No product sales yet</p>
-              <p className="text-sm">Add products and create orders to see top sellers</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Top Products - Now as separate component */}
+      <Suspense fallback={<TopProductsSkeleton />}>
+        <TopProductsCard />
+      </Suspense>
     </div>
+  )
+}
+
+// Loading skeleton for top products
+function TopProductsSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Top Selling Products</CardTitle>
+        <CardDescription>Best performers this month</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex items-center gap-4">
+              <Skeleton className="h-12 w-12 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -244,7 +246,7 @@ function StatsCard({
   value: string
   change: string
   trend: 'up' | 'down'
-  icon: any
+  icon: React.ComponentType<{ className?: string }>
 }) {
   return (
     <Card>
@@ -335,43 +337,6 @@ function AlertItem({
         <Button variant="link" size="sm" className="h-auto p-0 mt-1" asChild>
           <Link href={href}>{action}</Link>
         </Button>
-      </div>
-    </div>
-  )
-}
-
-function TopProductItem({
-  name,
-  sold,
-  revenue,
-  profit,
-  trend,
-}: {
-  name: string
-  sold: number
-  revenue: string
-  profit: string
-  trend: 'up' | 'down'
-}) {
-  return (
-    <div className="flex items-center gap-4">
-      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
-        <Package className="h-6 w-6 text-muted-foreground" />
-      </div>
-      <div className="flex-1 space-y-1">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">{name}</p>
-          {trend === 'up' ? (
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          ) : (
-            <TrendingDown className="h-4 w-4 text-red-500" />
-          )}
-        </div>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span>{sold} sold</span>
-          <span>Revenue: {revenue}</span>
-          <span className="text-green-600 font-medium">Profit: {profit}</span>
-        </div>
       </div>
     </div>
   )

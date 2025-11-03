@@ -82,7 +82,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
         <AreaChart
           accessibilityLayer
           data={chartData}
-          margin={{ top: 12, left: -10, right: 0, bottom: 0 }}
+          margin={{ top: 12, left: 0, right: 0, bottom: 0 }}
         >
           <CartesianGrid vertical={false} />
 

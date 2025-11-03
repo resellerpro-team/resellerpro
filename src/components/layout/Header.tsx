@@ -29,15 +29,17 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
+    <header className="px-6 flex items-center justify-between border-b">
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex-1 max-w-md">
+
+      <div className="sticky top-0 z-30 flex h-16 sm:w-[60%] w-[75%] items-center gap-4  bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <form onSubmit={handleSearch} className="flex-1 w-full">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute  left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search products, customers, orders..."
-            className="pl-10 pr-4"
+            className="pl-10 pr-4 w-full"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -69,6 +71,10 @@ export default function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+      </div>
+      </div>
+      <div>
+         
         {/* Theme Toggle */}
         <Button
           variant="ghost"

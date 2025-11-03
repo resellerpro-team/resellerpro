@@ -106,7 +106,7 @@ export async function getDashboardStats(): Promise<DashboardStats | null> {
     const now = new Date()
     const todayStart = new Date(now.setHours(0, 0, 0, 0)).toISOString()
     const todayEnd = new Date(now.setHours(23, 59, 59, 999)).toISOString()
-    
+
     const yesterday = new Date(now)
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayStart = new Date(yesterday.setHours(0, 0, 0, 0)).toISOString()
@@ -141,11 +141,11 @@ export async function getDashboardStats(): Promise<DashboardStats | null> {
     const yesterdayOrdersCount = yesterdayOrders?.length || 0
 
     // Calculate percentage changes
-    const revenueChange = yesterdayRevenue > 0 
+    const revenueChange = yesterdayRevenue > 0
       ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100)
       : todayRevenue > 0 ? 100 : 0
-      
-    const profitChange = yesterdayProfit > 0 
+
+    const profitChange = yesterdayProfit > 0
       ? Math.round(((todayProfit - yesterdayProfit) / yesterdayProfit) * 100)
       : todayProfit > 0 ? 100 : 0
 
@@ -256,8 +256,8 @@ export async function getRecentOrders(): Promise<RecentOrder[]> {
       // Get first product or show count if multiple
       const items = order.order_items || []
       const firstProduct = items[0]?.product_name || 'Unknown Product'
-      const productDisplay = items.length > 1 
-        ? `${firstProduct} × ${items.length}` 
+      const productDisplay = items.length > 1
+        ? `${firstProduct} × ${items.length}`
         : firstProduct
 
       // Calculate time ago
@@ -267,7 +267,7 @@ export async function getRecentOrders(): Promise<RecentOrder[]> {
       const diffMins = Math.floor(diffMs / 60000)
       const diffHours = Math.floor(diffMs / 3600000)
       const diffDays = Math.floor(diffMs / 86400000)
-      
+
       let timeAgo = ''
       if (diffMins < 1) {
         timeAgo = 'Just now'
@@ -314,39 +314,58 @@ export async function getTopProducts(): Promise<TopProduct[]> {
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString()
 
-    // Fetch this month's order items with order details
-    const { data: currentMonthOrders } = await supabase
+    // Fetch current month's order IDs first
+    const { data: currentMonthOrders, error: currentOrdersError } = await supabase
       .from('orders')
-      .select(`
-        id,
-        created_at,
-        order_items (
-          product_id,
-          product_name,
-          quantity,
-          unit_price,
-          unit_cost
-        )
-      `)
+      .select('id')
       .eq('user_id', user.id)
       .gte('created_at', monthStart)
-      .returns<OrderWithItemsForProducts[]>()
 
-    // Fetch last month's order items for trend
+    if (currentOrdersError) {
+      console.error('Error fetching current month orders:', currentOrdersError)
+      return []
+    }
+
+    if (!currentMonthOrders || currentMonthOrders.length === 0) {
+      return []
+    }
+
+    const currentOrderIds = currentMonthOrders.map(o => o.id)
+
+    // Fetch order items for current month - SELECT ALL COLUMNS to see what exists
+    const { data: currentItems, error: currentItemsError } = await supabase
+      .from('order_items')
+      .select('*')
+      .in('order_id', currentOrderIds)
+
+    if (currentItemsError) {
+      console.error('Error fetching current month items:', currentItemsError)
+      return []
+    }
+
+    // Fetch last month's order IDs
     const { data: lastMonthOrders } = await supabase
       .from('orders')
-      .select(`
-        order_items (
-          product_id,
-          quantity
-        )
-      `)
+      .select('id')
       .eq('user_id', user.id)
       .gte('created_at', lastMonthStart)
       .lte('created_at', lastMonthEnd)
-      .returns<OrderForTrend[]>()
 
-    if (!currentMonthOrders) return []
+    let lastMonthItems: { product_id: string; quantity: number }[] = []
+
+    if (lastMonthOrders && lastMonthOrders.length > 0) {
+      const lastOrderIds = lastMonthOrders.map(o => o.id)
+      const { data: items } = await supabase
+        .from('order_items')
+        .select('product_id, quantity')
+        .in('order_id', lastOrderIds)
+
+      lastMonthItems = items || []
+    }
+
+    if (!currentItems || currentItems.length === 0) {
+      return []
+    }
 
     // Aggregate data by product
     const productMap = new Map<string, {
@@ -359,33 +378,37 @@ export async function getTopProducts(): Promise<TopProduct[]> {
     }>()
 
     // Process current month data
-    currentMonthOrders.forEach(order => {
-      order.order_items?.forEach((item: OrderItem) => {
-        const existing = productMap.get(item.product_id) || {
-          id: item.product_id,
-          name: item.product_name,
-          sold: 0,
-          revenue: 0,
-          profit: 0,
-          lastMonthSold: 0,
-        }
+    currentItems.forEach((item) => {
+      if (!item.product_id) return
 
-        existing.sold += item.quantity
-        existing.revenue += item.quantity * Number(item.unit_price || 0)
-        existing.profit += item.quantity * (Number(item.unit_price || 0) - Number(item.unit_cost || 0))
+      const existing = productMap.get(item.product_id) || {
+        id: item.product_id,
+        name: item.product_name || 'Unknown Product',
+        sold: 0,
+        revenue: 0,
+        profit: 0,
+        lastMonthSold: 0,
+      }
 
-        productMap.set(item.product_id, existing)
-      })
+      const quantity = item.quantity || 0
+      const unitPrice = Number(item.unit_selling_price || 0)
+      const unitCost = Number(item.unit_cost_price || 0)
+
+      existing.sold += quantity
+      existing.revenue += quantity * unitPrice
+      existing.profit += quantity * (unitPrice - unitCost)
+
+      productMap.set(item.product_id, existing)
     })
 
     // Add last month data for trend calculation
-    lastMonthOrders?.forEach(order => {
-      order.order_items?.forEach((item: OrderItemForTrend) => {
-        const existing = productMap.get(item.product_id)
-        if (existing) {
-          existing.lastMonthSold += item.quantity
-        }
-      })
+    lastMonthItems.forEach((item) => {
+      if (!item.product_id) return
+
+      const existing = productMap.get(item.product_id)
+      if (existing) {
+        existing.lastMonthSold += item.quantity || 0
+      }
     })
 
     // Convert to array, sort by revenue, and take top 4
@@ -394,7 +417,7 @@ export async function getTopProducts(): Promise<TopProduct[]> {
       .slice(0, 4)
       .map(product => {
         const trend: 'up' | 'down' = product.sold >= product.lastMonthSold ? 'up' : 'down'
-        
+
         return {
           id: product.id,
           name: product.name,
@@ -419,7 +442,7 @@ export async function getTopProducts(): Promise<TopProduct[]> {
 export async function getDashboardAlerts(): Promise<DashboardAlerts> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return {
       pendingOrders: 0,
@@ -456,7 +479,7 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       .returns<{ total_amount: number }[]>()
 
     const monthlyRevenue = monthlyOrders?.reduce(
-      (sum, order) => sum + Number(order.total_amount || 0), 
+      (sum, order) => sum + Number(order.total_amount || 0),
       0
     ) || 0
 
