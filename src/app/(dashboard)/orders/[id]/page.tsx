@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { OrderStatusUpdate } from '@/components/orders/OrderStatusUpdate'
+import { PaymentStatusUpdate } from '@/components/orders/PaymentStatusUpdate'
 
 // ✅ FIXED: params is now a Promise
 export default async function OrderDetailsPage({
@@ -273,28 +274,19 @@ export default async function OrderDetailsPage({
             </Card>
           )}
 
-          {/* Payment & Status */}
+           {/* Payment Status Update */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Payment & Status
+                Payment Details
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span>Order Status</span>
-                <Badge
-                  className={`${statusConfig[order.status]?.color || 'bg-gray-500'} text-white`}
-                >
-                  {statusConfig[order.status]?.label || order.status}
-                </Badge>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span>Payment Status</span>
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-sm">Payment Status</span>
                 <span
-                  className={`font-semibold ${
+                  className={`font-semibold text-sm ${
                     paymentConfig[order.payment_status]?.color || 'text-gray-600'
                   }`}
                 >
@@ -303,20 +295,50 @@ export default async function OrderDetailsPage({
               </div>
 
               {order.payment_method && (
-                <div className="flex justify-between items-center">
-                  <span>Payment Method</span>
-                  <span className="text-muted-foreground">
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-sm">Payment Method</span>
+                  <span className="text-muted-foreground text-sm">
                     {order.payment_method.toUpperCase()}
                   </span>
                 </div>
               )}
+
+              <Separator />
+              
+              <PaymentStatusUpdate
+                orderId={order.id}
+                currentPaymentStatus={order.payment_status}
+                currentPaymentMethod={order.payment_method}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Order Status Update */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Order Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-sm">Current Status</span>
+                <Badge
+                  className={`${statusConfig[order.status]?.color || 'bg-gray-500'} text-white`}
+                >
+                  {statusConfig[order.status]?.label || order.status}
+                </Badge>
+              </div>
 
               {order.tracking_number && (
                 <>
                   <Separator />
                   <div>
                     <p className="text-sm font-medium mb-1">Tracking Number</p>
-                    <p className="text-sm text-muted-foreground font-mono">{order.tracking_number}</p>
+                    <p className="text-sm text-muted-foreground font-mono break-all">
+                      {order.tracking_number}
+                    </p>
                   </div>
                 </>
               )}
@@ -324,7 +346,9 @@ export default async function OrderDetailsPage({
               {order.courier_service && (
                 <div>
                   <p className="text-sm font-medium mb-1">Courier Service</p>
-                  <p className="text-sm text-muted-foreground">{order.courier_service}</p>
+                  <p className="text-sm text-muted-foreground break-words">
+                    {order.courier_service}
+                  </p>
                 </div>
               )}
 
@@ -333,7 +357,9 @@ export default async function OrderDetailsPage({
                   <Separator />
                   <div>
                     <p className="text-sm font-medium mb-1">Notes</p>
-                    <p className="text-sm text-muted-foreground">{order.notes}</p>
+                    <p className="text-sm text-muted-foreground break-words">
+                      {order.notes}
+                    </p>
                   </div>
                 </>
               )}
@@ -341,14 +367,14 @@ export default async function OrderDetailsPage({
               <Separator />
               
               <OrderStatusUpdate 
-  orderId={order.id} 
-  currentStatus={order.status}
-  orderNumber={order.order_number}
-  customerName={order.customers?.name}
-  customerPhone={order.customers?.phone}
-  orderItems={order.order_items?.map((item: any) => item.product_name) || []}
-  totalAmount={parseFloat(order.total_amount)}
-/>
+                orderId={order.id} 
+                currentStatus={order.status}
+                orderNumber={order.order_number}
+                customerName={order.customers?.name}
+                customerPhone={order.customers?.phone}
+                orderItems={order.order_items?.map((item: any) => item.product_name) || []}
+                totalAmount={parseFloat(order.total_amount)}
+              />
             </CardContent>
           </Card>
         </div>

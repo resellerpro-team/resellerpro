@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge' // ✅ Add Badge import
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
   SelectContent,
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Trash2, Save, Loader2, Package, AlertTriangle } from 'lucide-react' // ✅ Add AlertTriangle
+import { Plus, Trash2, Save, Loader2, Package, AlertTriangle } from 'lucide-react'
 import { createOrder } from '@/app/(dashboard)/orders/actions'
 
 type Customer = {
@@ -32,7 +33,7 @@ type Product = {
   selling_price: number
   cost_price: number
   stock_status: string
-  stock_quantity?: number // ✅ Add optional stock_quantity
+  stock_quantity: number // ✅ Made required
 }
 
 type OrderItem = {
@@ -42,7 +43,8 @@ type OrderItem = {
   quantity: number
   unitPrice: number
   unitCost: number
-  stockStatus?: string // ✅ Add stock status to item
+  stockStatus: string
+  maxStock: number // ✅ Add max available stock
 }
 
 export function NewOrderForm({
@@ -81,23 +83,40 @@ export function NewOrderForm({
   }, [preSelectedCustomerId, customers, toast])
 
   // ✅ Helper function to get stock status badge
-  const getStockBadge = (status: string) => {
+  const getStockBadge = (status: string, quantity?: number) => {
+    if (quantity !== undefined && quantity === 0) {
+      return <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
+    }
+    
     switch (status) {
       case 'in_stock':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">In Stock</Badge>
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">In Stock</Badge>
       case 'low_stock':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Low Stock</Badge>
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">Low Stock</Badge>
       case 'out_of_stock':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Out of Stock</Badge>
+        return <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
       default:
         return null
     }
   }
 
+  // ✅ Check if any item exceeds available stock
+  const hasStockIssues = orderItems.some(item => item.quantity > item.maxStock)
+
   // Add product to order
   const handleAddProduct = (productId: string) => {
     const product = products.find((p) => p.id === productId)
     if (!product) return
+
+    // ✅ Check if product is out of stock
+    if (product.stock_quantity === 0) {
+      toast({
+        title: 'Out of Stock',
+        description: `${product.name} is currently out of stock`,
+        variant: 'destructive',
+      })
+      return
+    }
 
     const existingItem = orderItems.find((item) => item.productId === productId)
     if (existingItem) {
@@ -116,17 +135,40 @@ export function NewOrderForm({
       quantity: 1,
       unitPrice: product.selling_price,
       unitCost: product.cost_price,
-      stockStatus: product.stock_status, // ✅ Store stock status
+      stockStatus: product.stock_status,
+      maxStock: product.stock_quantity, // ✅ Store max available stock
     }
 
     setOrderItems([...orderItems, newItem])
   }
 
+  // ✅ Updated quantity handler with validation
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
     if (quantity < 1) return
+
+    const item = orderItems.find(i => i.id === itemId)
+    if (!item) return
+
+    // ✅ Enforce max stock limit
+    if (quantity > item.maxStock) {
+      toast({
+        title: 'Insufficient Stock',
+        description: `Only ${item.maxStock} units available for ${item.productName}`,
+        variant: 'destructive',
+      })
+      
+      // Set to max available
+      setOrderItems(
+        orderItems.map((i) =>
+          i.id === itemId ? { ...i, quantity: item.maxStock } : i
+        )
+      )
+      return
+    }
+
     setOrderItems(
-      orderItems.map((item) =>
-        item.id === itemId ? { ...item, quantity } : item
+      orderItems.map((i) =>
+        i.id === itemId ? { ...i, quantity } : i
       )
     )
   }
@@ -172,6 +214,16 @@ export function NewOrderForm({
       toast({
         title: 'Error',
         description: 'Please add at least one product',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // ✅ Final stock validation before submission
+    if (hasStockIssues) {
+      toast({
+        title: 'Stock Issues',
+        description: 'Some items exceed available stock. Please adjust quantities.',
         variant: 'destructive',
       })
       return
@@ -258,7 +310,6 @@ export function NewOrderForm({
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Add Products</CardTitle>
-              {/* ✅ Show product count */}
               <span className="text-sm text-muted-foreground">
                 {products.length} product(s) available
               </span>
@@ -281,13 +332,32 @@ export function NewOrderForm({
                     </div>
                   ) : (
                     products.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        <div className="flex items-center justify-between w-full gap-2">
-                          <span>{product.name} - ₹{product.selling_price}</span>
-                          {/* ✅ Show stock indicator */}
-                          {product.stock_status === 'low_stock' && (
-                            <AlertTriangle className="h-3 w-3 text-yellow-600" />
-                          )}
+                      <SelectItem 
+                        key={product.id} 
+                        value={product.id}
+                        disabled={product.stock_quantity === 0} // ✅ Disable out of stock
+                      >
+                        <div className="flex items-center justify-between w-full gap-3">
+                          <span className="flex-1">
+                            {product.name} - ₹{product.selling_price}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {/* ✅ Show stock quantity */}
+                            <span className={`text-xs ${
+                              product.stock_quantity < 5 
+                                ? 'text-yellow-600 font-medium' 
+                                : 'text-muted-foreground'
+                            }`}>
+                              Stock: {product.stock_quantity}
+                            </span>
+                            {/* ✅ Show stock status indicator */}
+                            {product.stock_status === 'low_stock' && (
+                              <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                            )}
+                            {product.stock_quantity === 0 && (
+                              <span className="text-xs text-red-600 font-medium">Out</span>
+                            )}
+                          </div>
                         </div>
                       </SelectItem>
                     ))
@@ -299,64 +369,102 @@ export function NewOrderForm({
             {/* Order Items List */}
             {orderItems.length > 0 ? (
               <div className="space-y-3 pt-4">
-                {orderItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-3 p-3 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{item.productName}</p>
-                        {/* ✅ Show stock status badge */}
-                        {item.stockStatus && getStockBadge(item.stockStatus)}
+                {orderItems.map((item) => {
+                  const hasError = item.quantity > item.maxStock
+                  const isLowStock = item.stockStatus === 'low_stock' || item.maxStock < 5
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-4 border rounded-lg ${
+                        hasError ? 'border-red-500 bg-red-50 dark:bg-red-950/10' : ''
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium">{item.productName}</p>
+                            {getStockBadge(item.stockStatus, item.maxStock)}
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>Cost: ₹{item.unitCost}</span>
+                            <span className={`font-medium ${
+                              item.maxStock < 5 ? 'text-yellow-600' : ''
+                            }`}>
+                              Available: {item.maxStock} units
+                            </span>
+                          </div>
+                          {/* ✅ Show low stock warning */}
+                          {isLowStock && !hasError && (
+                            <div className="flex items-center gap-1 mt-2 text-xs text-yellow-600">
+                              <AlertTriangle className="h-3 w-3" />
+                              <span>Low stock alert</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          {/* ✅ Quantity input with max validation */}
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              Qty <span className="text-muted-foreground">(Max: {item.maxStock})</span>
+                            </Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              max={item.maxStock}
+                              value={item.quantity}
+                              onChange={(e) =>
+                                handleUpdateQuantity(item.id, parseInt(e.target.value) || 1)
+                              }
+                              className={`w-20 h-9 ${hasError ? 'border-red-500' : ''}`}
+                            />
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <Label className="text-xs">Price</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={item.unitPrice}
+                              onChange={(e) =>
+                                handleUpdatePrice(item.id, parseFloat(e.target.value) || 0)
+                              }
+                              className="w-24 h-9"
+                            />
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <Label className="text-xs">Total</Label>
+                            <p className="text-sm font-semibold h-9 flex items-center">
+                              ₹{(item.quantity * item.unitPrice).toFixed(2)}
+                            </p>
+                          </div>
+                          
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="h-9 w-9 mt-5"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Cost: ₹{item.unitCost}
-                      </p>
+
+                      {/* ✅ Error message for exceeded stock */}
+                      {hasError && (
+                        <Alert variant="destructive" className="mt-3">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertDescription>
+                            Only {item.maxStock} units available. Quantity has been adjusted to maximum.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Qty</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleUpdateQuantity(item.id, parseInt(e.target.value))
-                          }
-                          className="w-16 h-8"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Price</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) =>
-                            handleUpdatePrice(item.id, parseFloat(e.target.value))
-                          }
-                          className="w-24 h-8"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Total</Label>
-                        <p className="text-sm font-semibold h-8 flex items-center">
-                          ₹{(item.quantity * item.unitPrice).toFixed(2)}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="h-8 w-8"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="text-center py-8 border-2 border-dashed rounded-lg">
@@ -473,11 +581,21 @@ export function NewOrderForm({
               </div>
             </div>
 
+            {/* ✅ Stock warning before submission */}
+            {hasStockIssues && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Please fix stock quantity issues before creating order
+                </AlertDescription>
+              </Alert>
+            )}
+
             <Button
               type="submit"
               size="lg"
               className="w-full"
-              disabled={isPending || !selectedCustomerId || orderItems.length === 0}
+              disabled={isPending || !selectedCustomerId || orderItems.length === 0 || hasStockIssues}
             >
               {isPending ? (
                 <>

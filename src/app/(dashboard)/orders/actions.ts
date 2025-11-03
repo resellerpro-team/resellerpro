@@ -92,6 +92,7 @@ export async function createOrder(p0: { success: boolean; message: string }, for
         payment_status: paymentStatus,
         payment_method: paymentMethod || null,
         notes: notes || null,
+        status: 'pending', // Default status
       })
       .select('id, order_number')
       .single()
@@ -109,6 +110,20 @@ export async function createOrder(p0: { success: boolean; message: string }, for
     }
 
     console.log('✅ Order created:', newOrder)
+
+    // Insert initial status history
+    const { error: historyError } = await supabase
+      .from('order_status_history')
+      .insert({
+        order_id: newOrder.id,
+        status: 'pending',
+        user_id: user.id,
+      })
+
+    if (historyError) {
+      console.error('⚠️ Status history error:', historyError)
+      // Don't fail the order creation for this
+    }
 
     // Prepare order items
     const orderItemsData = items.map((item: any) => ({
@@ -159,6 +174,10 @@ export async function createOrder(p0: { success: boolean; message: string }, for
     }
   }
 }
+
+// ========================================================
+// SERVER ACTION: UPDATE ORDER STATUS
+// ========================================================
 export async function updateOrderStatus(formData: FormData) {
   const supabase = await createClient()
   
@@ -207,6 +226,22 @@ export async function updateOrderStatus(formData: FormData) {
       return { success: false, message: error.message }
     }
 
+    // Insert status history
+    const { error: historyError } = await supabase
+      .from('order_status_history')
+      .insert({
+        order_id: orderId,
+        status: status,
+        courier_service: courierService || null,
+        tracking_number: trackingNumber || null,
+        user_id: user.id,
+      })
+
+    if (historyError) {
+      console.error('Error inserting status history:', historyError)
+      // Don't fail the update for this
+    }
+
     revalidatePath('/orders')
     revalidatePath(`/orders/${orderId}`)
 
@@ -221,5 +256,60 @@ export async function updateOrderStatus(formData: FormData) {
       message: error.message || 'Failed to update status' 
     }
   }
+}
 
+// ========================================================
+// SERVER ACTION: UPDATE PAYMENT STATUS
+// ========================================================
+export async function updatePaymentStatus(formData: FormData) {
+  const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, message: 'Authentication required.' }
+  }
+
+  try {
+    const orderId = formData.get('orderId') as string
+    const paymentStatus = formData.get('paymentStatus') as string
+    const paymentMethod = formData.get('paymentMethod') as string
+
+    if (!orderId || !paymentStatus) {
+      return { success: false, message: 'Invalid data.' }
+    }
+
+    const updateData: any = {
+      payment_status: paymentStatus,
+      updated_at: new Date().toISOString(),
+    }
+
+    if (paymentMethod) {
+      updateData.payment_method = paymentMethod
+    }
+
+    const { error } = await supabase
+      .from('orders')
+      .update(updateData)
+      .eq('id', orderId)
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error('Error updating payment status:', error)
+      return { success: false, message: error.message }
+    }
+
+    revalidatePath('/orders')
+    revalidatePath(`/orders/${orderId}`)
+
+    return { 
+      success: true, 
+      message: `Payment status updated to "${paymentStatus}".` 
+    }
+  } catch (error: any) {
+    console.error('Error updating payment status:', error)
+    return { 
+      success: false, 
+      message: error.message || 'Failed to update payment status' 
+    }
+  }
 }
