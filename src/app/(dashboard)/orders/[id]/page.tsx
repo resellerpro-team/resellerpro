@@ -16,26 +16,22 @@ import {
   CreditCard,
   Phone,
   Mail,
-  ChevronDown,
-  ChevronUp,
+  Clock,
 } from 'lucide-react'
 import Link from 'next/link'
 import { OrderStatusUpdate } from '@/components/orders/OrderStatusUpdate'
 import { PaymentStatusUpdate } from '@/components/orders/PaymentStatusUpdate'
 import { CollapsibleSection } from '@/components/orders/CollapsibleSection'
 
-// ✅ FIXED: params is now a Promise
 export default async function OrderDetailsPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  // ✅ AWAIT params before using it
   const { id } = await params
-
   const supabase = await createClient()
 
-  // ✅ Now use the awaited id
+  // Fetch order with status history
   const { data: order, error } = await supabase
     .from('orders')
     .select(`
@@ -44,6 +40,14 @@ export default async function OrderDetailsPage({
       order_items (
         *,
         products (name, image_url)
+      ),
+      order_status_history (
+        id,
+        status,
+        notes,
+        courier_service,
+        tracking_number,
+        created_at
       )
     `)
     .eq('id', id)
@@ -54,12 +58,18 @@ export default async function OrderDetailsPage({
     return notFound()
   }
 
-  const statusConfig: Record<string, { label: string; color: string }> = {
-    pending: { label: 'Pending', color: 'bg-yellow-500' },
-    processing: { label: 'Processing', color: 'bg-blue-500' },
-    shipped: { label: 'Shipped', color: 'bg-purple-500' },
-    delivered: { label: 'Delivered', color: 'bg-green-500' },
-    cancelled: { label: 'Cancelled', color: 'bg-red-500' },
+  // Sort status history by date (oldest to newest)
+  const statusHistory = (order.order_status_history || []).sort(
+    (a: any, b: any) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  )
+
+  const statusConfig: Record<string, { label: string; color: string; icon: string }> = {
+    pending: { label: 'Order Placed', color: 'bg-yellow-500', icon: '📦' },
+    processing: { label: 'Processing', color: 'bg-blue-500', icon: '⚙️' },
+    shipped: { label: 'Shipped', color: 'bg-purple-500', icon: '🚚' },
+    delivered: { label: 'Delivered', color: 'bg-green-500', icon: '✅' },
+    cancelled: { label: 'Cancelled', color: 'bg-red-500', icon: '❌' },
   }
 
   const paymentConfig: Record<string, { label: string; color: string }> = {
@@ -168,7 +178,7 @@ export default async function OrderDetailsPage({
             </CardContent>
           </Card>
 
-          {/* Order Timeline */}
+          {/* Order Timeline - Enhanced with Status History */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -177,50 +187,96 @@ export default async function OrderDetailsPage({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="relative pl-4">
-                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border"></div>
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="relative z-10 h-5 w-5 rounded-full flex items-center justify-center bg-primary">
-                    <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                  </div>
-                  <div className="flex-1 -mt-1">
-                    <p className="font-semibold">Order Placed</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(order.created_at).toLocaleString('en-IN')}
-                    </p>
-                  </div>
+              {statusHistory.length > 0 ? (
+                <div className="relative pl-8">
+                  {/* Vertical connecting line */}
+                  <div className="absolute left-[1.125rem] top-0 bottom-0 w-0.5 bg-border"></div>
+                  
+                  {statusHistory.map((historyItem: any, index: number) => {
+                    const config = statusConfig[historyItem.status] || {
+                      label: historyItem.status,
+                      color: 'bg-gray-500',
+                      icon: '•'
+                    }
+                    const isLatest = index === statusHistory.length - 1
+                    const isFirst = index === 0
+
+                    return (
+                      <div 
+                        key={historyItem.id} 
+                        className="flex items-start gap-4 mb-8 last:mb-0"
+                      >
+                        {/* Timeline dot/icon */}
+                        <div className={`
+                          relative z-10 h-9 w-9 rounded-full flex items-center justify-center 
+                          ${isLatest 
+                            ? `${config.color} ring-4 ring-primary/20 text-white` 
+                            : 'bg-primary/10 border-2 border-primary'
+                          }
+                          transition-all duration-300
+                        `}>
+                          {isLatest ? (
+                            <span className="text-lg">{config.icon}</span>
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                        
+                        {/* Timeline content */}
+                        <div className="flex-1 pb-6">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-base">
+                              {config.label}
+                            </p>
+                            {isLatest && (
+                              <Badge variant="outline" className="text-xs">
+                                Current
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                            <Clock className="h-3 w-3" />
+                            {new Date(historyItem.created_at).toLocaleString('en-IN', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short'
+                            })}
+                          </div>
+
+                          {historyItem.notes && (
+                            <p className="text-sm text-muted-foreground italic mt-2">
+                              "{historyItem.notes}"
+                            </p>
+                          )}
+
+                          {historyItem.tracking_number && (
+                            <div className="mt-3 p-3 bg-muted/50 rounded-md border">
+                              <div className="space-y-1">
+                                <p className="text-xs font-medium">Shipping Details</p>
+                                {historyItem.courier_service && (
+                                  <p className="text-sm">
+                                    <span className="text-muted-foreground">Courier: </span>
+                                    <span className="font-medium">{historyItem.courier_service}</span>
+                                  </p>
+                                )}
+                                <p className="text-sm">
+                                  <span className="text-muted-foreground">Tracking: </span>
+                                  <span className="font-mono font-medium">{historyItem.tracking_number}</span>
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-
-                {order.status !== 'pending' && (
-                  <div className="flex items-start gap-4 mb-6">
-                    <div className="relative z-10 h-5 w-5 rounded-full flex items-center justify-center bg-primary">
-                      <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                    </div>
-                    <div className="flex-1 -mt-1">
-                      <p className="font-semibold">
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(order.updated_at).toLocaleString('en-IN')}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {order.delivered_at && (
-                  <div className="flex items-start gap-4 mb-6">
-                    <div className="relative z-10 h-5 w-5 rounded-full flex items-center justify-center bg-primary">
-                      <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                    </div>
-                    <div className="flex-1 -mt-1">
-                      <p className="font-semibold">Delivered</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(order.delivered_at).toLocaleString('en-IN')}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No status history available</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

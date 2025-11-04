@@ -11,18 +11,49 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Truck } from 'lucide-react'
+import { Loader2, Truck, AlertCircle } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { updateOrderStatus } from '@/app/(dashboard)/orders/actions'
 
-const ORDER_STATUSES = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'processing', label: 'Processing' },
-  { value: 'shipped', label: 'Shipped' },
-  { value: 'delivered', label: 'Delivered' },
-  { value: 'cancelled', label: 'Cancelled' },
-]
+// Define allowed status transitions
+const STATUS_FLOW: Record<string, string[]> = {
+  pending: ['processing', 'cancelled'],
+  processing: ['shipped', 'cancelled'],
+  shipped: ['delivered', 'cancelled'],
+  delivered: [],
+  cancelled: [],
+}
+
+const STATUS_CONFIG = {
+  pending: { 
+    label: 'Pending', 
+    color: 'bg-yellow-500',
+    description: 'Order awaiting confirmation'
+  },
+  processing: { 
+    label: 'Processing', 
+    color: 'bg-blue-500',
+    description: 'Order is being prepared'
+  },
+  shipped: { 
+    label: 'Shipped', 
+    color: 'bg-purple-500',
+    description: 'Order is in transit'
+  },
+  delivered: { 
+    label: 'Delivered', 
+    color: 'bg-green-500',
+    description: 'Order successfully delivered'
+  },
+  cancelled: { 
+    label: 'Cancelled', 
+    color: 'bg-red-500',
+    description: 'Order has been cancelled'
+  },
+}
 
 export function OrderStatusUpdate({
   orderId,
@@ -44,19 +75,34 @@ export function OrderStatusUpdate({
   const router = useRouter()
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
-  const [selectedStatus, setSelectedStatus] = useState(currentStatus)
+  const [selectedStatus, setSelectedStatus] = useState('')
   const [courierName, setCourierName] = useState('')
   const [trackingNumber, setTrackingNumber] = useState('')
+  const [notes, setNotes] = useState('')
   const [showWhatsAppButton, setShowWhatsAppButton] = useState(false)
   const [lastUpdatedStatus, setLastUpdatedStatus] = useState('')
+
+  // Get allowed statuses based on current status
+  const allowedStatuses = STATUS_FLOW[currentStatus] || []
+  const isFinalStatus = allowedStatuses.length === 0
 
   const handleStatusUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (selectedStatus === currentStatus) {
+    if (!selectedStatus) {
       toast({
-        title: 'No changes',
-        description: 'Status is already set to this value',
+        title: 'No status selected',
+        description: 'Please select a new status',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Validate shipping info if status is shipped
+    if (selectedStatus === 'shipped' && (!courierName || !trackingNumber)) {
+      toast({
+        title: 'Missing shipping details',
+        description: 'Please provide courier name and tracking number',
         variant: 'destructive',
       })
       return
@@ -66,6 +112,7 @@ export function OrderStatusUpdate({
       const formData = new FormData()
       formData.append('orderId', orderId)
       formData.append('status', selectedStatus)
+      formData.append('notes', notes)
       
       if (selectedStatus === 'shipped') {
         formData.append('courierService', courierName)
@@ -83,6 +130,12 @@ export function OrderStatusUpdate({
         // Show WhatsApp button after successful update
         setShowWhatsAppButton(true)
         setLastUpdatedStatus(selectedStatus)
+
+        // Reset form
+        setSelectedStatus('')
+        setNotes('')
+        setCourierName('')
+        setTrackingNumber('')
 
         router.refresh()
       } else {
@@ -112,51 +165,99 @@ export function OrderStatusUpdate({
     setShowWhatsAppButton(false)
   }
 
+  // If order is in final status, show info message
+  if (isFinalStatus) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          This order is in a final state ({STATUS_CONFIG[currentStatus as keyof typeof STATUS_CONFIG]?.label}). 
+          Status cannot be changed.
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
   return (
-    <form onSubmit={handleStatusUpdate} className="space-y-4 overflow-visible" >
+    <form onSubmit={handleStatusUpdate} className="space-y-4 overflow-visible">
       <div className="space-y-2">
-        <Label htmlFor="status">Order Status</Label>
+        <Label htmlFor="status">Update Order Status</Label>
         <Select value={selectedStatus} onValueChange={setSelectedStatus}>
           <SelectTrigger id="status">
-            <SelectValue />
+            <SelectValue placeholder="Select new status..." />
           </SelectTrigger>
           <SelectContent position="popper" sideOffset={5}>
-            {ORDER_STATUSES.map((status) => (
-              <SelectItem key={status.value} value={status.value}>
-                {status.label}
-              </SelectItem>
-            ))}
+            {allowedStatuses.map((status) => {
+              const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG]
+              return (
+                <SelectItem key={status} value={status}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
+                    <div>
+                      <div className="font-medium">{config.label}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {config.description}
+                      </div>
+                    </div>
+                  </div>
+                </SelectItem>
+              )
+            })}
           </SelectContent>
         </Select>
+        {allowedStatuses.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Available transitions: {allowedStatuses.map(s => 
+              STATUS_CONFIG[s as keyof typeof STATUS_CONFIG]?.label
+            ).join(', ')}
+          </p>
+        )}
       </div>
 
       {selectedStatus === 'shipped' && (
         <div className="space-y-4 p-4 border rounded-md bg-muted/50 animate-in fade-in-50 duration-300">
           <div className="space-y-2">
-            <Label htmlFor="courierName">Courier Name</Label>
+            <Label htmlFor="courierName">
+              Courier Name <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="courierName"
               value={courierName}
               onChange={(e) => setCourierName(e.target.value)}
               placeholder="e.g., BlueDart, Delhivery, DTDC"
+              required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="trackingNumber">Tracking Number</Label>
+            <Label htmlFor="trackingNumber">
+              Tracking Number <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="trackingNumber"
               value={trackingNumber}
               onChange={(e) => setTrackingNumber(e.target.value)}
               placeholder="e.g., BD123456789"
+              required
             />
           </div>
         </div>
       )}
 
+      <div className="space-y-2">
+        <Label htmlFor="notes">Notes (Optional)</Label>
+        <Textarea
+          id="notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Add any additional notes about this status change..."
+          rows={3}
+        />
+      </div>
+
       <Button
         type="submit"
         className="w-full"
-        disabled={isPending || selectedStatus === currentStatus}
+        disabled={isPending || !selectedStatus}
       >
         {isPending ? (
           <>

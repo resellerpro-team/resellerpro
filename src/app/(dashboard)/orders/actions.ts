@@ -2,7 +2,16 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { canCreateOrder } from '../settings/subscription/actions';
+import { canCreateOrder } from '../settings/subscription/actions'
+
+// Define allowed status transitions
+const STATUS_FLOW: Record<string, string[]> = {
+  pending: ['processing', 'cancelled'],
+  processing: ['shipped', 'cancelled'],
+  shipped: ['delivered', 'cancelled'],
+  delivered: [], // Final state
+  cancelled: [], // Final state
+}
 
 // ========================================================
 // SERVER ACTION: CREATE A NEW ORDER
@@ -111,19 +120,20 @@ export async function createOrder(p0: { success: boolean; message: string }, for
 
     console.log('✅ Order created:', newOrder)
 
-    // Insert initial status history
-    const { error: historyError } = await supabase
-      .from('order_status_history')
-      .insert({
-        order_id: newOrder.id,
-        status: 'pending',
-        user_id: user.id,
-      })
+    // // Insert initial status history entry
+    // const { error: historyError } = await supabase
+    //   .from('order_status_history')
+    //   .insert({
+    //     order_id: newOrder.id,
+    //     status: 'pending',
+    //     notes: 'Order placed',
+    //     changed_by: user.id,
+    //   })
 
-    if (historyError) {
-      console.error('⚠️ Status history error:', historyError)
-      // Don't fail the order creation for this
-    }
+    // if (historyError) {
+    //   console.error('⚠️ Status history error:', historyError)
+    //   // Don't fail the order creation for this
+    // }
 
     // Prepare order items
     const orderItemsData = items.map((item: any) => ({
@@ -176,7 +186,7 @@ export async function createOrder(p0: { success: boolean; message: string }, for
 }
 
 // ========================================================
-// SERVER ACTION: UPDATE ORDER STATUS
+// SERVER ACTION: UPDATE ORDER STATUS (WITH VALIDATION)
 // ========================================================
 export async function updateOrderStatus(formData: FormData) {
   const supabase = await createClient()
@@ -188,22 +198,55 @@ export async function updateOrderStatus(formData: FormData) {
 
   try {
     const orderId = formData.get('orderId') as string
-    const status = formData.get('status') as string
+    const newStatus = formData.get('status') as string
     const courierService = formData.get('courierService') as string
     const trackingNumber = formData.get('trackingNumber') as string
+    const notes = formData.get('notes') as string
 
-    if (!orderId || !status) {
+    if (!orderId || !newStatus) {
       return { success: false, message: 'Invalid data.' }
+    }
+
+    // Get current order
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('id, status, order_number')
+      .eq('id', orderId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (fetchError || !order) {
+      return { success: false, message: 'Order not found.' }
+    }
+
+    const currentStatus = order.status
+
+    // Validate status transition
+    const allowedStatuses = STATUS_FLOW[currentStatus] || []
+    
+    if (!allowedStatuses.includes(newStatus)) {
+      const allowedLabels = allowedStatuses.map(s => 
+        s.charAt(0).toUpperCase() + s.slice(1)
+      ).join(', ')
+      
+      return { 
+        success: false, 
+        message: `Cannot change status from "${currentStatus}" to "${newStatus}". ${
+          allowedStatuses.length > 0 
+            ? `Allowed transitions: ${allowedLabels}` 
+            : 'This order is in a final state and cannot be changed.'
+        }` 
+      }
     }
 
     // Prepare update data
     const updateData: any = {
-      status: status,
+      status: newStatus,
       updated_at: new Date().toISOString(),
     }
 
     // Add delivery timestamp if status is delivered
-    if (status === 'delivered') {
+    if (newStatus === 'delivered') {
       updateData.delivered_at = new Date().toISOString()
     }
 
@@ -215,26 +258,28 @@ export async function updateOrderStatus(formData: FormData) {
       updateData.tracking_number = trackingNumber
     }
 
-    const { error } = await supabase
+    // Update the order
+    const { error: updateError } = await supabase
       .from('orders')
       .update(updateData)
       .eq('id', orderId)
       .eq('user_id', user.id)
 
-    if (error) {
-      console.error('Error updating order status:', error)
-      return { success: false, message: error.message }
+    if (updateError) {
+      console.error('Error updating order status:', updateError)
+      return { success: false, message: updateError.message }
     }
 
-    // Insert status history
+    // Insert status history entry
     const { error: historyError } = await supabase
       .from('order_status_history')
       .insert({
         order_id: orderId,
-        status: status,
+        status: newStatus,
+        notes: notes || null,
         courier_service: courierService || null,
         tracking_number: trackingNumber || null,
-        user_id: user.id,
+        changed_by: user.id,
       })
 
     if (historyError) {
@@ -247,7 +292,7 @@ export async function updateOrderStatus(formData: FormData) {
 
     return { 
       success: true, 
-      message: `Order status updated to "${status}".` 
+      message: `Order #${order.order_number} status updated to "${newStatus}".` 
     }
   } catch (error: any) {
     console.error('Error updating order status:', error)
@@ -255,6 +300,37 @@ export async function updateOrderStatus(formData: FormData) {
       success: false, 
       message: error.message || 'Failed to update status' 
     }
+  }
+}
+
+// ========================================================
+// HELPER: Get allowed next statuses for an order
+// ========================================================
+export async function getAllowedStatusTransitions(orderId: string) {
+  const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, allowedStatuses: [] }
+  }
+
+  const { data: order } = await supabase
+    .from('orders')
+    .select('status')
+    .eq('id', orderId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!order) {
+    return { success: false, allowedStatuses: [] }
+  }
+
+  const allowedStatuses = STATUS_FLOW[order.status] || []
+  
+  return { 
+    success: true, 
+    currentStatus: order.status,
+    allowedStatuses 
   }
 }
 
