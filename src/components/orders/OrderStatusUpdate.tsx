@@ -113,14 +113,14 @@ export function OrderStatusUpdate({
   }
 
   return (
-    <form onSubmit={handleStatusUpdate} className="space-y-4">
+    <form onSubmit={handleStatusUpdate} className="space-y-4 overflow-visible" >
       <div className="space-y-2">
         <Label htmlFor="status">Order Status</Label>
         <Select value={selectedStatus} onValueChange={setSelectedStatus}>
           <SelectTrigger id="status">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent position="popper" sideOffset={5}>
             {ORDER_STATUSES.map((status) => (
               <SelectItem key={status.value} value={status.value}>
                 {status.label}

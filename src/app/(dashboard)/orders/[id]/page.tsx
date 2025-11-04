@@ -16,10 +16,13 @@ import {
   CreditCard,
   Phone,
   Mail,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import Link from 'next/link'
 import { OrderStatusUpdate } from '@/components/orders/OrderStatusUpdate'
 import { PaymentStatusUpdate } from '@/components/orders/PaymentStatusUpdate'
+import { CollapsibleSection } from '@/components/orders/CollapsibleSection'
 
 // ✅ FIXED: params is now a Promise
 export default async function OrderDetailsPage({
@@ -222,161 +225,159 @@ export default async function OrderDetailsPage({
           </Card>
         </div>
 
-        {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Customer Info */}
-          {order.customers && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Customer
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="font-semibold">{order.customers.name}</div>
+        {/* Sidebar with Fixed Height and Scroll */}
+        <div className="lg:col-span-1">
+          <div className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {/* Customer Info */}
+            {order.customers && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Customer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="font-semibold">{order.customers.name}</div>
 
-                {order.customers.address_line1 && (
+                  {order.customers.address_line1 && (
+                    <>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>{order.customers.address_line1}</p>
+                        {order.customers.address_line2 && (
+                          <p>{order.customers.address_line2}</p>
+                        )}
+                        <p>
+                          {order.customers.city}, {order.customers.state} -{' '}
+                          {order.customers.pincode}
+                        </p>
+                      </div>
+                      <Separator />
+                    </>
+                  )}
+
+                  <div className="text-sm space-y-2">
+                    <p className="flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      {order.customers.phone}
+                    </p>
+                    {order.customers.email && (
+                      <p className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        {order.customers.email}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href={`/customers/${order.customers.id}`}>
+                      View Customer
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Payment Status Update - Collapsible */}
+            <CollapsibleSection
+              title="Payment Details"
+              icon={<CreditCard className="h-5 w-5" />}
+              defaultOpen={false}
+            >
+              <div className="space-y-4">
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-sm">Payment Status</span>
+                  <span
+                    className={`font-semibold text-sm ${
+                      paymentConfig[order.payment_status]?.color || 'text-gray-600'
+                    }`}
+                  >
+                    {paymentConfig[order.payment_status]?.label || order.payment_status}
+                  </span>
+                </div>
+
+                {order.payment_method && (
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-sm">Payment Method</span>
+                    <span className="text-muted-foreground text-sm">
+                      {order.payment_method.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
+                <Separator />
+                
+                <PaymentStatusUpdate
+                  orderId={order.id}
+                  currentPaymentStatus={order.payment_status}
+                  currentPaymentMethod={order.payment_method}
+                />
+              </div>
+            </CollapsibleSection>
+
+            {/* Order Status Update - Collapsible */}
+            <CollapsibleSection
+              title="Order Status"
+              icon={<Package className="h-5 w-5" />}
+              defaultOpen={false}
+            >
+              <div className="space-y-4">
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-sm">Current Status</span>
+                  <Badge
+                    className={`${statusConfig[order.status]?.color || 'bg-gray-500'} text-white`}
+                  >
+                    {statusConfig[order.status]?.label || order.status}
+                  </Badge>
+                </div>
+
+                {order.tracking_number && (
                   <>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>{order.customers.address_line1}</p>
-                      {order.customers.address_line2 && (
-                        <p>{order.customers.address_line2}</p>
-                      )}
-                      <p>
-                        {order.customers.city}, {order.customers.state} -{' '}
-                        {order.customers.pincode}
+                    <Separator />
+                    <div>
+                      <p className="text-sm font-medium mb-1">Tracking Number</p>
+                      <p className="text-sm text-muted-foreground font-mono break-all">
+                        {order.tracking_number}
                       </p>
                     </div>
-                    <Separator />
                   </>
                 )}
 
-                <div className="text-sm space-y-2">
-                  <p className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    {order.customers.phone}
-                  </p>
-                  {order.customers.email && (
-                    <p className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      {order.customers.email}
-                    </p>
-                  )}
-                </div>
-
-                <Button variant="outline" className="w-full" asChild>
-                  <Link href={`/customers/${order.customers.id}`}>
-                    View Customer
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-           {/* Payment Status Update */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Payment Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-sm">Payment Status</span>
-                <span
-                  className={`font-semibold text-sm ${
-                    paymentConfig[order.payment_status]?.color || 'text-gray-600'
-                  }`}
-                >
-                  {paymentConfig[order.payment_status]?.label || order.payment_status}
-                </span>
-              </div>
-
-              {order.payment_method && (
-                <div className="flex justify-between items-center gap-2">
-                  <span className="text-sm">Payment Method</span>
-                  <span className="text-muted-foreground text-sm">
-                    {order.payment_method.toUpperCase()}
-                  </span>
-                </div>
-              )}
-
-              <Separator />
-              
-              <PaymentStatusUpdate
-                orderId={order.id}
-                currentPaymentStatus={order.payment_status}
-                currentPaymentMethod={order.payment_method}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Order Status Update */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Order Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-sm">Current Status</span>
-                <Badge
-                  className={`${statusConfig[order.status]?.color || 'bg-gray-500'} text-white`}
-                >
-                  {statusConfig[order.status]?.label || order.status}
-                </Badge>
-              </div>
-
-              {order.tracking_number && (
-                <>
-                  <Separator />
+                {order.courier_service && (
                   <div>
-                    <p className="text-sm font-medium mb-1">Tracking Number</p>
-                    <p className="text-sm text-muted-foreground font-mono break-all">
-                      {order.tracking_number}
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {order.courier_service && (
-                <div>
-                  <p className="text-sm font-medium mb-1">Courier Service</p>
-                  <p className="text-sm text-muted-foreground break-words">
-                    {order.courier_service}
-                  </p>
-                </div>
-              )}
-
-              {order.notes && (
-                <>
-                  <Separator />
-                  <div>
-                    <p className="text-sm font-medium mb-1">Notes</p>
+                    <p className="text-sm font-medium mb-1">Courier Service</p>
                     <p className="text-sm text-muted-foreground break-words">
-                      {order.notes}
+                      {order.courier_service}
                     </p>
                   </div>
-                </>
-              )}
+                )}
 
-              <Separator />
-              
-              <OrderStatusUpdate 
-                orderId={order.id} 
-                currentStatus={order.status}
-                orderNumber={order.order_number}
-                customerName={order.customers?.name}
-                customerPhone={order.customers?.phone}
-                orderItems={order.order_items?.map((item: any) => item.product_name) || []}
-                totalAmount={parseFloat(order.total_amount)}
-              />
-            </CardContent>
-          </Card>
+                {order.notes && (
+                  <>
+                    <Separator />
+                    <div>
+                      <p className="text-sm font-medium mb-1">Notes</p>
+                      <p className="text-sm text-muted-foreground break-words">
+                        {order.notes}
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                <Separator />
+                
+                <OrderStatusUpdate 
+                  orderId={order.id} 
+                  currentStatus={order.status}
+                  orderNumber={order.order_number}
+                  customerName={order.customers?.name}
+                  customerPhone={order.customers?.phone}
+                  orderItems={order.order_items?.map((item: any) => item.product_name) || []}
+                  totalAmount={parseFloat(order.total_amount)}
+                />
+              </div>
+            </CollapsibleSection>
+          </div>
         </div>
       </div>
     </div>
