@@ -45,7 +45,7 @@ export default async function DashboardLayout({
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Also pass it to the Header component */}
-        <Header user={userData} />
+        <Header />
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 lg:pb-6">
           {children}

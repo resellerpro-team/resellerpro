@@ -46,19 +46,6 @@ export async function createOrder(p0: { success: boolean; message: string }, for
     const totalAmount = parseFloat(formData.get('totalAmount') as string)
     const totalCost = parseFloat(formData.get('totalCost') as string)
 
-    // Debug logs
-    console.log('📝 Order Data:', {
-      customerId,
-      paymentStatus,
-      paymentMethod,
-      discount,
-      shippingCost,
-      subtotal,
-      totalAmount,
-      totalCost,
-      itemsCount: itemsJson ? JSON.parse(itemsJson).length : 0
-    })
-
     // Validation
     if (!customerId) {
       return { success: false, message: 'Please select a customer' }
@@ -118,22 +105,7 @@ export async function createOrder(p0: { success: boolean; message: string }, for
       return { success: false, message: 'Failed to create order' }
     }
 
-    console.log('✅ Order created:', newOrder)
 
-    // // Insert initial status history entry
-    // const { error: historyError } = await supabase
-    //   .from('order_status_history')
-    //   .insert({
-    //     order_id: newOrder.id,
-    //     status: 'pending',
-    //     notes: 'Order placed',
-    //     changed_by: user.id,
-    //   })
-
-    // if (historyError) {
-    //   console.error('⚠️ Status history error:', historyError)
-    //   // Don't fail the order creation for this
-    // }
 
     // Prepare order items
     const orderItemsData = items.map((item: any) => ({
@@ -144,8 +116,6 @@ export async function createOrder(p0: { success: boolean; message: string }, for
       unit_selling_price: item.unitPrice,
       unit_cost_price: item.unitCost,
     }))
-
-    console.log('📦 Creating order items:', orderItemsData.length)
 
     // Insert order items
     const { error: itemsError } = await supabase
@@ -163,8 +133,6 @@ export async function createOrder(p0: { success: boolean; message: string }, for
         message: `Failed to add items: ${itemsError.message}` 
       }
     }
-
-    console.log('✅ Order items created')
 
     // Revalidate pages
     revalidatePath('/orders')
