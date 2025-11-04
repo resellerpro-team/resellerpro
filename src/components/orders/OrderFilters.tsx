@@ -16,12 +16,18 @@ export function OrdersFilter() {
 
   const handleStatusChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString())
+    
     if (value === 'all') {
       params.delete('status')
     } else {
       params.set('status', value)
     }
-    router.push(`/orders?${params.toString()}`)
+    
+    const newUrl = params.toString() 
+      ? `/orders?${params.toString()}` 
+      : '/orders'
+    
+    router.push(newUrl)
   }
 
   return (

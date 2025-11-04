@@ -33,7 +33,7 @@ type Product = {
   selling_price: number
   cost_price: number
   stock_status: string
-  stock_quantity: number // ✅ Made required
+  stock_quantity: number // Made required
 }
 
 type OrderItem = {
@@ -44,7 +44,7 @@ type OrderItem = {
   unitPrice: number
   unitCost: number
   stockStatus: string
-  maxStock: number // ✅ Add max available stock
+  maxStock: number // Add max available stock
 }
 
 export function NewOrderForm({
@@ -82,7 +82,7 @@ export function NewOrderForm({
     }
   }, [preSelectedCustomerId, customers, toast])
 
-  // ✅ Helper function to get stock status badge
+  // Helper function to get stock status badge
   const getStockBadge = (status: string, quantity?: number) => {
     if (quantity !== undefined && quantity === 0) {
       return <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
@@ -100,7 +100,7 @@ export function NewOrderForm({
     }
   }
 
-  // ✅ Check if any item exceeds available stock
+  // Check if any item exceeds available stock
   const hasStockIssues = orderItems.some(item => item.quantity > item.maxStock)
 
   // Add product to order
@@ -108,7 +108,7 @@ export function NewOrderForm({
     const product = products.find((p) => p.id === productId)
     if (!product) return
 
-    // ✅ Check if product is out of stock
+    // Check if product is out of stock
     if (product.stock_quantity === 0) {
       toast({
         title: 'Out of Stock',
@@ -136,20 +136,20 @@ export function NewOrderForm({
       unitPrice: product.selling_price,
       unitCost: product.cost_price,
       stockStatus: product.stock_status,
-      maxStock: product.stock_quantity, // ✅ Store max available stock
+      maxStock: product.stock_quantity, // Store max available stock
     }
 
     setOrderItems([...orderItems, newItem])
   }
 
-  // ✅ Updated quantity handler with validation
+  // Updated quantity handler with validation
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
     if (quantity < 1) return
 
     const item = orderItems.find(i => i.id === itemId)
     if (!item) return
 
-    // ✅ Enforce max stock limit
+    // Enforce max stock limit
     if (quantity > item.maxStock) {
       toast({
         title: 'Insufficient Stock',
@@ -219,7 +219,7 @@ export function NewOrderForm({
       return
     }
 
-    // ✅ Final stock validation before submission
+    // Final stock validation before submission
     if (hasStockIssues) {
       toast({
         title: 'Stock Issues',
@@ -335,14 +335,14 @@ export function NewOrderForm({
                       <SelectItem 
                         key={product.id} 
                         value={product.id}
-                        disabled={product.stock_quantity === 0} // ✅ Disable out of stock
+                        disabled={product.stock_quantity === 0} // Disable out of stock
                       >
                         <div className="flex items-center justify-between w-full gap-3">
                           <span className="flex-1">
                             {product.name} - ₹{product.selling_price}
                           </span>
                           <div className="flex items-center gap-2">
-                            {/* ✅ Show stock quantity */}
+                            {/* Show stock quantity */}
                             <span className={`text-xs ${
                               product.stock_quantity < 5 
                                 ? 'text-yellow-600 font-medium' 
@@ -350,7 +350,7 @@ export function NewOrderForm({
                             }`}>
                               Stock: {product.stock_quantity}
                             </span>
-                            {/* ✅ Show stock status indicator */}
+                            {/* Show stock status indicator */}
                             {product.stock_status === 'low_stock' && (
                               <AlertTriangle className="h-3 w-3 text-yellow-600" />
                             )}
@@ -394,7 +394,7 @@ export function NewOrderForm({
                               Available: {item.maxStock} units
                             </span>
                           </div>
-                          {/* ✅ Show low stock warning */}
+                          {/* Show low stock warning */}
                           {isLowStock && !hasError && (
                             <div className="flex items-center gap-1 mt-2 text-xs text-yellow-600">
                               <AlertTriangle className="h-3 w-3" />
@@ -404,7 +404,7 @@ export function NewOrderForm({
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          {/* ✅ Quantity input with max validation */}
+                          {/* Quantity input with max validation */}
                           <div className="space-y-1">
                             <Label className="text-xs">
                               Qty <span className="text-muted-foreground">(Max: {item.maxStock})</span>
@@ -453,7 +453,7 @@ export function NewOrderForm({
                         </div>
                       </div>
 
-                      {/* ✅ Error message for exceeded stock */}
+                      {/* Error message for exceeded stock */}
                       {hasError && (
                         <Alert variant="destructive" className="mt-3">
                           <AlertTriangle className="h-4 w-4" />
@@ -581,7 +581,7 @@ export function NewOrderForm({
               </div>
             </div>
 
-            {/* ✅ Stock warning before submission */}
+            {/* Stock warning before submission */}
             {hasStockIssues && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
