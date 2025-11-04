@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { canCreateOrder } from '../settings/subscription/actions'
 
+
 // Define allowed status transitions
 const STATUS_FLOW: Record<string, string[]> = {
   pending: ['processing', 'cancelled'],
@@ -13,23 +14,29 @@ const STATUS_FLOW: Record<string, string[]> = {
   cancelled: [], // Final state
 }
 
+
 // ========================================================
 // SERVER ACTION: CREATE A NEW ORDER
 // ========================================================
-export async function createOrder(p0: { success: boolean; message: string }, formData: FormData) {
+export async function createOrder(
+  prevState: { success: boolean; message: string },
+  formData: FormData
+) {
   const supabase = await createClient()
 
   // Authenticate user
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
 
   const { allowed, reason } = await canCreateOrder()
   if (!allowed) {
-    return { 
-      success: false, 
-      message: reason || 'Cannot create order. Please check your subscription.' 
+    return {
+      success: false,
+      message: reason || 'Cannot create order. Please check your subscription.',
     }
   }
 
@@ -41,10 +48,11 @@ export async function createOrder(p0: { success: boolean; message: string }, for
     const paymentMethod = formData.get('paymentMethod') as string
     const discount = parseFloat(formData.get('discount') as string) || 0
     const shippingCost = parseFloat(formData.get('shippingCost') as string) || 0
-    const notes = formData.get('notes') as string || ''
+    const notes = (formData.get('notes') as string) || ''
     const subtotal = parseFloat(formData.get('subtotal') as string)
     const totalAmount = parseFloat(formData.get('totalAmount') as string)
     const totalCost = parseFloat(formData.get('totalCost') as string)
+
 
     // Validation
     if (!customerId) {
@@ -95,9 +103,9 @@ export async function createOrder(p0: { success: boolean; message: string }, for
 
     if (orderError) {
       console.error('❌ Order creation error:', orderError)
-      return { 
-        success: false, 
-        message: `Database error: ${orderError.message}` 
+      return {
+        success: false,
+        message: `Database error: ${orderError.message}`,
       }
     }
 
@@ -124,13 +132,13 @@ export async function createOrder(p0: { success: boolean; message: string }, for
 
     if (itemsError) {
       console.error('❌ Order items error:', itemsError)
-      
+
       // Rollback: Delete the order
       await supabase.from('orders').delete().eq('id', newOrder.id)
-      
-      return { 
-        success: false, 
-        message: `Failed to add items: ${itemsError.message}` 
+
+      return {
+        success: false,
+        message: `Failed to add items: ${itemsError.message}`,
       }
     }
 
@@ -146,9 +154,9 @@ export async function createOrder(p0: { success: boolean; message: string }, for
     }
   } catch (error: any) {
     console.error('❌ Unexpected error:', error)
-    return { 
-      success: false, 
-      message: `Error: ${error.message || 'Something went wrong'}` 
+    return {
+      success: false,
+      message: `Error: ${error.message || 'Something went wrong'}`,
     }
   }
 }
@@ -158,8 +166,10 @@ export async function createOrder(p0: { success: boolean; message: string }, for
 // ========================================================
 export async function updateOrderStatus(formData: FormData) {
   const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
@@ -264,9 +274,9 @@ export async function updateOrderStatus(formData: FormData) {
     }
   } catch (error: any) {
     console.error('Error updating order status:', error)
-    return { 
-      success: false, 
-      message: error.message || 'Failed to update status' 
+    return {
+      success: false,
+      message: error.message || 'Failed to update status',
     }
   }
 }
@@ -307,8 +317,10 @@ export async function getAllowedStatusTransitions(orderId: string) {
 // ========================================================
 export async function updatePaymentStatus(formData: FormData) {
   const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
@@ -345,15 +357,15 @@ export async function updatePaymentStatus(formData: FormData) {
     revalidatePath('/orders')
     revalidatePath(`/orders/${orderId}`)
 
-    return { 
-      success: true, 
-      message: `Payment status updated to "${paymentStatus}".` 
+    return {
+      success: true,
+      message: `Payment status updated to "${paymentStatus}".`,
     }
   } catch (error: any) {
     console.error('Error updating payment status:', error)
-    return { 
-      success: false, 
-      message: error.message || 'Failed to update payment status' 
+    return {
+      success: false,
+      message: error.message || 'Failed to update payment status',
     }
   }
 }

@@ -23,15 +23,17 @@ import { OrderStatusUpdate } from '@/components/orders/OrderStatusUpdate'
 import { PaymentStatusUpdate } from '@/components/orders/PaymentStatusUpdate'
 import { CollapsibleSection } from '@/components/orders/CollapsibleSection'
 
+//  FIXED: params is now a Promise
 export default async function OrderDetailsPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
+  //  AWAIT params before using it
   const { id } = await params
   const supabase = await createClient()
 
-  // Fetch order with status history
+  //  Now use the awaited id
   const { data: order, error } = await supabase
     .from('orders')
     .select(`

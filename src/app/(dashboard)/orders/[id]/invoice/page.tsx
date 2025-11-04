@@ -5,13 +5,13 @@ import { notFound } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Sparkles } from 'lucide-react'
 
-// ✅ FIXED: params is now a Promise
+// FIXED: params is now a Promise
 export default async function InvoicePage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  // ✅ AWAIT params before using it
+  // AWAIT params before using it
   const { id } = await params
 
   const supabase = await createClient()

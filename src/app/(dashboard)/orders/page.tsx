@@ -8,15 +8,36 @@ import Link from 'next/link'
 import { OrdersTable } from '@/components/orders/OrderTable'
 import { OrdersFilter } from '@/components/orders/OrderFilters'
 
+type Order = {
+  profit: number
+  id: string
+  order_number: number
+  created_at: string
+  status: string
+  payment_status: string
+  total_amount: number
+  total_profit: number
+  customers?: {
+    id: string
+    name: string
+    phone: string
+  } | null
+}
+
 export default async function OrdersPage({
   searchParams,
 }: {
-  searchParams: { status?: string }
+  searchParams: Promise<{ status?: string }>
 }) {
   const supabase = await createClient()
+  const resolvedParams = await searchParams
+  const statusFilter = resolvedParams.status || 'all'
 
-  // Fetch orders with customer data
-  let query = supabase
+
+  // ========================================================
+  // Query 1: Fetch ALL orders for stats calculation
+  // ========================================================
+  const { data: allOrders, error: allOrdersError } = await supabase
     .from('orders')
     .select(`
       *,
@@ -26,28 +47,53 @@ export default async function OrdersPage({
         phone
       )
     `)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: false }) as { data: Order[] | null, error: any }
 
-  // Apply status filter
-  if (searchParams.status && searchParams.status !== 'all') {
-    query = query.eq('status', searchParams.status)
+  if (allOrdersError) {
+    console.error('Error fetching all orders:', allOrdersError)
   }
 
-  const { data: orders, error } = await query
+  // ========================================================
+  // Query 2: Fetch FILTERED orders for table display
+  // ========================================================
+  let filteredQuery = supabase
+    .from('orders')
+    .select(`
+      *,
+      customers (
+        id,
+        name,
+        phone
+      )
+    `)
 
-  if (error) {
-    console.error('Error fetching orders:', error)
+  // Apply status filter at database level
+  if (statusFilter && statusFilter !== 'all') {
+    filteredQuery = filteredQuery.eq('status', statusFilter)
   }
 
-  // Calculate stats
-  const totalOrders = orders?.length || 0
-  const totalRevenue = orders?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0
-  const totalProfit = orders?.reduce((sum, o) => sum + parseFloat(o.profit || 0), 0) || 0
-  const pendingOrders = orders?.filter(o => o.status === 'pending').length || 0
+  const { data: orders, error: ordersError } = await filteredQuery
+    .order('created_at', { ascending: false }) as { data: Order[] | null, error: any }
+
+  if (ordersError) {
+    console.error('Error fetching filtered orders:', ordersError)
+  }
+
+
+  // ========================================================
+  // Calculate stats from ALL orders (unfiltered)
+  // ========================================================
+  const totalOrders = allOrders?.length || 0
+  const totalRevenue =
+    allOrders?.reduce((sum, o) => sum + Number(o.total_amount || 0), 0) || 0
+  const totalProfit =
+    allOrders?.reduce((sum, o) => sum + Number(o.profit || 0), 0) || 0
+  const pendingOrders =
+    allOrders?.filter((o) => o.status === 'pending').length || 0
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
@@ -61,7 +107,7 @@ export default async function OrdersPage({
         </Button>
       </div>
 
-      {/* Stats */}
+      {/* Stats Cards - Always show total stats */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -106,16 +152,32 @@ export default async function OrdersPage({
         </Card>
       </div>
 
-      {/* Orders Table */}
+      {/* Orders Table with Filter */}
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle>All Orders</CardTitle>
+            <CardTitle>
+              {statusFilter === 'all' 
+                ? 'All Orders' 
+                : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Orders`}
+            </CardTitle>
             <OrdersFilter />
           </div>
         </CardHeader>
         <CardContent>
-          <OrdersTable orders={orders || []} />
+          {orders && orders.length > 0 ? (
+            <OrdersTable orders={orders} />
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <Package className="mx-auto h-12 w-12 opacity-50 mb-4" />
+              <p className="text-lg font-medium">No orders found</p>
+              <p className="text-sm">
+                {statusFilter !== 'all' 
+                  ? `No ${statusFilter} orders at the moment`
+                  : 'Create your first order to get started'}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -21,8 +21,8 @@ type Order = {
   status: string
   payment_status: string
   total_amount: number
-  total_profit: number // ✅ Changed from 'profit' to 'total_profit'
-  customers: {
+  total_profit: number 
+  customers?: {
     id: string
     name: string
     phone: string
