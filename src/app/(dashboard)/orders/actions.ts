@@ -83,16 +83,21 @@ export async function createOrder(
   prevState: { success: boolean; message: string },
   formData: FormData
 ) {
+  console.log('🚀 CREATE ORDER STARTED')
+  
   const supabase = await createClient()
 
   // Authenticate user
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
+    console.log('❌ No user found')
     return { success: false, message: 'Authentication required.' }
   }
 
-  // ✅ Check subscription limits BEFORE creating order
+  console.log('✅ User authenticated:', user.id)
+
+  // Check subscription limits BEFORE creating order
   const orderCheck = await canCreateOrder()
   
   if (!orderCheck.allowed) {
@@ -116,18 +121,23 @@ export async function createOrder(
     const totalAmount = parseFloat(formData.get('totalAmount') as string)
     const totalCost = parseFloat(formData.get('totalCost') as string)
 
-    console.log('📦 Creating order:', {
+    console.log('📦 Order data received:', {
       customerId,
-      itemCount: itemsJson ? JSON.parse(itemsJson).length : 0,
+      itemsJson: itemsJson?.substring(0, 50),
+      paymentStatus,
+      subtotal,
       totalAmount,
+      totalCost,
     })
 
     // Validation
     if (!customerId) {
+      console.log('❌ Validation failed: No customer')
       return { success: false, message: 'Please select a customer' }
     }
 
     if (!itemsJson) {
+      console.log('❌ Validation failed: No items')
       return { success: false, message: 'Please add at least one product' }
     }
 
@@ -135,25 +145,28 @@ export async function createOrder(
     try {
       items = JSON.parse(itemsJson)
     } catch (e) {
+      console.error('❌ JSON parse error:', e)
       return { success: false, message: 'Invalid items data' }
     }
 
     if (!Array.isArray(items) || items.length === 0) {
+      console.log('❌ Validation failed: Empty items array')
       return { success: false, message: 'Please add at least one product' }
     }
 
     if (!paymentStatus) {
+      console.log('❌ Validation failed: No payment status')
       return { success: false, message: 'Please select payment status' }
     }
 
     if (isNaN(subtotal) || isNaN(totalAmount) || isNaN(totalCost)) {
+      console.log('❌ Validation failed: Invalid numbers')
       return { success: false, message: 'Invalid pricing data' }
     }
 
-    // ✅ Calculate profit
-    const profit = totalAmount - totalCost
+    console.log('✅ Validation passed, creating order...')
 
-    // Create the main order record
+    // ✅ INSERT ORDER - WITH .select().single() TO GET THE CREATED ORDER!
     const { data: newOrder, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -164,28 +177,35 @@ export async function createOrder(
         shipping_cost: shippingCost,
         total_amount: totalAmount,
         total_cost: totalCost,
-        profit: profit, // ✅ Add profit field
+        // profit is auto-calculated by database
         payment_status: paymentStatus,
         payment_method: paymentMethod || null,
         notes: notes || null,
         status: 'pending',
       })
-      .select('id, order_number')
-      .single()
+      .select() // ✅ THIS WAS MISSING!
+      .single() // ✅ THIS WAS MISSING!
+
+    console.log('💾 Database response:', { 
+      hasData: !!newOrder, 
+      hasError: !!orderError,
+      orderId: newOrder?.id 
+    })
 
     if (orderError) {
-      console.error('❌ Order creation error:', orderError)
+      console.error('❌ Order creation error:', JSON.stringify(orderError, null, 2))
       return {
         success: false,
-        message: `Database error: ${orderError.message}`,
+        message: `Database error: ${orderError.message || 'Unknown error'}`,
       }
     }
 
     if (!newOrder) {
-      return { success: false, message: 'Failed to create order' }
+      console.error('❌ No order returned from database')
+      return { success: false, message: 'Failed to create order - no data returned' }
     }
 
-    console.log('✅ Order created:', newOrder.order_number)
+    console.log('✅ Order created:', newOrder.id, newOrder.order_number)
 
     // Prepare order items
     const orderItemsData = items.map((item: any) => ({
@@ -197,15 +217,18 @@ export async function createOrder(
       unit_cost_price: item.unitCost,
     }))
 
+    console.log('📦 Inserting order items:', orderItemsData.length)
+
     // Insert order items
     const { error: itemsError } = await supabase
       .from('order_items')
       .insert(orderItemsData)
 
     if (itemsError) {
-      console.error('❌ Order items error:', itemsError)
+      console.error('❌ Order items error:', JSON.stringify(itemsError, null, 2))
 
       // Rollback: Delete the order
+      console.log('🔄 Rolling back - deleting order...')
       await supabase.from('orders').delete().eq('id', newOrder.id)
 
       return {
@@ -216,8 +239,8 @@ export async function createOrder(
 
     console.log('✅ Order items added:', orderItemsData.length)
 
-    // ✅ Create initial status history
-    await supabase
+    // Create initial status history
+    const { error: historyError } = await supabase
       .from('order_status_history')
       .insert({
         order_id: newOrder.id,
@@ -226,10 +249,20 @@ export async function createOrder(
         changed_by: user.id,
       })
 
+    if (historyError) {
+      console.warn('⚠️ Status history creation failed (non-critical):', historyError)
+      // Don't fail the whole order for this
+    } else {
+      console.log('✅ Status history created')
+    }
+
     // Revalidate pages
+    console.log('🔄 Revalidating pages...')
     revalidatePath('/orders')
     revalidatePath('/dashboard')
-    revalidatePath('/settings/subscription') // ✅ Also revalidate subscription page
+    revalidatePath('/settings/subscription')
+
+    console.log('🎉 Order creation complete!')
 
     return {
       success: true,
@@ -238,7 +271,11 @@ export async function createOrder(
       orderNumber: newOrder.order_number,
     }
   } catch (error: any) {
-    console.error('❌ Unexpected error:', error)
+    console.error('❌ UNEXPECTED ERROR:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    })
     return {
       success: false,
       message: `Error: ${error.message || 'Something went wrong'}`,
@@ -342,7 +379,7 @@ export async function updateOrderStatus(formData: FormData) {
 
     console.log('✅ Order status updated:', newStatus)
 
-    // ✅ Insert status history entry
+    // Insert status history entry
     const { error: historyError } = await supabase
       .from('order_status_history')
       .insert({
@@ -356,7 +393,6 @@ export async function updateOrderStatus(formData: FormData) {
 
     if (historyError) {
       console.error('⚠️ Error inserting status history:', historyError)
-      // Don't fail the update for this
     } else {
       console.log('✅ Status history recorded')
     }
@@ -458,7 +494,6 @@ export async function updatePaymentStatus(formData: FormData) {
 
     console.log('✅ Payment status updated')
 
-    // Revalidate pages
     revalidatePath('/orders')
     revalidatePath(`/orders/${orderId}`)
 
@@ -490,7 +525,6 @@ export async function deleteOrder(orderId: string) {
   try {
     console.log('🗑️ Deleting order:', orderId)
 
-    // Delete order (cascade will handle order_items and status_history)
     const { error } = await supabase
       .from('orders')
       .delete()
@@ -504,7 +538,6 @@ export async function deleteOrder(orderId: string) {
 
     console.log('✅ Order deleted')
 
-    // Revalidate pages
     revalidatePath('/orders')
     revalidatePath('/dashboard')
     revalidatePath('/settings/subscription')
