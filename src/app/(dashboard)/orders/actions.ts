@@ -2,8 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { canCreateOrder } from '../settings/subscription/actions'
-
 
 // Define allowed status transitions
 const STATUS_FLOW: Record<string, string[]> = {
@@ -14,6 +12,69 @@ const STATUS_FLOW: Record<string, string[]> = {
   cancelled: [], // Final state
 }
 
+// ========================================================
+// HELPER: Check if user can create order
+// ========================================================
+async function canCreateOrder() {
+  const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { allowed: false, reason: 'Not authenticated' }
+  }
+
+  // Get user's subscription
+  const { data: subscription } = await supabase
+    .from('user_subscriptions')
+    .select(`
+      *,
+      plan:subscription_plans(*)
+    `)
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .single()
+
+  if (!subscription) {
+    return { allowed: false, reason: 'No active subscription found' }
+  }
+
+  const orderLimit = subscription.plan?.order_limit
+
+  // If unlimited (null), allow
+  if (!orderLimit) {
+    console.log('✅ Unlimited plan - order allowed')
+    return { allowed: true }
+  }
+
+  // Check current month usage
+  const periodStart = new Date()
+  periodStart.setDate(1)
+  periodStart.setHours(0, 0, 0, 0)
+
+  const { count: ordersThisMonth } = await supabase
+    .from('orders')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', periodStart.toISOString())
+
+  const currentCount = ordersThisMonth || 0
+
+  console.log('📊 Order limit check:', {
+    plan: subscription.plan?.name,
+    limit: orderLimit,
+    current: currentCount,
+    allowed: currentCount < orderLimit,
+  })
+
+  if (currentCount >= orderLimit) {
+    return {
+      allowed: false,
+      reason: `You've reached your monthly limit of ${orderLimit} orders. Please upgrade your plan to continue.`,
+    }
+  }
+
+  return { allowed: true }
+}
 
 // ========================================================
 // SERVER ACTION: CREATE A NEW ORDER
@@ -25,18 +86,20 @@ export async function createOrder(
   const supabase = await createClient()
 
   // Authenticate user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+  
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
 
-  const { allowed, reason } = await canCreateOrder()
-  if (!allowed) {
+  // ✅ Check subscription limits BEFORE creating order
+  const orderCheck = await canCreateOrder()
+  
+  if (!orderCheck.allowed) {
+    console.log('❌ Order creation blocked:', orderCheck.reason)
     return {
       success: false,
-      message: reason || 'Cannot create order. Please check your subscription.',
+      message: orderCheck.reason || 'Cannot create order. Please check your subscription.',
     }
   }
 
@@ -53,6 +116,11 @@ export async function createOrder(
     const totalAmount = parseFloat(formData.get('totalAmount') as string)
     const totalCost = parseFloat(formData.get('totalCost') as string)
 
+    console.log('📦 Creating order:', {
+      customerId,
+      itemCount: itemsJson ? JSON.parse(itemsJson).length : 0,
+      totalAmount,
+    })
 
     // Validation
     if (!customerId) {
@@ -82,6 +150,9 @@ export async function createOrder(
       return { success: false, message: 'Invalid pricing data' }
     }
 
+    // ✅ Calculate profit
+    const profit = totalAmount - totalCost
+
     // Create the main order record
     const { data: newOrder, error: orderError } = await supabase
       .from('orders')
@@ -93,10 +164,11 @@ export async function createOrder(
         shipping_cost: shippingCost,
         total_amount: totalAmount,
         total_cost: totalCost,
+        profit: profit, // ✅ Add profit field
         payment_status: paymentStatus,
         payment_method: paymentMethod || null,
         notes: notes || null,
-        status: 'pending', // Default status
+        status: 'pending',
       })
       .select('id, order_number')
       .single()
@@ -113,7 +185,7 @@ export async function createOrder(
       return { success: false, message: 'Failed to create order' }
     }
 
-
+    console.log('✅ Order created:', newOrder.order_number)
 
     // Prepare order items
     const orderItemsData = items.map((item: any) => ({
@@ -142,9 +214,22 @@ export async function createOrder(
       }
     }
 
+    console.log('✅ Order items added:', orderItemsData.length)
+
+    // ✅ Create initial status history
+    await supabase
+      .from('order_status_history')
+      .insert({
+        order_id: newOrder.id,
+        status: 'pending',
+        notes: 'Order created',
+        changed_by: user.id,
+      })
+
     // Revalidate pages
     revalidatePath('/orders')
     revalidatePath('/dashboard')
+    revalidatePath('/settings/subscription') // ✅ Also revalidate subscription page
 
     return {
       success: true,
@@ -167,9 +252,8 @@ export async function createOrder(
 export async function updateOrderStatus(formData: FormData) {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+  
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
@@ -180,6 +264,13 @@ export async function updateOrderStatus(formData: FormData) {
     const courierService = formData.get('courierService') as string
     const trackingNumber = formData.get('trackingNumber') as string
     const notes = formData.get('notes') as string
+
+    console.log('🔄 Updating order status:', {
+      orderId,
+      newStatus,
+      courierService,
+      trackingNumber,
+    })
 
     if (!orderId || !newStatus) {
       return { success: false, message: 'Invalid data.' }
@@ -194,6 +285,7 @@ export async function updateOrderStatus(formData: FormData) {
       .single()
 
     if (fetchError || !order) {
+      console.error('❌ Order not found:', fetchError)
       return { success: false, message: 'Order not found.' }
     }
 
@@ -244,11 +336,13 @@ export async function updateOrderStatus(formData: FormData) {
       .eq('user_id', user.id)
 
     if (updateError) {
-      console.error('Error updating order status:', updateError)
+      console.error('❌ Error updating order status:', updateError)
       return { success: false, message: updateError.message }
     }
 
-    // Insert status history entry
+    console.log('✅ Order status updated:', newStatus)
+
+    // ✅ Insert status history entry
     const { error: historyError } = await supabase
       .from('order_status_history')
       .insert({
@@ -261,10 +355,13 @@ export async function updateOrderStatus(formData: FormData) {
       })
 
     if (historyError) {
-      console.error('Error inserting status history:', historyError)
+      console.error('⚠️ Error inserting status history:', historyError)
       // Don't fail the update for this
+    } else {
+      console.log('✅ Status history recorded')
     }
 
+    // Revalidate pages
     revalidatePath('/orders')
     revalidatePath(`/orders/${orderId}`)
 
@@ -273,7 +370,7 @@ export async function updateOrderStatus(formData: FormData) {
       message: `Order #${order.order_number} status updated to "${newStatus}".` 
     }
   } catch (error: any) {
-    console.error('Error updating order status:', error)
+    console.error('❌ Error updating order status:', error)
     return {
       success: false,
       message: error.message || 'Failed to update status',
@@ -318,9 +415,8 @@ export async function getAllowedStatusTransitions(orderId: string) {
 export async function updatePaymentStatus(formData: FormData) {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+  
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
@@ -329,6 +425,12 @@ export async function updatePaymentStatus(formData: FormData) {
     const orderId = formData.get('orderId') as string
     const paymentStatus = formData.get('paymentStatus') as string
     const paymentMethod = formData.get('paymentMethod') as string
+
+    console.log('💳 Updating payment status:', {
+      orderId,
+      paymentStatus,
+      paymentMethod,
+    })
 
     if (!orderId || !paymentStatus) {
       return { success: false, message: 'Invalid data.' }
@@ -350,10 +452,13 @@ export async function updatePaymentStatus(formData: FormData) {
       .eq('user_id', user.id)
 
     if (error) {
-      console.error('Error updating payment status:', error)
+      console.error('❌ Error updating payment status:', error)
       return { success: false, message: error.message }
     }
 
+    console.log('✅ Payment status updated')
+
+    // Revalidate pages
     revalidatePath('/orders')
     revalidatePath(`/orders/${orderId}`)
 
@@ -362,10 +467,62 @@ export async function updatePaymentStatus(formData: FormData) {
       message: `Payment status updated to "${paymentStatus}".`,
     }
   } catch (error: any) {
-    console.error('Error updating payment status:', error)
+    console.error('❌ Error updating payment status:', error)
     return {
       success: false,
       message: error.message || 'Failed to update payment status',
     }
   }
 }
+
+// ========================================================
+// SERVER ACTION: DELETE ORDER
+// ========================================================
+export async function deleteOrder(orderId: string) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    return { success: false, message: 'Authentication required.' }
+  }
+
+  try {
+    console.log('🗑️ Deleting order:', orderId)
+
+    // Delete order (cascade will handle order_items and status_history)
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId)
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error('❌ Error deleting order:', error)
+      return { success: false, message: error.message }
+    }
+
+    console.log('✅ Order deleted')
+
+    // Revalidate pages
+    revalidatePath('/orders')
+    revalidatePath('/dashboard')
+    revalidatePath('/settings/subscription')
+
+    return {
+      success: true,
+      message: 'Order deleted successfully',
+    }
+  } catch (error: any) {
+    console.error('❌ Error deleting order:', error)
+    return {
+      success: false,
+      message: error.message || 'Failed to delete order',
+    }
+  }
+}
+
+// ========================================================
+// EXPORT: Check if user can create order (for UI)
+// ========================================================
+export { canCreateOrder }
