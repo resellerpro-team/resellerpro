@@ -1,185 +1,171 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Plus, Package, ShoppingCart, TrendingUp, IndianRupee } from 'lucide-react'
-import Link from 'next/link'
-import { OrdersTable } from '@/components/orders/OrderTable'
-import { OrdersFilter } from '@/components/orders/OrderFilters'
+import { OrdersClient } from './OrdersClient'
 
-type Order = {
-  profit: number
-  id: string
-  order_number: number
-  created_at: string
-  status: string
-  payment_status: string
-  total_amount: number
-  total_profit: number
-  customers?: {
-    id: string
-    name: string
-    phone: string
-  } | null
-}
-
-export default async function OrdersPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ status?: string }>
+export default async function OrdersPage(props: {
+  searchParams: Promise<{ search?: string; status?: string; sort?: string; payment?: string }>
 }) {
+  const searchParams = await props.searchParams
   const supabase = await createClient()
-  const resolvedParams = await searchParams
-  const statusFilter = resolvedParams.status || 'all'
 
+  // Get logged-in user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return <div>Please log in</div>
+  }
 
-  // ========================================================
-  // Query 1: Fetch ALL orders for stats calculation
-  // ========================================================
-  const { data: allOrders, error: allOrdersError } = await supabase
+  // Start base query
+  let query = supabase
     .from('orders')
-    .select(`
+    .select(
+      `
       *,
       customers (
         id,
         name,
         phone
       )
-    `)
-    .order('created_at', { ascending: false }) as { data: Order[] | null, error: any }
+    `
+    )
+    .eq('user_id', user.id)
 
-  if (allOrdersError) {
-    console.error('Error fetching all orders:', allOrdersError)
+  // =============================
+  // 🔍 Full Search Logic (with smarter detection)
+  // =============================
+  if (searchParams.search) {
+    const rawSearch = searchParams.search.trim()
+    if (rawSearch) {
+      const searchTerm = rawSearch.toLowerCase()
+      const term = `%${searchTerm}%`
+
+      // Determine the type of search
+      const isOrderNumber = searchTerm.startsWith('#')
+      const isPhoneNumber = /^[+]?(91)?\d{10}$/.test(searchTerm.replace(/\s+/g, ''))
+      const isName = !isOrderNumber && !isPhoneNumber
+
+      if (isOrderNumber) {
+        // ------------------------------
+        // 🧾 Search by Order Number
+        // ------------------------------
+        const numericPart = searchTerm.replace('#', '').replace('%23', '').trim()
+
+        // if it's numeric, use eq (exact match)
+        if (/^\d+$/.test(numericPart)) {
+          query = query.eq('order_number', Number(numericPart))
+        } else {
+          // fallback for weird input
+          query = query.ilike('order_number_text', `%${numericPart}%`)
+        }
+      } else if (isPhoneNumber) {
+        // ------------------------------
+        // 📞 Search by Phone Number (handle +91 / 91 / no prefix)
+        // ------------------------------
+        const cleanPhone = searchTerm.replace('+91', '').replace('91', '').slice(-10)
+
+        const { data: matchedCustomers, error: phoneError } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('user_id', user.id)
+          .or(`phone.ilike.%${cleanPhone}%`)
+
+        if (phoneError) console.error('Phone search error:', phoneError)
+
+        const matchedIds = matchedCustomers?.map((c) => c.id) || []
+        if (matchedIds.length > 0) {
+          query = query.in('customer_id', matchedIds)
+        } else {
+          // fallback: no match
+          query = query.eq('id', '00000000-0000-0000-0000-000000000000') // empty result
+        }
+      } else if (isName) {
+        // ------------------------------
+        // 👤 Search by Customer Name
+        // ------------------------------
+        const { data: matchedCustomers, error: nameError } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('user_id', user.id)
+          .ilike('name', term)
+
+        if (nameError) console.error('Name search error:', nameError)
+
+        const matchedIds = matchedCustomers?.map((c) => c.id) || []
+        if (matchedIds.length > 0) {
+          query = query.in('customer_id', matchedIds)
+        } else {
+          // fallback: no match
+          query = query.eq('id', '00000000-0000-0000-0000-000000000000')
+        }
+      }
+    }
   }
 
-  // ========================================================
-  // Query 2: Fetch FILTERED orders for table display
-  // ========================================================
-  let filteredQuery = supabase
-    .from('orders')
-    .select(`
-      *,
-      customers (
-        id,
-        name,
-        phone
-      )
-    `)
-
-  // Apply status filter at database level
-  if (statusFilter && statusFilter !== 'all') {
-    filteredQuery = filteredQuery.eq('status', statusFilter)
+  // =============================
+  // 🏷️ Filter: Status
+  // =============================
+  if (searchParams.status && searchParams.status !== 'all') {
+    query = query.eq('status', searchParams.status)
   }
 
-  const { data: orders, error: ordersError } = await filteredQuery
-    .order('created_at', { ascending: false }) as { data: Order[] | null, error: any }
-
-  if (ordersError) {
-    console.error('Error fetching filtered orders:', ordersError)
+  // 💳 Filter: Payment
+  if (searchParams.payment && searchParams.payment !== 'all') {
+    query = query.eq('payment_status', searchParams.payment)
   }
 
+  // =============================
+  // ↕ Sorting
+  // =============================
+  const sortBy = searchParams.sort || '-created_at'
+  const sortOrder = sortBy.startsWith('-')
+  const sortField = sortBy.replace('-', '')
+  query = query.order(sortField, { ascending: !sortOrder })
 
-  // ========================================================
-  // Calculate stats from ALL orders (unfiltered)
-  // ========================================================
-  const totalOrders = allOrders?.length || 0
-  const totalRevenue =
-    allOrders?.reduce((sum, o) => sum + Number(o.total_amount || 0), 0) || 0
-  const totalProfit =
-    allOrders?.reduce((sum, o) => sum + Number(o.profit || 0), 0) || 0
-  const pendingOrders =
-    allOrders?.filter((o) => o.status === 'pending').length || 0
+  // =============================
+  // 🧾 Fetch Data
+  // =============================
+  const { data: orders, error } = await query
+  if (error) {
+    console.error('Error fetching orders:', error)
+    return <div>Error loading orders</div>
+  }
 
+  // =============================
+  // 📊 Stats Calculation
+  // =============================
+  const totalOrders = orders?.length || 0
+  const totalRevenue = orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0
+  const totalProfit = orders?.reduce((sum, o) => sum + (o.total_profit || 0), 0) || 0
+  const pendingOrders = orders?.filter((o) => o.status === 'pending').length || 0
+  const completedOrders = orders?.filter((o) => o.status === 'completed').length || 0
+
+  const stats = {
+    totalOrders,
+    totalRevenue,
+    totalProfit,
+    pendingOrders,
+    completedOrders,
+  }
+
+  // Extract unique statuses & payment methods
+  const statuses = [...new Set(orders?.map((o) => o.status).filter(Boolean))] as string[]
+  const payments = [...new Set(orders?.map((o) => o.payment_status).filter(Boolean))] as string[]
+
+  // =============================
+  // 🧭 Return UI Client Component
+  // =============================
   return (
-    <div className="space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground">Manage and track your orders</p>
-        </div>
-        <Button asChild>
-          <Link href="/orders/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Order
-          </Link>
-        </Button>
-      </div>
-
-      {/* Stats Cards - Always show total stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalOrders}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <IndianRupee className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{totalRevenue.toFixed(2)}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Profit</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              ₹{totalProfit.toFixed(2)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingOrders}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Orders Table with Filter */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle>
-              {statusFilter === 'all' 
-                ? 'All Orders' 
-                : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Orders`}
-            </CardTitle>
-            <OrdersFilter />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {orders && orders.length > 0 ? (
-            <OrdersTable orders={orders} />
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <Package className="mx-auto h-12 w-12 opacity-50 mb-4" />
-              <p className="text-lg font-medium">No orders found</p>
-              <p className="text-sm">
-                {statusFilter !== 'all' 
-                  ? `No ${statusFilter} orders at the moment`
-                  : 'Create your first order to get started'}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <OrdersClient
+      initialOrders={orders || []}
+      stats={stats}
+      statuses={statuses}
+      payments={payments}
+      currentSort={sortBy}
+      currentStatus={searchParams.status || 'all'}
+      currentPayment={searchParams.payment || 'all'}
+      currentSearch={searchParams.search || ''}
+    />
   )
 }
