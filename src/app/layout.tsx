@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   title: 'ResellerPro - Manage Your Reselling Business',
   description: 'Complete order management system for WhatsApp/Instagram resellers',
   keywords: ['reselling', 'order management', 'inventory', 'business'],
+  manifest: '/manifest.json',
+  themeColor: '#0f172a',
+  icons: {
+    icon: '/icons/icon-192x192.png',
+    apple: '/icons/icon-192x192.png',
+  },
 }
 
 export default function RootLayout({
