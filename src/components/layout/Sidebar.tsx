@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
@@ -38,36 +38,12 @@ type NavItem = {
 }
 
 const navigation: NavItem[] = [
-  {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    name: 'Products',
-    href: '/products',
-    icon: Package,
-  },
-  {
-    name: 'Customers',
-    href: '/customers',
-    icon: Users,
-  },
-  {
-    name: 'Orders',
-    href: '/orders',
-    icon: ShoppingCart,
-  },
-  {
-    name: 'Analytics',
-    href: '/analytics',
-    icon: BarChart3,
-  },
-  {
-    name: 'Settings',
-    href: '/settings',
-    icon: Settings,
-  },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Products', href: '/products', icon: Package },
+  { name: 'Customers', href: '/customers', icon: Users },
+  { name: 'Orders', href: '/orders', icon: ShoppingCart },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 type UserData = {
@@ -80,7 +56,6 @@ export default function Sidebar({ user }: { user: UserData }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
 
-  // Get user initials for avatar fallback
   const getInitials = (name?: string | null) => {
     if (!name) return 'U'
     return name
@@ -91,34 +66,35 @@ export default function Sidebar({ user }: { user: UserData }) {
       .slice(0, 2)
   }
 
-  // Get display name
   const displayName = user?.name || user?.email?.split('@')[0] || 'User'
-  
-  // Get user initials
   const initials = getInitials(user?.name)
+
+  useEffect(() => {
+    const bottomNav = document.querySelector('nav.fixed.bottom-0')
+    if (bottomNav) {
+      if (mobileMenuOpen) bottomNav.classList.add('hide-mobile-nav')
+      else bottomNav.classList.remove('hide-mobile-nav')
+    }
+  }, [mobileMenuOpen])
 
   return (
     <>
-      {/* Mobile menu button */}
+      {/* Menu button (top-left on mobile) */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <Button
           variant="outline"
           size="icon"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onClick={() => setMobileMenuOpen(true)}
           className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
         >
-          {mobileMenuOpen ? (
-            <X className="h-5 w-5" />
-          ) : (
-            <Menu className="h-5 w-5" />
-          )}
+          <Menu className="h-5 w-5" />
         </Button>
       </div>
 
       {/* Mobile backdrop */}
       {mobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+          className="lg:hidden fixed inset-0 bg-black/30 z-40 backdrop-blur-sm"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -126,15 +102,14 @@ export default function Sidebar({ user }: { user: UserData }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed lg:sticky top-0 left-0 z-40 h-screen w-72',
+          'fixed lg:sticky top-0 left-0 z-50 h-screen w-72',
           'border-r bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50',
-          'transition-transform duration-300 ease-in-out',
-          'flex flex-col',
+          'transition-transform duration-300 ease-in-out flex flex-col',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        {/* Logo */}
-        <div className="flex h-16 items-center gap-2 border-b px-6">
+        {/* Header / Logo */}
+        <div className="relative flex h-16 items-center gap-2 border-b px-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Sparkles className="h-6 w-6" />
           </div>
@@ -142,13 +117,22 @@ export default function Sidebar({ user }: { user: UserData }) {
             <span className="text-lg font-bold">ResellerPro</span>
             <span className="text-xs text-muted-foreground">Manage with ease</span>
           </div>
+
+          {/* Close (X) button – top-right inside sidebar */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden absolute border top-4 right-4"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-4 overflow-y-auto scrollbar-custom">
           {navigation.map((item) => {
             const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
-            
             return (
               <Link
                 key={item.name}
