@@ -11,25 +11,41 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'ResellerPro - Manage Your Reselling Business',
-  description: 'Complete order management system for WhatsApp/Instagram resellers',
-  keywords: ['reselling', 'order management', 'inventory', 'business'],
+  description:
+    'ResellerPro is an AI-powered CRM platform for WhatsApp and Instagram resellers to manage leads, orders, and automation.',
+  keywords: 'whatsapp crm, instagram crm, reseller crm, resellerpro, order tracking, ai automation',
+  openGraph: {
+    title: 'ResellerPro - WhatsApp CRM',
+    description: 'AI-powered CRM for WhatsApp resellers',
+    url: 'https://resellerpro.in',
+    siteName: 'ResellerPro',
+    images: [
+      {
+        url: 'https://resellerpro.in/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'ResellerPro Dashboard',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+  card: "summary_large_image",
+  site: "@resellerpro",
+  title: "ResellerPro - WhatsApp CRM",
+  description: "AI-powered CRM for WhatsApp resellers",
+  images: ["https://resellerpro.in/og-image.png"],
+},
   manifest: '/manifest.json',
   themeColor: '#0f172a',
-  icons: {
-    icon: '/icons/icon-192x192.png',
-    apple: '/icons/icon-192x192.png',
-  },
+  icons: { icon: '/icons/icon-192x192.png', apple: '/icons/icon-192x192.png' },
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <AppLoader/>
+        <AppLoader />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
