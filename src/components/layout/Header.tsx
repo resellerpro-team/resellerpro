@@ -91,7 +91,7 @@ export default function Header() {
             <Input
               type="search"
               placeholder="Search products, customers, orders..."
-              className="pl-10 pr-4 w-full"
+              className="pl-8 pr-2 h-10 w-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -101,7 +101,7 @@ export default function Header() {
         {/* Quick Add */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" className="gap-2">
+            <Button size="sm" className="gap-2 h-10">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Quick Add</span>
             </Button>
