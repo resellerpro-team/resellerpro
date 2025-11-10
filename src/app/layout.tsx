@@ -44,7 +44,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-    <head>
+     <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -57,7 +57,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "sameAs": [
                 "https://www.instagram.com/resellerpro",
                 "https://www.facebook.com/resellerpro"
-              ]
+              ],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "ResellerPro",
+              "url": "https://resellerpro.in",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://resellerpro.in/search?q={search_term_string}",
+                "query-input": "required name=search_term_string",
+              },
             }),
           }}
         />
