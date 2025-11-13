@@ -33,6 +33,19 @@ export default async function OrderDetailsPage({
   const { id } = await params
   const supabase = await createClient()
 
+  //  Get authenticated user to fetch business name
+  const { data: { user } } = await supabase.auth.getUser()
+
+  //  Fetch user profile with business name
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('business_name')
+    .eq('id', user?.id)
+    .single()
+
+  //  Get business name or fallback
+  const businessName = profile?.business_name || 'Your Store'
+
   //  Now use the awaited id
   const { data: order, error } = await supabase
     .from('orders')
@@ -432,6 +445,7 @@ export default async function OrderDetailsPage({
                   customerPhone={order.customers?.phone}
                   orderItems={order.order_items?.map((item: any) => item.product_name) || []}
                   totalAmount={parseFloat(order.total_amount)}
+                  shopName={businessName}
                 />
               </div>
             </CollapsibleSection>
