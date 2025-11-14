@@ -1,3 +1,5 @@
+import { Toaster } from "@/components/ui/toaster"
+
 export default function AuthLayout({
   children,
 }: {
@@ -6,6 +8,7 @@ export default function AuthLayout({
   return (
     <div className="min-h-screen">
       {children}
+      <Toaster />
     </div>
   )
 }
