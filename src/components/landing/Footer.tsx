@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="relative mt-20 bg-gradient-to-b from-gray-50 via-white to-gray-50 pt-20 pb-10 overflow-hidden">
+    <footer className="relative bg-gradient-to-b from-gray-50 via-white to-gray-50 pt-20 pb-10 overflow-hidden">
 
       {/* Background blobs */}
       <div className="absolute top-10 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />

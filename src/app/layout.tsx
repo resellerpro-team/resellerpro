@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster'
 // Update the import path if the file is located elsewhere, for example:
 import { ThemeProvider } from '../components/providers/theme-provider'
 import { AppLoader } from '@/components/onboarding/PremiumLoader'
+import { Providers } from './providers'
 // Or, if using absolute imports, ensure your tsconfig.json has the correct "paths" and "baseUrl" set.
 
 const inter = Inter({ subsets: ['latin'] })
@@ -30,12 +31,12 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
-  card: "summary_large_image",
-  site: "@resellerpro",
-  title: "ResellerPro - WhatsApp CRM",
-  description: "AI-powered CRM for WhatsApp resellers",
-  images: ["https://resellerpro.in/og-image.png"],
-},
+    card: 'summary_large_image',
+    site: '@resellerpro',
+    title: 'ResellerPro - WhatsApp CRM',
+    description: 'AI-powered CRM for WhatsApp resellers',
+    images: ['https://resellerpro.in/og-image.png'],
+  },
   manifest: '/manifest.json',
   themeColor: '#0f172a',
   icons: { icon: '/icons/icon-192x192.png', apple: '/icons/icon-512x512.png' },
@@ -44,19 +45,19 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-     <head>
+      <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              "name": "ResellerPro",
-              "url": "https://resellerpro.in",
-              "logo": "https://resellerpro.in/icons/icon-512x512.png",
-              "sameAs": [
-                "https://www.instagram.com/resellerpro",
-                "https://www.facebook.com/resellerpro"
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'ResellerPro',
+              url: 'https://resellerpro.in',
+              logo: 'https://resellerpro.in/icons/icon-512x512.png',
+              sameAs: [
+                'https://www.instagram.com/resellerpro',
+                'https://www.facebook.com/resellerpro',
               ],
             }),
           }}
@@ -65,14 +66,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              "name": "ResellerPro",
-              "url": "https://resellerpro.in",
-              "potentialAction": {
-                "@type": "SearchAction",
-                "target": "https://resellerpro.in/search?q={search_term_string}",
-                "query-input": "required name=search_term_string",
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'ResellerPro',
+              url: 'https://resellerpro.in',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: 'https://resellerpro.in/search?q={search_term_string}',
+                'query-input': 'required name=search_term_string',
               },
             }),
           }}
@@ -80,15 +81,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={inter.className}>
         <AppLoader />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider>
+            {children}
+            <Toaster />
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   )
