@@ -1,17 +1,26 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Edit, MessageSquare, Phone, DollarSign, ShoppingCart, Mail, MapPin } from 'lucide-react'
+import {
+  ArrowLeft,
+  Edit,
+  MessageSquare,
+  Phone,
+  DollarSign,
+  ShoppingCart,
+  Mail,
+  MapPin,
+  Delete,
+  Trash,
+  Trash2,
+} from 'lucide-react'
 import Link from 'next/link'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { notFound } from 'next/navigation'
 import { getCustomer, getCustomerOrders } from '../action'
+import DeleteCustomerButton from '@/components/customers/DeleteCustomerButton'
 
-export default async function CustomerDetailsPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> 
-}) {
+export default async function CustomerDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const customer = await getCustomer(id)
   const orders = await getCustomerOrders(id)
@@ -24,7 +33,7 @@ export default async function CustomerDetailsPage({
   const getCustomerType = (): { label: string; color: string } => {
     const totalOrders = customer.total_orders ?? 0
     const totalSpent = customer.total_spent ?? 0
-    
+
     if (totalOrders >= 10 || totalSpent >= 15000) {
       return { label: 'VIP', color: 'bg-purple-500' }
     }
@@ -62,36 +71,50 @@ export default async function CustomerDetailsPage({
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        {/* Left Section */}
+        <div className="flex md:items-center gap-3">
           <Button variant="outline" size="icon" asChild>
             <Link href="/customers">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+
+          <div className="flex items gap-3 w-full ">
+            <Avatar className="h-10 w-10 md:h-16 md:w-16">
+              <AvatarFallback className="text-md md:text-2xl bg-primary text-primary-foreground">
                 {initials}
               </AvatarFallback>
             </Avatar>
+
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">{customer.name}</h1>
-              <p className="text-muted-foreground">
-                Member since {new Date(customer.created_at).toLocaleDateString('en-IN', { 
-                  month: 'short', 
-                  year: 'numeric' 
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight leading-tight">
+                {customer.name}
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                Member since{' '}
+                {new Date(customer.created_at).toLocaleDateString('en-IN', {
+                  month: 'short',
+                  year: 'numeric',
                 })}
               </p>
             </div>
           </div>
         </div>
-        <Button variant="outline" asChild>
-          <Link href={`/customers/${id}/edit`}>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </Link>
-        </Button>
+
+        {/* Right Section Buttons */}
+        <div className="flex gap-2 self-end md:self-auto">
+          <Button variant="outline" className="flex-1 md:flex-none" asChild>
+            <Link href={`/customers/${id}/edit`}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Link>
+          </Button>
+
+          <div className="flex-1 md:flex-none">
+            <DeleteCustomerButton customerId={id} />
+          </div>
+        </div>
       </div>
 
       {/* Stats */}
@@ -106,7 +129,7 @@ export default async function CustomerDetailsPage({
           <CardContent>
             <p className="text-2xl font-bold">{customer.total_orders ?? 0}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {customer.last_order_date 
+              {customer.last_order_date
                 ? `Last order: ${new Date(customer.last_order_date).toLocaleDateString('en-IN')}`
                 : 'No orders yet'}
             </p>
@@ -116,7 +139,7 @@ export default async function CustomerDetailsPage({
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
+              <span className="text-[20px]" >₹</span>
               Total Spent
             </CardTitle>
           </CardHeader>
@@ -125,9 +148,11 @@ export default async function CustomerDetailsPage({
               ₹{(customer.total_spent ?? 0).toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Avg: ₹{customer.total_orders && customer.total_orders > 0 
+              Avg: ₹
+              {customer.total_orders && customer.total_orders > 0
                 ? Math.round((customer.total_spent ?? 0) / customer.total_orders).toLocaleString()
-                : 0} per order
+                : 0}{' '}
+              per order
             </p>
           </CardContent>
         </Card>
@@ -242,18 +267,22 @@ export default async function CustomerDetailsPage({
           ) : (
             <div className="space-y-3">
               {orders.map((order) => (
-                <div 
+                <div
                   key={order.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">Order #{order.order_number}</p>
-                      <Badge variant={
-                        order.status === 'delivered' ? 'default' :
-                        order.status === 'cancelled' ? 'destructive' :
-                        'secondary'
-                      }>
+                      <Badge
+                        variant={
+                          order.status === 'delivered'
+                            ? 'default'
+                            : order.status === 'cancelled'
+                            ? 'destructive'
+                            : 'secondary'
+                        }
+                      >
                         {order.status}
                       </Badge>
                     </div>
@@ -261,12 +290,14 @@ export default async function CustomerDetailsPage({
                       {new Date(order.created_at).toLocaleDateString('en-IN', {
                         day: 'numeric',
                         month: 'short',
-                        year: 'numeric'
+                        year: 'numeric',
                       })}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-green-600">₹{order.total_amount.toLocaleString()}</p>
+                    <p className="font-bold text-green-600">
+                      ₹{order.total_amount.toLocaleString()}
+                    </p>
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/orders/${order.id}`}>View Details</Link>
                     </Button>
