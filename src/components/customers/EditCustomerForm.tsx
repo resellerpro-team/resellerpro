@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 import { Save } from 'lucide-react'
 import Link from 'next/link'
 import { updateCustomer } from '@/app/(dashboard)/customers/action'
@@ -64,14 +64,15 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-6">
-          {/* Hidden ID field */}
+          
+          {/* Hidden ID Field */}
           <input type="hidden" name="id" value={customerId} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Full Name */}
             <div className="space-y-2">
-              <Label htmlFor="name">
-                Full Name <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
               <Input
                 id="name"
                 name="name"
@@ -84,10 +85,9 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
               )}
             </div>
 
+            {/* Phone Number */}
             <div className="space-y-2">
-              <Label htmlFor="phone">
-                Phone Number <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="phone">Phone Number <span className="text-red-500">*</span></Label>
               <Input
                 id="phone"
                 name="phone"
@@ -100,6 +100,7 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
               )}
             </div>
 
+            {/* WhatsApp */}
             <div className="space-y-2">
               <Label htmlFor="whatsapp">WhatsApp Number</Label>
               <Input
@@ -110,6 +111,7 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
               />
             </div>
 
+            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email (Optional)</Label>
               <Input
@@ -125,26 +127,30 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
             </div>
           </div>
 
+          {/* Shipping Address */}
           <div className="space-y-4 pt-4 border-t">
             <h3 className="text-lg font-medium">Shipping Address</h3>
+
             <div className="space-y-2">
-              <Label htmlFor="addressLine1">Address Line 1</Label>
+              <Label htmlFor="address_line1">Address Line 1</Label>
               <Input
-                id="addressLine1"
-                name="addressLine1"
+                id="address_line1"
+                name="address_line1"
                 defaultValue={customer.address_line1 || ''}
                 placeholder="House no, Building, Street"
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="addressLine2">Address Line 2</Label>
+              <Label htmlFor="address_line2">Address Line 2</Label>
               <Input
-                id="addressLine2"
-                name="addressLine2"
+                id="address_line2"
+                name="address_line2"
                 defaultValue={customer.address_line2 || ''}
                 placeholder="Area, Landmark"
               />
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
@@ -152,18 +158,20 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
                   id="city"
                   name="city"
                   defaultValue={customer.city || ''}
-                  placeholder="e.g., Noida"
+                  placeholder="e.g., Kochi"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="state">State</Label>
                 <Input
                   id="state"
                   name="state"
                   defaultValue={customer.state || ''}
-                  placeholder="e.g., Uttar Pradesh"
+                  placeholder="e.g., Kerala"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="pincode">Pincode</Label>
                 <Input
@@ -176,6 +184,7 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
             </div>
           </div>
 
+          {/* Notes */}
           <div className="space-y-2 pt-4 border-t">
             <Label htmlFor="notes">Notes (Optional)</Label>
             <Textarea
@@ -186,15 +195,18 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
             />
           </div>
 
+          {/* Actions */}
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" asChild type="button">
               <Link href={`/customers/${customerId}`}>Cancel</Link>
             </Button>
+
             <Button type="submit" disabled={isPending}>
               <Save className="mr-2 h-4 w-4" />
               {isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
+
         </form>
       </CardContent>
     </Card>
