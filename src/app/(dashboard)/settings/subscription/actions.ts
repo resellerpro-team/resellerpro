@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { razorpay, verifyPaymentSignature, isMockMode } from '@/lib/razorpay/razorpay'
 import { revalidatePath } from 'next/cache'
 
-// ✅ Helper: Ensure subscription exists
+// Helper: Ensure subscription exists
 async function ensureSubscriptionExists(userId: string) {
   const supabase = await createClient()
   
@@ -58,12 +58,12 @@ export async function getSubscriptionData() {
 
   if (!subscription) return null
 
-  // ✅ Get current month start
+  // Get current month start
   const periodStart = new Date()
   periodStart.setDate(1)
   periodStart.setHours(0, 0, 0, 0)
 
-  // ✅ Count orders directly from orders table (more reliable)
+  // Count orders directly from orders table (more reliable)
   const { count: ordersThisMonth } = await supabase
     .from('orders')
     .select('*', { count: 'exact', head: true })
@@ -73,15 +73,6 @@ export async function getSubscriptionData() {
   const orderCount = ordersThisMonth || 0
   const orderLimit = subscription.plan?.order_limit || 0
   const usagePercentage = orderLimit > 0 ? Math.round((orderCount / orderLimit) * 100) : 0
-
-  console.log('📊 Subscription Debug:', {
-    userId: user.id,
-    planName: subscription.plan?.name,
-    orderLimit,
-    ordersThisMonth: orderCount,
-    usagePercentage,
-    periodStart: periodStart.toISOString(),
-  })
 
   return {
     ...subscription,
@@ -139,7 +130,7 @@ export async function createCheckoutSession(planId: string) {
       },
     })
 
-    // ✅ Save transaction with proper metadata
+    // Save transaction with proper metadata
     const { data: transaction } = await supabase
       .from('payment_transactions')
       .insert({
@@ -155,8 +146,6 @@ export async function createCheckoutSession(planId: string) {
       })
       .select()
       .single()
-
-    console.log('✅ Transaction created:', transaction)
 
     return {
       success: true,
@@ -191,27 +180,19 @@ export async function verifyPaymentAndActivate(
   }
 
   try {
-    console.log('🔍 Verifying payment:', {
-      orderId: razorpayOrderId,
-      paymentId: razorpayPaymentId,
-      signature: razorpaySignature,
-      isMock: isMockMode(),
-    })
 
-    // ✅ Verify signature
+    // Verify signature
     const isValid = verifyPaymentSignature(
       razorpayOrderId,
       razorpayPaymentId,
       razorpaySignature
     )
 
-    console.log('✅ Signature valid:', isValid)
-
     if (!isValid) {
       return { success: false, message: 'Invalid payment signature' }
     }
 
-    // ✅ Get transaction
+    // Get transaction
     const { data: transaction, error: txError } = await supabase
       .from('payment_transactions')
       .select('*')
@@ -219,14 +200,11 @@ export async function verifyPaymentAndActivate(
       .eq('user_id', user.id)
       .single()
 
-    console.log('📄 Transaction found:', transaction)
-    console.log('❌ Transaction error:', txError)
-
     if (!transaction) {
       return { success: false, message: 'Transaction not found' }
     }
 
-    // ✅ Update transaction
+    // Update transaction
     await supabase
       .from('payment_transactions')
       .update({
@@ -236,9 +214,8 @@ export async function verifyPaymentAndActivate(
       })
       .eq('id', transaction.id)
 
-    console.log('✅ Transaction updated to success')
 
-    // ✅ Get plan ID from metadata
+    // Get plan ID from metadata
     const metadata = transaction.metadata as any
     const planId = metadata?.plan_id
 
@@ -246,7 +223,7 @@ export async function verifyPaymentAndActivate(
       return { success: false, message: 'Plan ID not found in transaction' }
     }
 
-    // ✅ Update subscription
+    // Update subscription
     const now = new Date()
     const periodEnd = new Date(now)
     periodEnd.setMonth(periodEnd.getMonth() + 1)
@@ -261,9 +238,6 @@ export async function verifyPaymentAndActivate(
         cancel_at_period_end: false,
       })
       .eq('user_id', user.id)
-
-    console.log('✅ Subscription updated')
-    console.log('❌ Subscription error:', subError)
 
     if (subError) {
       return { success: false, message: 'Failed to update subscription: ' + subError.message }
