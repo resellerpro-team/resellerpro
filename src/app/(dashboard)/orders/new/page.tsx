@@ -18,7 +18,7 @@ export default async function NewOrderPage({
 
   const supabase = await createClient()
 
-  // ✅ Get authenticated user
+  // Get authenticated user
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
@@ -32,21 +32,14 @@ export default async function NewOrderPage({
     .eq('user_id', user.id)
     .order('name')
 
-  // ✅ Fetch ALL products (not just in_stock) - exclude only out_of_stock
+  // Fetch ALL products (not just in_stock) - exclude only out_of_stock
   const { data: products } = await supabase
     .from('products')
     .select('id, name, selling_price, cost_price, stock_status, stock_quantity')
     .eq('user_id', user.id)
     .neq('stock_status', 'out_of_stock') // Only exclude out of stock
     .order('name')
-      console.log("prodicuts------1",products);
 
-  // Alternative: Show ALL products including out of stock
-  // const { data: products } = await supabase
-  //   .from('products')
-  //   .select('id, name, selling_price, cost_price, stock_status, stock_quantity')
-  //   .eq('user_id', user.id)
-  //   .order('name')
 
   return (
     <div className="space-y-6">

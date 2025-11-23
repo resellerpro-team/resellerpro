@@ -64,15 +64,15 @@ export function NewOrderForm({
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [paymentStatus, setPaymentStatus] = useState('unpaid')
   const [paymentMethod, setPaymentMethod] = useState('')
-  const [discount, setDiscount] = useState(0)
-  const [shippingCost, setShippingCost] = useState(0)
+  const [discount, setDiscount] = useState('0')
+  const [shippingCost, setShippingCost] = useState('0')
   const [notes, setNotes] = useState('')
 
   // Set pre-selected customer when it changes
   useEffect(() => {
     if (preSelectedCustomerId) {
       setSelectedCustomerId(preSelectedCustomerId)
-      const customer = customers.find(c => c.id === preSelectedCustomerId)
+      const customer = customers.find((c) => c.id === preSelectedCustomerId)
       if (customer) {
         toast({
           title: 'Customer Selected',
@@ -82,26 +82,61 @@ export function NewOrderForm({
     }
   }, [preSelectedCustomerId, customers, toast])
 
+  const handleNumberInput = (value: string, setter: (val: string) => void) => {
+    // Allow empty input
+    if (value === '') {
+      setter('')
+      return
+    }
+
+    // Allow only numbers + decimal
+    if (/^\d*\.?\d*$/.test(value)) {
+      setter(value)
+    }
+  }
+
+const discountValue = parseFloat(discount) || 0;
+const shippingValue = parseFloat(shippingCost) || 0;
+
   // Helper function to get stock status badge
   const getStockBadge = (status: string, quantity?: number) => {
     if (quantity !== undefined && quantity === 0) {
-      return <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
+      return (
+        <Badge variant="destructive" className="text-xs">
+          Out of Stock
+        </Badge>
+      )
     }
-    
+
     switch (status) {
       case 'in_stock':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">In Stock</Badge>
+        return (
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+            In Stock
+          </Badge>
+        )
       case 'low_stock':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">Low Stock</Badge>
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs"
+          >
+            Low Stock
+          </Badge>
+        )
       case 'out_of_stock':
-        return <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
+        return (
+          <Badge variant="destructive" className="text-xs">
+            Out of Stock
+          </Badge>
+        )
       default:
         return null
     }
   }
 
   // Check if any item exceeds available stock
-  const hasStockIssues = orderItems.some(item => item.quantity > item.maxStock)
+  const hasStockIssues = orderItems.some((item) => item.quantity > item.maxStock)
 
   // Add product to order
   const handleAddProduct = (productId: string) => {
@@ -146,7 +181,7 @@ export function NewOrderForm({
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
     if (quantity < 1) return
 
-    const item = orderItems.find(i => i.id === itemId)
+    const item = orderItems.find((i) => i.id === itemId)
     if (!item) return
 
     // Enforce max stock limit
@@ -156,29 +191,21 @@ export function NewOrderForm({
         description: `Only ${item.maxStock} units available for ${item.productName}`,
         variant: 'destructive',
       })
-      
+
       // Set to max available
       setOrderItems(
-        orderItems.map((i) =>
-          i.id === itemId ? { ...i, quantity: item.maxStock } : i
-        )
+        orderItems.map((i) => (i.id === itemId ? { ...i, quantity: item.maxStock } : i))
       )
       return
     }
 
-    setOrderItems(
-      orderItems.map((i) =>
-        i.id === itemId ? { ...i, quantity } : i
-      )
-    )
+    setOrderItems(orderItems.map((i) => (i.id === itemId ? { ...i, quantity } : i)))
   }
 
   const handleUpdatePrice = (itemId: string, price: number) => {
     if (price < 0) return
     setOrderItems(
-      orderItems.map((item) =>
-        item.id === itemId ? { ...item, unitPrice: price } : item
-      )
+      orderItems.map((item) => (item.id === itemId ? { ...item, unitPrice: price } : item))
     )
   }
 
@@ -187,15 +214,9 @@ export function NewOrderForm({
   }
 
   // Calculate totals
-  const subtotal = orderItems.reduce(
-    (sum, item) => sum + item.quantity * item.unitPrice,
-    0
-  )
-  const totalCost = orderItems.reduce(
-    (sum, item) => sum + item.quantity * item.unitCost,
-    0
-  )
-  const total = subtotal + shippingCost - discount
+  const subtotal = orderItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+  const totalCost = orderItems.reduce((sum, item) => sum + item.quantity * item.unitCost, 0)
+  const total = subtotal + shippingValue - discountValue
   const profit = total - totalCost
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -261,7 +282,7 @@ export function NewOrderForm({
     })
   }
 
-  const selectedCustomer = customers.find(c => c.id === selectedCustomerId)
+  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -332,8 +353,8 @@ export function NewOrderForm({
                     </div>
                   ) : (
                     products.map((product) => (
-                      <SelectItem 
-                        key={product.id} 
+                      <SelectItem
+                        key={product.id}
                         value={product.id}
                         disabled={product.stock_quantity === 0} // Disable out of stock
                       >
@@ -343,11 +364,13 @@ export function NewOrderForm({
                           </span>
                           <div className="flex items-center gap-2">
                             {/* Show stock quantity */}
-                            <span className={`text-xs ${
-                              product.stock_quantity < 5 
-                                ? 'text-yellow-600 font-medium' 
-                                : 'text-muted-foreground'
-                            }`}>
+                            <span
+                              className={`text-xs ${
+                                product.stock_quantity < 5
+                                  ? 'text-yellow-600 font-medium'
+                                  : 'text-muted-foreground'
+                              }`}
+                            >
                               Stock: {product.stock_quantity}
                             </span>
                             {/* Show stock status indicator */}
@@ -388,9 +411,11 @@ export function NewOrderForm({
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span>Cost: ₹{item.unitCost}</span>
-                            <span className={`font-medium ${
-                              item.maxStock < 5 ? 'text-yellow-600' : ''
-                            }`}>
+                            <span
+                              className={`font-medium ${
+                                item.maxStock < 5 ? 'text-yellow-600' : ''
+                              }`}
+                            >
                               Available: {item.maxStock} units
                             </span>
                           </div>
@@ -402,12 +427,13 @@ export function NewOrderForm({
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                           {/* Quantity input with max validation */}
                           <div className="space-y-1">
                             <Label className="text-xs">
-                              Qty <span className="text-muted-foreground">(Max: {item.maxStock})</span>
+                              Qty{' '}
+                              <span className="text-muted-foreground">(Max: {item.maxStock})</span>
                             </Label>
                             <Input
                               type="number"
@@ -420,7 +446,7 @@ export function NewOrderForm({
                               className={`w-20 h-9 ${hasError ? 'border-red-500' : ''}`}
                             />
                           </div>
-                          
+
                           <div className="space-y-1">
                             <Label className="text-xs">Price</Label>
                             <Input
@@ -433,14 +459,14 @@ export function NewOrderForm({
                               className="w-24 h-9"
                             />
                           </div>
-                          
+
                           <div className="space-y-1">
                             <Label className="text-xs">Total</Label>
                             <p className="text-sm font-semibold h-9 flex items-center">
                               ₹{(item.quantity * item.unitPrice).toFixed(2)}
                             </p>
                           </div>
-                          
+
                           <Button
                             type="button"
                             variant="ghost"
@@ -458,7 +484,8 @@ export function NewOrderForm({
                         <Alert variant="destructive" className="mt-3">
                           <AlertTriangle className="h-4 w-4" />
                           <AlertDescription>
-                            Only {item.maxStock} units available. Quantity has been adjusted to maximum.
+                            Only {item.maxStock} units available. Quantity has been adjusted to
+                            maximum.
                           </AlertDescription>
                         </Alert>
                       )}
@@ -469,9 +496,7 @@ export function NewOrderForm({
             ) : (
               <div className="text-center py-8 border-2 border-dashed rounded-lg">
                 <Package className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                <p className="text-sm text-muted-foreground mt-2">
-                  No products added yet
-                </p>
+                <p className="text-sm text-muted-foreground mt-2">No products added yet</p>
               </div>
             )}
           </CardContent>
@@ -487,21 +512,18 @@ export function NewOrderForm({
               <div className="space-y-2">
                 <Label>Discount (₹)</Label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
                   value={discount}
-                  onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => handleNumberInput(e.target.value, setDiscount)}
                 />
               </div>
+
               <div className="space-y-2">
                 <Label>Shipping Cost (₹)</Label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
                   value={shippingCost}
-                  onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => handleNumberInput(e.target.value, setShippingCost)}
                 />
               </div>
             </div>
@@ -563,11 +585,11 @@ export function NewOrderForm({
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
-                <span>₹{shippingCost.toFixed(2)}</span>
+                <span>₹{shippingValue.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Discount</span>
-                <span className="text-red-500">-₹{discount.toFixed(2)}</span>
+                <span className="text-red-500">-₹{discountValue.toFixed(2)}</span>
               </div>
               <div className="border-t pt-2">
                 <div className="flex justify-between font-bold text-base">
@@ -595,7 +617,9 @@ export function NewOrderForm({
               type="submit"
               size="lg"
               className="w-full"
-              disabled={isPending || !selectedCustomerId || orderItems.length === 0 || hasStockIssues}
+              disabled={
+                isPending || !selectedCustomerId || orderItems.length === 0 || hasStockIssues
+              }
             >
               {isPending ? (
                 <>

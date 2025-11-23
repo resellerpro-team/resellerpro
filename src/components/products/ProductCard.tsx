@@ -48,10 +48,10 @@ export function ProductCard({ product }: { product: Product }) {
   const router = useRouter()
   const { toast } = useToast()
   const supabase = createClient()
-  
+
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  
+
   const profit = product.selling_price - product.cost_price
   const profitMargin = ((profit / product.selling_price) * 100).toFixed(1)
 
@@ -61,13 +61,15 @@ export function ProductCard({ product }: { product: Product }) {
     out_of_stock: 'bg-red-500',
   }
 
-  // ✅ DELETE HANDLER
+  // DELETE HANDLER
   const handleDelete = async () => {
     setIsDeleting(true)
 
     try {
       // Check authentication
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         toast({
           title: 'Authentication Error',
@@ -81,7 +83,7 @@ export function ProductCard({ product }: { product: Product }) {
 
       // Get all images to delete
       const imagesToDelete: string[] = []
-      
+
       if (product.images && product.images.length > 0) {
         imagesToDelete.push(...product.images)
       } else if (product.image_url) {
@@ -96,7 +98,7 @@ export function ProductCard({ product }: { product: Product }) {
             const { error: storageError } = await supabase.storage
               .from('product-images')
               .remove([path])
-            
+
             if (storageError) {
               console.error('Error deleting image:', storageError)
             }
@@ -133,7 +135,6 @@ export function ProductCard({ product }: { product: Product }) {
 
       setShowDeleteDialog(false)
       router.refresh() // Refresh the page to show updated list
-      
     } catch (error: any) {
       console.error('Unexpected error:', error)
       toast({
@@ -146,10 +147,12 @@ export function ProductCard({ product }: { product: Product }) {
     }
   }
 
-  // ✅ DUPLICATE HANDLER (Optional)
+  // DUPLICATE HANDLER (Optional)
   const handleDuplicate = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         toast({
           title: 'Authentication Error',
@@ -229,8 +232,8 @@ export function ProductCard({ product }: { product: Product }) {
             </Badge>
 
             {/* Quick Actions Menu */}
-            <div 
-              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+            <div
+              className="absolute top-3 right-3 lg:opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => e.preventDefault()}
             >
               <DropdownMenu>
@@ -257,8 +260,8 @@ export function ProductCard({ product }: { product: Product }) {
                     Duplicate
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  {/* ✅ DELETE BUTTON WITH HANDLER */}
-                  <DropdownMenuItem 
+                  {/* DELETE BUTTON WITH HANDLER */}
+                  <DropdownMenuItem
                     className="text-red-600 focus:text-red-600"
                     onClick={(e) => {
                       e.preventDefault()
@@ -282,9 +285,7 @@ export function ProductCard({ product }: { product: Product }) {
             {/* Out of Stock Overlay */}
             {product.stock_status === 'out_of_stock' && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <Badge className="bg-red-500 text-white text-sm">
-                  Out of Stock
-                </Badge>
+                <Badge className="bg-red-500 text-white text-sm">Out of Stock</Badge>
               </div>
             )}
           </div>
@@ -301,9 +302,7 @@ export function ProductCard({ product }: { product: Product }) {
                   </Badge>
                 )}
                 {product.sku && (
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {product.sku}
-                  </span>
+                  <span className="text-xs text-muted-foreground font-mono">{product.sku}</span>
                 )}
               </div>
 
@@ -327,12 +326,8 @@ export function ProductCard({ product }: { product: Product }) {
                 <div className="border-t pt-2 flex justify-between items-center">
                   <span className="text-sm font-medium text-muted-foreground">Profit:</span>
                   <div className="text-right">
-                    <div className="font-bold text-green-600">
-                      ₹{profit.toFixed(2)}
-                    </div>
-                    <div className="text-xs text-green-600/80">
-                      {profitMargin}% margin
-                    </div>
+                    <div className="font-bold text-green-600">₹{profit.toFixed(2)}</div>
+                    <div className="text-xs text-green-600/80">{profitMargin}% margin</div>
                   </div>
                 </div>
 
@@ -340,9 +335,7 @@ export function ProductCard({ product }: { product: Product }) {
                 {product.stock_quantity !== undefined && (
                   <div className="flex justify-between items-center text-sm border-t pt-2">
                     <span className="text-muted-foreground">Stock:</span>
-                    <span className="font-medium">
-                      {product.stock_quantity} units
-                    </span>
+                    <span className="font-medium">{product.stock_quantity} units</span>
                   </div>
                 )}
               </div>
@@ -356,56 +349,54 @@ export function ProductCard({ product }: { product: Product }) {
         </CardFooter>
       </Card>
 
-      {/* ✅ DELETE CONFIRMATION DIALOG - FIXED */}
-<AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle className="flex items-center gap-2">
-        <AlertTriangle className="h-5 w-5 text-destructive" />
-        Delete Product?
-      </AlertDialogTitle>
-      <AlertDialogDescription asChild>
-        <div>
-          <p>
-            Are you sure you want to delete <strong>"{product.name}"</strong>?
-          </p>
-          
-          <p className="mt-4">This will permanently delete:</p>
-          
-          <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-            <li>Product information</li>
-            <li>All product images</li>
-            <li>Sales history (if any)</li>
-          </ul>
-          
-          <p className="mt-4 text-destructive font-semibold">
-            This action cannot be undone.
-          </p>
-        </div>
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-      <AlertDialogAction
-        onClick={handleDelete}
-        disabled={isDeleting}
-        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-      >
-        {isDeleting ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Deleting...
-          </>
-        ) : (
-          <>
-            <Trash className="mr-2 h-4 w-4" />
-            Delete Forever
-          </>
-        )}
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+      {/* DELETE CONFIRMATION DIALOG - FIXED */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Product?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                <p>
+                  Are you sure you want to delete <strong>"{product.name}"</strong>?
+                </p>
+
+                <p className="mt-4">This will permanently delete:</p>
+
+                <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                  <li>Product information</li>
+                  <li>All product images</li>
+                  <li>Sales history (if any)</li>
+                </ul>
+
+                <p className="mt-4 text-destructive font-semibold">This action cannot be undone.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete Forever
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
