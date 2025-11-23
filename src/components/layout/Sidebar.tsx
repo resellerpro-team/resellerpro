@@ -140,7 +140,7 @@ export default function Sidebar({ user }: { user: UserData }) {
                 onClick={() => setMobileMenuOpen(false)}
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
-                  'hover:bg-accent hover:text-accent-foreground',
+                  'hover:bg-accent ',
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
                     : 'text-muted-foreground'
