@@ -50,7 +50,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Today's Revenue"
           value={`₹${stats?.todayRevenue.toLocaleString('en-IN') || 0}`}
@@ -251,12 +251,12 @@ function StatsCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-nowrap">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1 text-nowrap">
           {trend === 'up' ? (
             <TrendingUp className="h-3 w-3 text-green-500" />
           ) : (
