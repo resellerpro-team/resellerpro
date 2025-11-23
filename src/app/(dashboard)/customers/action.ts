@@ -4,22 +4,22 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+const optionalText = z.string().transform(v => v || '')
+
 const CustomerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   phone: z.string()
     .min(10, 'Phone number must be at least 10 digits.')
-    .transform(val => val.replace(/\s+/g, '')) // Remove all spaces
+    .transform(val => val.replace(/\s+/g, ''))
     .pipe(z.string().regex(/^[0-9]{10,15}$/, 'Invalid phone number format.')),
-  whatsapp: z.string()
-    .transform(val => val ? val.replace(/\s+/g, '') : val)
-    .optional(),
-  email: z.string().email('Invalid email address.').optional().or(z.literal('')),
-  address_line1: z.string().optional().or(z.literal('')),
-  address_line2: z.string().optional().or(z.literal('')),
-  city: z.string().optional().or(z.literal('')),
-  state: z.string().optional().or(z.literal('')),
-  pincode: z.string().optional().or(z.literal('')),
-  notes: z.string().optional().or(z.literal('')),
+  whatsapp: optionalText.optional(),
+  email: optionalText.optional(),
+  address_line1: optionalText,
+  address_line2: optionalText,
+  city: optionalText,
+  state: optionalText,
+  pincode: optionalText,
+  notes: optionalText,
 })
 
 export type FormState = {
@@ -47,8 +47,8 @@ export async function createCustomer(
     phone: formData.get('phone'),
     whatsapp: formData.get('whatsapp'),
     email: formData.get('email'),
-    address_line1: formData.get('addressLine1') || formData.get('address_line1'),
-    address_line2: formData.get('addressLine2') || formData.get('address_line2'),
+    address_line1: formData.get('address_line1'),
+    address_line2: formData.get('address_line2'),
     city: formData.get('city'),
     state: formData.get('state'),
     pincode: formData.get('pincode'),
@@ -103,6 +103,7 @@ export async function getCustomers(search?: string) {
     .from('customers')
     .select('*')
     .eq('user_id', user.id)
+    .eq("is_deleted", false)
     .order('created_at', { ascending: false })
 
   // Apply search filter if provided
@@ -147,14 +148,14 @@ export async function updateCustomer(
   })
 
   // Validate inputs
-  const validated = CustomerUpdateSchema.safeParse({
+   const validated = CustomerUpdateSchema.safeParse({
     id: formData.get('id'),
     name: formData.get('name'),
     phone: formData.get('phone'),
     whatsapp: formData.get('whatsapp'),
     email: formData.get('email'),
-    address_line1: formData.get('addressLine1') || formData.get('address_line1'),
-    address_line2: formData.get('addressLine2') || formData.get('address_line2'),
+    address_line1: formData.get('address_line1'),
+    address_line2: formData.get('address_line2'),
     city: formData.get('city'),
     state: formData.get('state'),
     pincode: formData.get('pincode'),
@@ -198,33 +199,6 @@ export async function updateCustomer(
   }
 }
 
-// --- Delete Customer ---
-export async function deleteCustomer(customerId: string): Promise<FormState> {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, message: 'Authentication required.' }
-  }
-
-  const { error } = await supabase
-    .from('customers')
-    .delete()
-    .eq('id', customerId)
-    .eq('user_id', user.id)
-
-  if (error) {
-    console.error('Delete error:', error)
-    return { success: false, message: 'Failed to delete customer.' }
-  }
-
-  revalidatePath('/customers')
-
-  return {
-    success: true,
-    message: 'Customer deleted successfully.',
-  }
-}
 
 // --- Get Single Customer ---
 export async function getCustomer(customerId: string) {
@@ -269,4 +243,57 @@ export async function getCustomerOrders(customerId: string) {
   }
 
   return orders
+}
+
+// --- Delete Customer ---
+export async function deleteCustomer(customerId: string): Promise<FormState> {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, message: 'Authentication required.' }
+  }
+
+  // Check customer's orders that are NOT delivered/cancelled
+  const { data: activeOrders, error: ordersError } = await supabase
+    .from('orders')
+    .select('id, status')
+    .eq('customer_id', customerId)
+    .eq('user_id', user.id)
+    .not('status', 'in', '("delivered","cancelled")')  // NOT allowed for delete
+
+  if (ordersError) {
+    console.error('Order check error:', ordersError)
+    return { success: false, message: 'Failed to check customer orders.' }
+  }
+
+  // If any active orders exist → block deletion
+  if (activeOrders && activeOrders.length > 0) {
+    return {
+      success: false,
+      message: 'Customer cannot be deleted until all orders are delivered or cancelled.',
+    }
+  }
+
+  // Otherwise → Soft delete customer
+  const { error } = await supabase
+    .from('customers')
+    .update({
+      is_deleted: true,
+      deleted_at: new Date().toISOString()
+    })
+    .eq('id', customerId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('Delete error:', error)
+    return { success: false, message: 'Failed to delete customer.' }
+  }
+
+  revalidatePath('/customers')
+
+  return {
+    success: true,
+    message: 'Customer deleted successfully.',
+  }
 }
