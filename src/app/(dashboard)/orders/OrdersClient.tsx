@@ -89,17 +89,19 @@ export function OrdersClient({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground">Manage and track your orders</p>
+          <p className="text-muted-foreground text-nowrap">Manage and track your orders</p>
         </div>
-        <Button asChild>
+        <div className='w-full flex justify-end'>
+            <Button asChild>
           <Link href="/orders/new">
             <Plus className="mr-2 h-4 w-4" /> New Order
           </Link>
         </Button>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Orders"
           icon={ShoppingCart}
@@ -238,7 +240,7 @@ function StatsCard({ title, icon: Icon, value, subtitle }: any) {
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-[20px] sm:text-[25px] font-bold">{value}</div>
         <p className="text-xs text-muted-foreground">{subtitle}</p>
       </CardContent>
     </Card>
