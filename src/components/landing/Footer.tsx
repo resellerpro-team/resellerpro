@@ -17,7 +17,7 @@ export default function Footer() {
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
               <img
-                src="/icons/icon-512x512_imgupscaler.ai_V1(Fast)_2K.png"
+                src="/icons/icon-512x512.png"
                 alt="ResellerPro"
                 className="w-12 h-12"
               />
@@ -74,12 +74,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="hover:text-blue-600 transition-colors">
+                <Link href="/privacy-policy" className="hover:text-blue-600 transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="hover:text-blue-600 transition-colors">
+                <Link href="/terms-and-conditions" className="hover:text-blue-600 transition-colors">
                   Terms & Conditions
                 </Link>
               </li>
