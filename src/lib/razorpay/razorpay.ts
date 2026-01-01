@@ -1,55 +1,24 @@
-// ✅ Remove 'use server' - this is a utility file, not server actions
+import Razorpay from 'razorpay'
+import crypto from 'crypto'
 
-const IS_MOCK = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID === 'mock'
+// Single Razorpay client (server-side only)
+export const razorpay = new Razorpay({
+  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+})
 
-// ✅ Mock Razorpay client (no real Razorpay needed)
-export const razorpay = {
-  orders: {
-    create: async (options: any) => {
-      if (IS_MOCK) {
-        console.log('🧪 MOCK: Creating Razorpay order', options)
-        return {
-          id: `order_mock_${Date.now()}`,
-          entity: 'order',
-          amount: options.amount,
-          currency: options.currency || 'INR',
-          receipt: options.receipt,
-          status: 'created',
-          notes: options.notes || {},
-        }
-      }
-      
-      // Real Razorpay (when you have keys)
-      const Razorpay = (await import('razorpay')).default
-      const client = new Razorpay({
-        key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-        key_secret: process.env.RAZORPAY_KEY_SECRET!,
-      })
-      return client.orders.create(options)
-    },
-  },
-}
-
+// Strict signature verification (test + live)
 export function verifyPaymentSignature(
   razorpayOrderId: string,
   razorpayPaymentId: string,
   razorpaySignature: string
 ): boolean {
-  if (IS_MOCK) {
-    console.log('🧪 MOCK: Auto-verifying payment signature')
-    return true // Always succeed in mock mode
-  }
+  const body = `${razorpayOrderId}|${razorpayPaymentId}`
 
-  // Real verification
-  const crypto = require('crypto')
-  const text = razorpayOrderId + '|' + razorpayPaymentId
-  const generated_signature = crypto
+  const expectedSignature = crypto
     .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
-    .update(text)
+    .update(body)
     .digest('hex')
-  
-  return generated_signature === razorpaySignature
-}
 
-// ✅ Regular function (not async) - this is fine now
-export const isMockMode = () => IS_MOCK
+  return expectedSignature === razorpaySignature
+}
