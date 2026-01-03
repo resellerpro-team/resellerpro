@@ -118,3 +118,7 @@
     max-width: 100% !important;
   }
 }
+
+.hide-mobile-nav {
+  display: none !important;
+}

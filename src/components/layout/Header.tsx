@@ -29,46 +29,9 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
-      {/* Search */}
-      <form onSubmit={handleSearch} className="flex-1 max-w-md">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search products, customers, orders..."
-            className="pl-10 pr-4"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </form>
-
-      {/* Actions */}
-      <div className="flex items-center gap-2">
-        {/* Quick Add */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Quick Add</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Create New</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/orders/new')}>
-              New Order
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/products/new')}>
-              New Product
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/customers/new')}>
-              New Customer
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
+    <header className="flex flex-wrap items-center justify-between px-4 border-b">
+      {/* Buttons Section (Top on mobile, Right on desktop) */}
+      <div className="order-1 sm:order-2 flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-end py-2 sm:py-0">
         {/* Theme Toggle */}
         <Button
           variant="ghost"
@@ -115,6 +78,45 @@ export default function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem className="justify-center text-primary">
               View all notifications
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Search Section (Bottom on mobile, Left on desktop) */}
+      <div className="order-2 sm:order-1 flex h-16 w-full sm:w-[60%] items-center gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <form onSubmit={handleSearch} className="flex-1 w-full">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search products, customers, orders..."
+              className="pl-8 pr-2 h-10 w-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </form>
+
+        {/* Quick Add */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" className="gap-2 h-10">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Quick Add</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>Create New</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push('/orders/new')}>
+              New Order
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/products/new')}>
+              New Product
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/customers/new')}>
+              New Customer
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

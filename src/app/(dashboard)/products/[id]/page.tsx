@@ -42,7 +42,7 @@ export default async function ProductDetailsPage(props: { params: Promise<{ id: 
         <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight">{product.name}</h1>
           <p className="text-muted-foreground">
-            {product.sku ? `SKU: ${product.sku}` : `ID: ${id}`}
+            {product.sku ? `SKU: ${product.sku}` : ''}
           </p>
         </div>
         <Button asChild>

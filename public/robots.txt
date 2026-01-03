@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://resellerpro.in
+
+# Sitemaps
+Sitemap: https://resellerpro.in/sitemap.xml

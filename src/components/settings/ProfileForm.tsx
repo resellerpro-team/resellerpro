@@ -29,7 +29,6 @@ export default function ProfileForm({ user }: { user: UserData }) {
   const [formData, setFormData] = useState({
     full_name: user.full_name,
     phone: user.phone,
-    business_name: user.business_name,
   })
 
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url)
@@ -110,7 +109,6 @@ export default function ProfileForm({ user }: { user: UserData }) {
       data.append('userId', user.id)
       data.append('full_name', formData.full_name)
       data.append('phone', formData.phone)
-      data.append('business_name', formData.business_name)
 
       const result = await updateProfile(data)
 
@@ -248,7 +246,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
         />
       </div>
 
-      {/* Business Name */}
+      {/* Business Name (Read-only) */}
       <div className="space-y-2">
         <Label htmlFor="business_name">
           <div className="flex items-center gap-2">
@@ -258,12 +256,14 @@ export default function ProfileForm({ user }: { user: UserData }) {
         </Label>
         <Input
           id="business_name"
-          name="business_name"
-          value={formData.business_name}
-          onChange={handleInputChange}
-          placeholder="Enter your business name"
-          disabled={isPending}
+          type="text"
+          value={user.business_name}
+          disabled
+          className="bg-muted"
         />
+        <p className="text-xs text-muted-foreground">
+          Business name can be edited from business settings.
+        </p>
       </div>
 
       {/* Account Info */}

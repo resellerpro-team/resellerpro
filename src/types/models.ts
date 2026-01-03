@@ -65,6 +65,8 @@ export interface Product {
 }
 
 export interface Order {
+  profit: number
+  total_amount: number
   id: string
   order_number: string
   user_id: string

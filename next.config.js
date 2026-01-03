@@ -1,19 +1,29 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+});
+
+const nextConfig = withPWA({
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.supabase.co', // Allows images from your Supabase storage
+        hostname: '**.supabase.co',
       },
     ],
   },
-  // This is the corrected format for enabling server actions
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb', // Optional: Increase body size limit if needed
+      bodySizeLimit: '10mb',
     },
   },
-}
+  reactStrictMode: true,
 
-module.exports = nextConfig
+  // 👇 Add this line to tell Next.js to use Webpack instead of Turbopack
+  turbopack: {},
+});
+
+module.exports = nextConfig;
