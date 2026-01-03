@@ -94,9 +94,9 @@
 
 'use client'
 
-import { useFormStatus } from 'react-dom'
+import { useFormStatus, useFormState } from 'react-dom'
 import { useEffect, useState } from 'react'
-import { useActionState } from 'react' // Change this import
+// import { useActionState } from 'react' // Change this import
 import Link from 'next/link'
 import { login, type LoginFormState } from '@/app/(auth)/login/actions'
 import { Eye, EyeOff, Loader2, Mail, Lock, Sparkles } from 'lucide-react'
@@ -120,7 +120,7 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
 
   const initialState: LoginFormState = { success: false, message: '', errors: {} }
-  const [state, formAction] = useActionState(login, initialState) // Changed from useFormState
+  const [state, formAction] = useFormState(login, initialState) // Changed from useFormState
 
   useEffect(() => {
     if (!state.success && state.message) {
