@@ -79,7 +79,7 @@ export default function LoginForm() {
         </CardContent>
         <CardFooter className="flex-col space-y-4">
           <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            Don't have an account?{' '}
             <Link href="/signup" className="text-primary font-medium hover:underline">Sign up for free</Link>
           </p>
         </CardFooter>
