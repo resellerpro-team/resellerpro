@@ -47,6 +47,14 @@ export type DashboardAlerts = {
   monthlyTarget: number
 }
 
+export type Enquiry = {
+  id: string
+  customerName: string
+  message: string
+  date: string
+  status: 'new' | 'read' | 'replied'
+}
+
 // Internal types for database responses
 type OrderBasic = {
   total_amount: number
@@ -106,7 +114,7 @@ export async function getDashboardStats(): Promise<DashboardStats | null> {
     const now = new Date()
     const todayStart = new Date(now.setHours(0, 0, 0, 0)).toISOString()
     const todayEnd = new Date(now.setHours(23, 59, 59, 999)).toISOString()
-    
+
     const yesterday = new Date(now)
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayStart = new Date(yesterday.setHours(0, 0, 0, 0)).toISOString()
@@ -141,11 +149,11 @@ export async function getDashboardStats(): Promise<DashboardStats | null> {
     const yesterdayOrdersCount = yesterdayOrders?.length || 0
 
     // Calculate percentage changes
-    const revenueChange = yesterdayRevenue > 0 
+    const revenueChange = yesterdayRevenue > 0
       ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100)
       : todayRevenue > 0 ? 100 : 0
-      
-    const profitChange = yesterdayProfit > 0 
+
+    const profitChange = yesterdayProfit > 0
       ? Math.round(((todayProfit - yesterdayProfit) / yesterdayProfit) * 100)
       : todayProfit > 0 ? 100 : 0
 
@@ -256,8 +264,8 @@ export async function getRecentOrders(): Promise<RecentOrder[]> {
       // Get first product or show count if multiple
       const items = order.order_items || []
       const firstProduct = items[0]?.product_name || 'Unknown Product'
-      const productDisplay = items.length > 1 
-        ? `${firstProduct} × ${items.length}` 
+      const productDisplay = items.length > 1
+        ? `${firstProduct} × ${items.length}`
         : firstProduct
 
       // Calculate time ago
@@ -267,7 +275,7 @@ export async function getRecentOrders(): Promise<RecentOrder[]> {
       const diffMins = Math.floor(diffMs / 60000)
       const diffHours = Math.floor(diffMs / 3600000)
       const diffDays = Math.floor(diffMs / 86400000)
-      
+
       let timeAgo = ''
       if (diffMins < 1) {
         timeAgo = 'Just now'
@@ -394,7 +402,7 @@ export async function getTopProducts(): Promise<TopProduct[]> {
       .slice(0, 4)
       .map(product => {
         const trend: 'up' | 'down' = product.sold >= product.lastMonthSold ? 'up' : 'down'
-        
+
         return {
           id: product.id,
           name: product.name,
@@ -419,7 +427,7 @@ export async function getTopProducts(): Promise<TopProduct[]> {
 export async function getDashboardAlerts(): Promise<DashboardAlerts> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return {
       pendingOrders: 0,
@@ -456,7 +464,7 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       .returns<{ total_amount: number }[]>()
 
     const monthlyRevenue = monthlyOrders?.reduce(
-      (sum, order) => sum + Number(order.total_amount || 0), 
+      (sum, order) => sum + Number(order.total_amount || 0),
       0
     ) || 0
 
@@ -476,4 +484,13 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       monthlyTarget: 50000,
     }
   }
+}
+
+/**
+ * Fetches enquiries (mock data for now)
+ */
+export async function getEnquiries(): Promise<Enquiry[]> {
+  // In a real app, this would fetch from a 'messages' or 'enquiries' table
+  // For now, we'll return mock data as requested
+  return []
 }

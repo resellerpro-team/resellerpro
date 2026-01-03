@@ -20,7 +20,9 @@ import {
   getRecentOrders,
   getTopProducts,
   getDashboardAlerts,
+  getEnquiries,
 } from './action'
+import { EnquiriesCard } from '@/components/dashboard/EnquiriesCard'
 
 export const metadata = {
   title: 'Dashboard - ResellerPro',
@@ -29,12 +31,13 @@ export const metadata = {
 
 export default async function DashboardPage() {
   // Fetch all data in parallel for better performance
-  const [stats, revenueData, recentOrders, topProducts, alerts] = await Promise.all([
+  const [stats, revenueData, recentOrders, topProducts, alerts, enquiries] = await Promise.all([
     getDashboardStats(),
     getRevenueChartData(),
     getRecentOrders(),
     getTopProducts(),
     getDashboardAlerts(),
+    getEnquiries(),
   ])
 
   return (
@@ -47,8 +50,13 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* Enquiries Section */}
+      <section>
+        <EnquiriesCard enquiries={enquiries} />
+      </section>
+
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <StatsCard
           title="Today's Revenue"
           value={`₹${stats?.todayRevenue.toLocaleString('en-IN') || 0}`}
@@ -63,74 +71,6 @@ export default async function DashboardPage() {
           trend={stats?.profitChange && stats.profitChange >= 0 ? 'up' : 'down'}
           icon={TrendingUp}
         />
-        <StatsCard
-          title="Orders"
-          value={stats?.todayOrders.toString() || '0'}
-          change={`${stats?.ordersChange && stats.ordersChange > 0 ? '+' : ''}${stats?.ordersChange || 0}`}
-          trend={stats?.ordersChange && stats.ordersChange >= 0 ? 'up' : 'down'}
-          icon={ShoppingCart}
-        />
-        <StatsCard
-          title="Customers"
-          value={stats?.totalCustomers.toString() || '0'}
-          change={`${stats?.customersChange && stats.customersChange > 0 ? '+' : ''}${stats?.customersChange || 0}`}
-          trend={stats?.customersChange && stats.customersChange >= 0 ? 'up' : 'down'}
-          icon={Users}
-        />
-      </div>
-
-      {/* Main Grid */}
-      <div className="grid gap-4 lg:grid-cols-7">
-        {/* Revenue Chart */}
-        <Card className="lg:col-span-4 h-full">
-          <CardHeader>
-            <CardTitle>Revenue Overview</CardTitle>
-            <CardDescription>Your revenue for the last 7 days</CardDescription>
-          </CardHeader>
-          <CardContent className="h-full">
-            <div className="flex items-start justify-start w-full h-full rounded-lg">
-              <div className="text-muted-foreground w-full h-full">
-                <RevenueChart data={revenueData} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Recent Orders</CardTitle>
-            <CardDescription>Latest 5 orders from customers</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentOrders.length > 0 ? (
-              <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <RecentOrderItem
-                    key={order.id}
-                    customer={order.customer}
-                    amount={`₹${order.amount.toLocaleString('en-IN')}`}
-                    product={order.product}
-                    time={order.time}
-                    status={order.status}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No orders yet</p>
-                <p className="text-sm">Create your first order to get started</p>
-              </div>
-            )}
-            <Button variant="ghost" className="w-full mt-4" asChild>
-              <Link href="/orders">
-                View All Orders
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Quick Actions & Alerts */}
@@ -199,6 +139,62 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Main Grid */}
+      <div className="grid gap-4 lg:grid-cols-7">
+        {/* Revenue Chart */}
+        <Card className="lg:col-span-4 h-full">
+          <CardHeader>
+            <CardTitle>Revenue Overview</CardTitle>
+            <CardDescription>Your revenue for the last 7 days</CardDescription>
+          </CardHeader>
+          <CardContent className="h-full">
+            <div className="flex items-start justify-start w-full h-full rounded-lg">
+              <div className="text-muted-foreground w-full h-full">
+                <RevenueChart data={revenueData} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity */}
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Recent Orders</CardTitle>
+            <CardDescription>Latest 5 orders from customers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentOrders.length > 0 ? (
+              <div className="space-y-4">
+                {recentOrders.map((order) => (
+                  <RecentOrderItem
+                    key={order.id}
+                    customer={order.customer}
+                    amount={`₹${order.amount.toLocaleString('en-IN')}`}
+                    product={order.product}
+                    time={order.time}
+                    status={order.status}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No orders yet</p>
+                <p className="text-sm">Create your first order to get started</p>
+              </div>
+            )}
+            <Button variant="ghost" className="w-full mt-4" asChild>
+              <Link href="/orders">
+                View All Orders
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+
 
       {/* Top Products */}
       <Card>
