@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useActionState } from 'react'
+import { useFormState, useFormStatus } from 'react-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,11 +32,27 @@ interface EditCustomerFormProps {
   customerId: string
 }
 
+function SubmitButton({ customerId }: { customerId: string }) {
+  const { pending } = useFormStatus()
+  return (
+    <div className="flex justify-end gap-2 pt-4">
+      <Button variant="outline" asChild type="button">
+        <Link href={`/customers/${customerId}`}>Cancel</Link>
+      </Button>
+
+      <Button type="submit" disabled={pending}>
+        <Save className="mr-2 h-4 w-4" />
+        {pending ? 'Saving...' : 'Save Changes'}
+      </Button>
+    </div>
+  )
+}
+
 export default function EditCustomerForm({ customer, customerId }: EditCustomerFormProps) {
   const router = useRouter()
   const { toast } = useToast()
 
-  const [state, formAction, isPending] = useActionState(updateCustomer, {
+  const [state, formAction] = useFormState(updateCustomer, {
     success: false,
     message: '',
   })
@@ -64,7 +80,7 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-6">
-          
+
           {/* Hidden ID Field */}
           <input type="hidden" name="id" value={customerId} />
 
@@ -196,16 +212,7 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" asChild type="button">
-              <Link href={`/customers/${customerId}`}>Cancel</Link>
-            </Button>
-
-            <Button type="submit" disabled={isPending}>
-              <Save className="mr-2 h-4 w-4" />
-              {isPending ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
+          <SubmitButton customerId={customerId} />
 
         </form>
       </CardContent>
