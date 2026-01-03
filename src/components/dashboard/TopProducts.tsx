@@ -1,11 +1,9 @@
-import { getTopProducts } from '@/app/(dashboard)/dashboard/action'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Package, TrendingUp, TrendingDown } from 'lucide-react'
 // import { getTopProducts, type TopProduct } from '@/app/dashboard/action'
 
-export async function TopProductsCard() {
-  const topProducts = await getTopProducts()
-  
+export function TopProductsCard({ topProducts }: { topProducts: import('@/app/(dashboard)/dashboard/action').TopProduct[] }) {
   return (
     <Card>
       <CardHeader>
