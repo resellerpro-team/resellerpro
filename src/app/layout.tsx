@@ -4,7 +4,7 @@ import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 // Update the import path if the file is located elsewhere, for example:
 import { ThemeProvider } from '../components/providers/theme-provider'
-import { AppLoader } from '@/components/onboarding/PremiumLoader'
+// import { AppLoader } from '@/components/onboarding/PremiumLoader'
 import { Providers } from './providers'
 // Or, if using absolute imports, ensure your tsconfig.json has the correct "paths" and "baseUrl" set.
 
@@ -80,7 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={inter.className}>
-        <AppLoader />
+        {/* <AppLoader /> */}
         <Providers>
           <ThemeProvider>
             {children}

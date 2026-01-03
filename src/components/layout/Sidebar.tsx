@@ -118,7 +118,7 @@ export default function Sidebar({ user }: { user: UserData }) {
           </Button>
           <div className="flex flex-col">
             <span className="text-lg font-bold">ResellerPro</span>
-            <span className="text-xs text-muted-foreground">Manage with ease - testing workflow</span>
+            <span className="text-xs text-muted-foreground">Manage with ease</span>
           </div>
 
           {/* Close (X) button – top-right inside sidebar */}
