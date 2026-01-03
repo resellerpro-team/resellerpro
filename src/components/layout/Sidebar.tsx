@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
 import {
   LayoutDashboard,
@@ -55,6 +55,7 @@ type UserData = {
 export default function Sidebar({ user }: { user: UserData }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
 
   const getInitials = (name?: string | null) => {
     if (!name) return 'U'
@@ -110,9 +111,11 @@ export default function Sidebar({ user }: { user: UserData }) {
       >
         {/* Header / Logo */}
         <div className="relative flex h-16 items-center gap-2 border-b px-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Sparkles className="h-6 w-6" />
-          </div>
+          <Button onClick={() => router.push('/dashboard')}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Sparkles className="h-6 w-6" />
+            </div>
+          </Button>
           <div className="flex flex-col">
             <span className="text-lg font-bold">ResellerPro</span>
             <span className="text-xs text-muted-foreground">Manage with ease</span>
