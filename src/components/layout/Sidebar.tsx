@@ -111,11 +111,11 @@ export default function Sidebar({ user }: { user: UserData }) {
       >
         {/* Header / Logo */}
         <div className="relative flex h-16 items-center gap-2 border-b px-6">
-          <Button onClick={() => router.push('/dashboard')}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Link href="/dashboard">
+            <div className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Sparkles className="h-6 w-6" />
             </div>
-          </Button>
+          </Link>
           <div className="flex flex-col">
             <span className="text-lg font-bold">ResellerPro</span>
             <span className="text-xs text-muted-foreground">Manage with ease</span>
