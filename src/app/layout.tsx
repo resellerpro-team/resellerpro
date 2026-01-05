@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
@@ -38,8 +38,11 @@ export const metadata: Metadata = {
     images: ['https://resellerpro.in/og-image.png'],
   },
   manifest: '/manifest.json',
-  themeColor: '#0f172a',
   icons: { icon: '/icons/icon-192x192.png', apple: '/icons/icon-512x512.png' },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0f172a',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -82,7 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={inter.className}>
         {/* <AppLoader /> */}
         <Providers>
-          <ThemeProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}
             <Toaster />
           </ThemeProvider>
