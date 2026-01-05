@@ -50,8 +50,7 @@ export function EnquiryRow({ enquiry }: EnquiryRowProps) {
     const updateStatus = (status: string) => {
         updateEnquiry({
             id: enquiry.id,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            status: status as any
+            status: status as "new" | "needs_follow_up" | "converted" | "dropped",
         }, {
             onSuccess: () => {
                 toast({
