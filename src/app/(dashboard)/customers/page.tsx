@@ -1,7 +1,12 @@
 import { CustomersClient } from "@/components/customers/CustomersClient";
+import { Suspense } from "react";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export default function CustomersPage() {
-  return <CustomersClient />;
+  return (
+    <Suspense>
+      <CustomersClient />
+    </Suspense>
+  );
 }

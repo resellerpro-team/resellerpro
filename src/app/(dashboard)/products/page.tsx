@@ -1,7 +1,12 @@
 import { ProductsClient } from "./ProductsClient";
+import { Suspense } from "react";
 
-export const dynamic = "force-static"; 
+export const dynamic = "force-dynamic";
 
 export default function ProductsPage() {
-  return <ProductsClient />;
+  return (
+    <Suspense>
+      <ProductsClient />
+    </Suspense>
+  );
 }
