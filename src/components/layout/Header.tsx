@@ -109,6 +109,9 @@ export default function Header() {
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuLabel>Create New</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push('/enquiries/new')}>
+              New Enquiry
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/orders/new')}>
               New Order
             </DropdownMenuItem>
