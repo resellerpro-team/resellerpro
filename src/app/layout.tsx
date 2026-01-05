@@ -1,10 +1,10 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 // Update the import path if the file is located elsewhere, for example:
 import { ThemeProvider } from '../components/providers/theme-provider'
-import { AppLoader } from '@/components/onboarding/PremiumLoader'
+// import { AppLoader } from '@/components/onboarding/PremiumLoader'
 import { Providers } from './providers'
 // Or, if using absolute imports, ensure your tsconfig.json has the correct "paths" and "baseUrl" set.
 
@@ -38,8 +38,11 @@ export const metadata: Metadata = {
     images: ['https://resellerpro.in/og-image.png'],
   },
   manifest: '/manifest.json',
-  themeColor: '#0f172a',
   icons: { icon: '/icons/icon-192x192.png', apple: '/icons/icon-512x512.png' },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0f172a',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -80,9 +83,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={inter.className}>
-        <AppLoader />
+        {/* <AppLoader /> */}
         <Providers>
-          <ThemeProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}
             <Toaster />
           </ThemeProvider>

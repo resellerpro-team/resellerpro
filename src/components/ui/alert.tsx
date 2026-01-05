@@ -21,7 +21,7 @@ const alertVariants = cva(
 
 export interface AlertProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof alertVariants> {}
+  VariantProps<typeof alertVariants> { }
 
 export function Alert({ className, variant, ...props }: AlertProps) {
   return (
@@ -40,3 +40,15 @@ export const AlertDescription = React.forwardRef<
   <div className={cn("text-sm [&_p]:leading-relaxed", className)} {...props} />
 ))
 AlertDescription.displayName = "AlertDescription"
+
+export const AlertTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h5
+    ref={ref}
+    className={cn("mb-1 font-medium leading-none tracking-tight", className)}
+    {...props}
+  />
+))
+AlertTitle.displayName = "AlertTitle"
