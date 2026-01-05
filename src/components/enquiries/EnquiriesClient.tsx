@@ -57,7 +57,9 @@ export function EnquiriesClient() {
                     <h1 className="text-3xl font-bold tracking-tight">Enquiries</h1>
                     <p className="text-muted-foreground">Manage ongoing customer conversations and leads</p>
                 </div>
-                {/* <Button>Create Manual Enquiry</Button> */}
+                <Button onClick={() => router.push('/enquiries/new')}>
+                    <MessageSquare className="mr-2 h-4 w-4" /> Add Enquiry
+                </Button>
             </div>
 
             {/* TWO: Stats Cards */}

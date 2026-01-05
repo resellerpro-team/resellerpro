@@ -28,8 +28,15 @@ interface EnquiryRowProps {
     enquiry: Enquiry;
 }
 
+import { useUpdateEnquiry } from "@/lib/react-query/hooks/useEnquiries";
+import { useRouter } from "next/navigation";
+
+// ... (keep imports)
+
 export function EnquiryRow({ enquiry }: EnquiryRowProps) {
     const { toast } = useToast();
+    const router = useRouter();
+    const { mutate: updateEnquiry } = useUpdateEnquiry();
 
     const copyReply = () => {
         const text = `Hi ${enquiry.customer_name}, thanks for your enquiry about "${enquiry.message}".`;
@@ -41,11 +48,25 @@ export function EnquiryRow({ enquiry }: EnquiryRowProps) {
     };
 
     const updateStatus = (status: string) => {
-        toast({
-            title: "Status Updated",
-            description: `Enquiry marked as ${status}. (Mock Action)`,
+        updateEnquiry({
+            id: enquiry.id,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            status: status as any
+        }, {
+            onSuccess: () => {
+                toast({
+                    title: "Status Updated",
+                    description: `Enquiry marked as ${status.replace(/_/g, " ")}.`,
+                });
+            },
+            onError: (error) => {
+                toast({
+                    title: "Error",
+                    description: error.message,
+                    variant: "destructive",
+                });
+            }
         });
-        // TODO: Implement mutation to update status
     };
 
     const getStatusColor = (status: string) => {
@@ -97,6 +118,9 @@ export function EnquiryRow({ enquiry }: EnquiryRowProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => router.push(`/enquiries/${enquiry.id}`)}>
+                            <MessageCircle className="mr-2 h-4 w-4" /> Edit Details
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={copyReply}>
                             <MessageCircle className="mr-2 h-4 w-4" /> Copy WhatsApp Reply
                         </DropdownMenuItem>
