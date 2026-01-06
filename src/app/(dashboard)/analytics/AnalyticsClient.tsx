@@ -150,16 +150,14 @@ export function AnalyticsClient() {
                             }
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="overflow-x-auto">
-                        <div className="min-w-[500px]">
-                            <SalesProfitChart
-                                orders={orders}
-                                dateRange={{
-                                    from: dateRanges?.hasFilter && from ? from : new Date(new Date().setDate(new Date().getDate() - 29)).toISOString(),
-                                    to: dateRanges?.hasFilter && to ? to : new Date().toISOString()
-                                }}
-                            />
-                        </div>
+                    <CardContent className="h-[350px]">
+                        <SalesProfitChart
+                            orders={orders}
+                            dateRange={{
+                                from: dateRanges?.hasFilter && from ? from : new Date(new Date().setDate(new Date().getDate() - 29)).toISOString(),
+                                to: dateRanges?.hasFilter && to ? to : new Date().toISOString()
+                            }}
+                        />
                     </CardContent>
                 </Card>
 
@@ -173,10 +171,8 @@ export function AnalyticsClient() {
                             }
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="overflow-x-auto">
-                        <div className="min-w-[500px]">
-                            <RevenueByCategoryChart orders={orders} />
-                        </div>
+                    <CardContent className="h-[350px]">
+                        <RevenueByCategoryChart orders={orders} />
                     </CardContent>
                 </Card>
 
@@ -187,7 +183,7 @@ export function AnalyticsClient() {
                             Distribution of payment statuses
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="h-[350px]">
                         <PaymentStatusChart orders={orders} />
                     </CardContent>
                 </Card>
@@ -199,7 +195,7 @@ export function AnalyticsClient() {
                             Current order processing pipeline
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="h-[350px]">
                         <OrderStatusChart orders={orders} />
                     </CardContent>
                 </Card>
@@ -258,10 +254,10 @@ function StatsCard({
                 <div className="text-2xl font-bold">{value}</div>
                 <p
                     className={`text-xs ${trend === 'up'
-                            ? 'text-green-600'
-                            : trend === 'down'
-                                ? 'text-red-600'
-                                : 'text-muted-foreground'
+                        ? 'text-green-600'
+                        : trend === 'down'
+                            ? 'text-red-600'
+                            : 'text-muted-foreground'
                         }`}
                 >
                     {change}

@@ -26,7 +26,7 @@ export function OrderStatusChart({ orders }: OrderStatusChartProps) {
     if (!orders || orders.length === 0) return []
 
     const statusCount: Record<string, number> = {}
-    
+
     orders.forEach(order => {
       const status = order.status || 'pending'
       if (!statusCount[status]) {
@@ -34,7 +34,7 @@ export function OrderStatusChart({ orders }: OrderStatusChartProps) {
       }
       statusCount[status]++
     })
-    
+
     return STATUS_ORDER
       .filter(status => statusCount[status] > 0)
       .map(status => ({
@@ -53,15 +53,15 @@ export function OrderStatusChart({ orders }: OrderStatusChartProps) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
+    <ResponsiveContainer width="100%" height="100%">
       <BarChart data={chartData}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-        <XAxis 
-          dataKey="status" 
+        <XAxis
+          dataKey="status"
           className="text-xs"
           tick={{ fill: 'hsl(var(--muted-foreground))' }}
         />
-        <YAxis 
+        <YAxis
           className="text-xs"
           tick={{ fill: 'hsl(var(--muted-foreground))' }}
           allowDecimals={false}

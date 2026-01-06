@@ -21,13 +21,13 @@ export function SalesProfitChart({ orders, dateRange }: SalesProfitChartProps) {
 
     const from = parseISO(dateRange.from)
     const to = parseISO(dateRange.to)
-    
+
     // Get all days in the range
     const days = eachDayOfInterval({ start: from, end: to })
-    
+
     // Group orders by date
     const ordersByDate: Record<string, { sales: number; profit: number }> = {}
-    
+
     orders.forEach(order => {
       const date = format(startOfDay(parseISO(order.created_at)), 'yyyy-MM-dd')
       if (!ordersByDate[date]) {
@@ -36,12 +36,12 @@ export function SalesProfitChart({ orders, dateRange }: SalesProfitChartProps) {
       ordersByDate[date].sales += parseFloat(order.total_amount || '0')
       ordersByDate[date].profit += parseFloat(order.profit || '0')
     })
-    
+
     // Create chart data for all days
     return days.map(day => {
       const dateKey = format(day, 'yyyy-MM-dd')
       const data = ordersByDate[dateKey] || { sales: 0, profit: 0 }
-      
+
       return {
         date: format(day, 'MMM dd'),
         sales: Math.round(data.sales),
@@ -59,15 +59,15 @@ export function SalesProfitChart({ orders, dateRange }: SalesProfitChartProps) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
+    <ResponsiveContainer width="100%" height="100%">
       <LineChart data={chartData}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-        <XAxis 
-          dataKey="date" 
+        <XAxis
+          dataKey="date"
           className="text-xs"
           tick={{ fill: 'hsl(var(--muted-foreground))' }}
         />
-        <YAxis 
+        <YAxis
           className="text-xs"
           tick={{ fill: 'hsl(var(--muted-foreground))' }}
           tickFormatter={(value) => `₹${value.toLocaleString('en-IN')}`}
