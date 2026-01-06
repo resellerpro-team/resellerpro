@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -30,30 +30,44 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { OrdersTable } from '@/components/orders/OrderTable'
+import { useOrders } from '@/lib/react-query/hooks/useOrders'
 
-export function OrdersClient({
-  initialOrders,
-  stats,
-  statuses,
-  payments,
-  currentSort,
-  currentStatus,
-  currentPayment,
-  currentSearch,
-}: {
-  initialOrders: any[]
-  stats: any
-  statuses: string[]
-  payments: string[]
-  currentSort: string
-  currentStatus: string
-  currentPayment: string
-  currentSearch: string
-}) {
+export function OrdersClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
-  const [search, setSearch] = useState(currentSearch)
+
+  const searchParam = searchParams.get('search') || ''
+  const statusParam = searchParams.get('status') || 'all'
+  const paymentParam = searchParams.get('payment') || 'all'
+  const sortParam = searchParams.get('sort') || '-created_at'
+
+  const [search, setSearch] = useState(searchParam)
+
+  // 📡 Fetch Data via React Query
+  const { data: orders = [], isLoading } = useOrders({
+    search: searchParam,
+    status: statusParam === 'all' ? undefined : statusParam,
+    payment: paymentParam === 'all' ? undefined : paymentParam,
+    sort: sortParam
+  })
+
+  // 📊 Calculate Stats (Memoized)
+  const stats = useMemo(() => {
+    const totalOrders = orders.length
+    const totalRevenue = orders.reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0)
+    const totalProfit = orders.reduce((sum: number, o: any) => sum + (o.total_profit || 0), 0)
+    const pendingOrders = orders.filter((o: any) => o.status === 'pending').length
+    const completedOrders = orders.filter((o: any) => o.status === 'completed').length
+
+    return {
+      totalOrders,
+      totalRevenue,
+      totalProfit,
+      pendingOrders,
+      completedOrders,
+    }
+  }, [orders])
 
   // 🔁 Update URL with new params
   const updateURL = (params: Record<string, string>) => {
@@ -65,14 +79,11 @@ export function OrdersClient({
     startTransition(() => router.push(`/orders?${newParams.toString()}`))
   }
 
-  // 🔍 Debounced live search (auto updates after 500ms)
+  // 🔍 Debounced live search
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       const trimmed = search.trim()
-
-      // 🧠 Skip invalid searches (like only '#' or empty)
-      if (trimmed === '' || trimmed === '#') return
-
+      if (trimmed === searchParam) return // Avoid redundant updates
       updateURL({ search: trimmed })
     }, 500)
 
@@ -92,11 +103,11 @@ export function OrdersClient({
           <p className="text-muted-foreground text-nowrap">Manage and track your orders</p>
         </div>
         <div className='w-full flex justify-end'>
-            <Button asChild>
-          <Link href="/orders/new">
-            <Plus className="mr-2 h-4 w-4" /> New Order
-          </Link>
-        </Button>
+          <Button asChild>
+            <Link href="/orders/new">
+              <Plus className="mr-2 h-4 w-4" /> New Order
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -111,13 +122,13 @@ export function OrdersClient({
         <StatsCard
           title="Revenue"
           icon={IndianRupee}
-          value={`₹${stats.totalRevenue.toFixed(2)}`}
+          value={`₹${stats.totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
           subtitle="Total income"
         />
         <StatsCard
           title="Profit"
           icon={TrendingUp}
-          value={`₹${stats.totalProfit.toFixed(2)}`}
+          value={`₹${stats.totalProfit.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
           subtitle="Net profit"
         />
         <StatsCard
@@ -145,16 +156,15 @@ export function OrdersClient({
             {/*  Smooth spinner animation */}
             <div className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 flex items-center justify-center">
               <Loader2
-              style={{ animationDuration: '1.1s' }}
-                className={`h-4 w-4 text-muted-foreground transition-opacity duration-300 ${
-                  isPending ? 'opacity-100 animate-spin' : 'opacity-0'
-                }`}
+                style={{ animationDuration: '1.1s' }}
+                className={`h-4 w-4 text-muted-foreground transition-opacity duration-300 ${isLoading || isPending ? 'opacity-100 animate-spin' : 'opacity-0'
+                  }`}
               />
             </div>
           </div>
 
           {/* Status Filter */}
-          <Select value={currentStatus} onValueChange={handleStatusChange} disabled={isPending}>
+          <Select value={statusParam} onValueChange={handleStatusChange} disabled={isPending}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
@@ -169,7 +179,7 @@ export function OrdersClient({
           </Select>
 
           {/* Payment Filter */}
-          <Select value={currentPayment} onValueChange={handlePaymentChange} disabled={isPending}>
+          <Select value={paymentParam} onValueChange={handlePaymentChange} disabled={isPending}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="All Payments" />
             </SelectTrigger>
@@ -211,13 +221,17 @@ export function OrdersClient({
 
       {/* Orders Table */}
       <Card className='select-none'>
-          {initialOrders.length > 0 ? (
-            <div
-              className={`transition-all duration-300 ${
-                isPending ? 'opacity-60 blur-[1px]' : 'opacity-100'
+        {orders.length > 0 ? (
+          <div
+            className={`transition-all duration-300 ${isLoading || isPending ? 'opacity-60 blur-[1px]' : 'opacity-100'
               }`}
-            >
-              <OrdersTable orders={initialOrders} />
+          >
+            <OrdersTable orders={orders} />
+          </div>
+        ) : (
+          isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">
@@ -225,7 +239,8 @@ export function OrdersClient({
               <p className="text-lg font-medium">No orders found</p>
               <p className="text-sm">Try adjusting filters or search terms</p>
             </div>
-          )}
+          )
+        )}
       </Card>
     </div>
   )
