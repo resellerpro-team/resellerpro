@@ -41,17 +41,63 @@ export async function PATCH(
 
     const body = await req.json()
 
-    // Prevent updating restricted fields
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id: _, user_id, created_at, ...updates } = body
+    const { data: existing } = await supabase
+        .from("enquiries")
+        .select("status")
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .single()
+
+    if (!existing) {
+        return NextResponse.json({ error: "Enquiry not found" }, { status: 404 })
+    }
+
+    const nextStatus = body.status
+    const currentStatus = existing.status
+
+    if (nextStatus) {
+        if (["converted", "dropped"].includes(currentStatus)) {
+            return NextResponse.json(
+                { error: "This enquiry is already closed" },
+                { status: 400 }
+            )
+        }
+
+        if (nextStatus === "needs_follow_up" && currentStatus !== "new") {
+            return NextResponse.json(
+                { error: "Only new enquiries can be marked as contacted" },
+                { status: 400 }
+            )
+        }
+
+        if (nextStatus === "converted" && currentStatus !== "needs_follow_up") {
+            return NextResponse.json(
+                { error: "Only contacted enquiries can be converted" },
+                { status: 400 }
+            )
+        }
+
+        if (
+            nextStatus === "dropped" &&
+            !["new", "needs_follow_up"].includes(currentStatus)
+        ) {
+            return NextResponse.json(
+                { error: "This enquiry cannot be closed" },
+                { status: 400 }
+            )
+        }
+    }
+
+    const { user_id, created_at, updated_at, ...updates } = body
 
     const { data, error } = await supabase
-        .from('enquiries')
-        .update({ ...updates, last_updated: new Date().toISOString() })
-        .eq('id', id)
-        .eq('user_id', user.id)
+        .from("enquiries")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("user_id", user.id)
         .select()
         .single()
+
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 })
