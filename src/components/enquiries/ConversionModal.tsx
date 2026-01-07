@@ -153,7 +153,7 @@ function ConversionFormContent({ enquiry, existingCustomer, onClose }: { enquiry
     const router = useRouter();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
-    // @ts-ignore
+    // @ts-expect-error - useProducts definition might be slightly off
     const { data: productsData } = useProducts();
     const products = productsData || [];
 
@@ -228,7 +228,7 @@ function ConversionFormContent({ enquiry, existingCustomer, onClose }: { enquiry
     };
 
     const addProduct = (productId: string) => {
-        // @ts-ignore
+        // @ts-expect-error - products array type check
         const product = products.find(p => p.id === productId);
         if (!product) return;
 
@@ -406,7 +406,7 @@ function ConversionFormContent({ enquiry, existingCustomer, onClose }: { enquiry
                                         <SelectValue placeholder="Search product..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {/* @ts-ignore */}
+                                        {/* @ts-expect-error - products map type check */}
                                         {products.map((p) => (
                                             <SelectItem key={p.id} value={p.id} disabled={p.stock_quantity === 0}>
                                                 {p.name} - ₹{p.selling_price}
