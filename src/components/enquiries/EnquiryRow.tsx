@@ -171,7 +171,13 @@ export function EnquiryRow({ enquiry }: EnquiryRowProps) {
                                 </DropdownMenuItem>
                             )}
 
-                            {canConvert && (
+                            {enquiry.status !== "converted" && (
+                                <DropdownMenuItem onClick={() => router.push(`/enquiries/${enquiry.id}`)}>
+                                    <UserPlus className="mr-2 h-4 w-4" /> Edit Enquiry
+                                </DropdownMenuItem>
+                            )}
+
+                            {(enquiry.status === "needs_follow_up" || enquiry.status === "converted") && (
                                 <DropdownMenuItem onClick={(e) => {
                                     e.preventDefault();
                                     handleConversionClick();
@@ -181,7 +187,7 @@ export function EnquiryRow({ enquiry }: EnquiryRowProps) {
                                     ) : (
                                         <ShoppingCart className="mr-2 h-4 w-4" />
                                     )}
-                                    Convert to Order
+                                    {enquiry.status === "converted" ? "Complete Order" : "Convert to Order"}
                                 </DropdownMenuItem>
                             )}
 
@@ -195,12 +201,6 @@ export function EnquiryRow({ enquiry }: EnquiryRowProps) {
                                         <XCircle className="mr-2 h-4 w-4" /> Close Enquiry
                                     </DropdownMenuItem>
                                 </>
-                            )}
-
-                            {isFinal && (
-                                <DropdownMenuItem disabled className="opacity-60">
-                                    This enquiry is closed
-                                </DropdownMenuItem>
                             )}
 
                         </DropdownMenuContent>

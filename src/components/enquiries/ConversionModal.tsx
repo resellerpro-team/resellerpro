@@ -31,8 +31,8 @@ import {
 } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Sparkles, ChevronDown, ChevronRight, Trash2, CheckCircle2 } from "lucide-react";
-import { Enquiry } from "@/lib/react-query/hooks/useEnquiries";
+import { Loader2, Sparkles, ChevronDown, ChevronRight, Trash2, CheckCircle2, ArrowRight } from "lucide-react";
+import { Enquiry, useUpdateEnquiry } from "@/lib/react-query/hooks/useEnquiries";
 import { parseWhatsAppMessage } from "@/lib/utils/whatsapp-parser";
 import { convertEnquiryToOrder } from "@/app/(dashboard)/enquiries/actions";
 import { useProducts } from "@/lib/react-query/hooks/useProducts";
@@ -118,10 +118,12 @@ export function ConversionModal({ enquiry, existingCustomer, isOpen, onClose }: 
                     <DialogHeader className="px-6 py-4 border-b">
                         <DialogTitle className="flex items-center gap-2 text-xl">
                             <Sparkles className="h-5 w-5 text-primary" />
-                            Convert to Order
+                            {enquiry.status === "converted" ? "Complete Order" : "Convert to Order"}
                         </DialogTitle>
                         <DialogDescription>
-                            Create a new customer and order from this enquiry.
+                            {enquiry.status === "converted"
+                                ? "Finalize the order details for this converted enquiry."
+                                : "Create a new customer and order from this enquiry."}
                         </DialogDescription>
                     </DialogHeader>
                     {/* Content is same, extracted below */}
@@ -137,10 +139,12 @@ export function ConversionModal({ enquiry, existingCustomer, isOpen, onClose }: 
                 <SheetHeader className="px-6 py-4 border-b">
                     <SheetTitle className="flex items-center gap-2 text-xl">
                         <Sparkles className="h-5 w-5 text-primary" />
-                        Convert to Order
+                        {enquiry.status === "converted" ? "Complete Order" : "Convert to Order"}
                     </SheetTitle>
                     <SheetDescription>
-                        Create a new customer and order from this enquiry.
+                        {enquiry.status === "converted"
+                            ? "Finalize the order details for this converted enquiry."
+                            : "Create a new customer and order from this enquiry."}
                     </SheetDescription>
                 </SheetHeader>
                 <ConversionFormContent enquiry={enquiry} existingCustomer={existingCustomer} onClose={onClose} />
@@ -153,6 +157,8 @@ function ConversionFormContent({ enquiry, existingCustomer, onClose }: { enquiry
     const router = useRouter();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
+    const { mutate: updateEnquiry, isPending: isUpdatingStatus } = useUpdateEnquiry();
+
     // @ts-expect-error - useProducts definition might be slightly off
     const { data: productsData } = useProducts();
     const products = productsData || [];
@@ -474,25 +480,54 @@ function ConversionFormContent({ enquiry, existingCustomer, onClose }: { enquiry
                     </CustomAccordionItem>
                 </div>
 
-                <div className="p-6 bg-background border-t mt-auto shadow-up z-10">
-                    <div className="flex items-center justify-between mb-4 text-sm">
+
+
+                <div className="p-6 bg-background border-t mt-auto shadow-up z-10 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Total Amount</span>
                         <span className="text-lg font-bold">
                             ₹{orderItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0).toFixed(2)}
                         </span>
                     </div>
-                    <Button
-                        type="submit"
-                        className="w-full"
-                        size="lg"
-                        disabled={isPending}
-                        onClick={() => console.log("Submit Clicked")}
-                    >
-                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-                        {isPending ? "Creating Order..." : "Create Order"}
-                    </Button>
+                    <div className="flex gap-3">
+                        {enquiry.status !== "converted" && (
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="flex-1"
+                                disabled={isPending || isUpdatingStatus}
+                                onClick={() => {
+                                    updateEnquiry({
+                                        id: enquiry.id,
+                                        status: "converted"
+                                    }, {
+                                        onSuccess: () => {
+                                            toast({ title: "Marked as Converted", description: "You can complete the order later." });
+                                            onClose();
+                                        },
+                                        onError: (err) => {
+                                            toast({ title: "Error", description: err.message, variant: "destructive" });
+                                        }
+                                    });
+                                }}
+                            >
+                                {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
+                                Skip & Mark Converted
+                            </Button>
+                        )}
+                        <Button
+                            type="submit"
+                            className="flex-[2]"
+                            size="lg"
+                            disabled={isPending || isUpdatingStatus}
+                            onClick={() => console.log("Submit Clicked")}
+                        >
+                            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                            {isPending ? "Creating Order..." : (enquiry.status === "converted" ? "Complete Order" : "Create Order")}
+                        </Button>
+                    </div>
                 </div>
-            </form>
+            </form >
         </>
     );
 }

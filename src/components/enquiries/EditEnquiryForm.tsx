@@ -123,10 +123,10 @@ export default function EditEnquiryForm({ id }: { id: string }) {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="new">New</SelectItem>
-                                    <SelectItem value="needs_follow_up">Needs Follow Up</SelectItem>
-                                    <SelectItem value="converted">Converted</SelectItem>
-                                    <SelectItem value="dropped">Dropped</SelectItem>
+                                    {status !== "converted" && <SelectItem value="new">New</SelectItem>}
+                                    {status !== "converted" && <SelectItem value="needs_follow_up">Mark as Contacted</SelectItem>}
+                                    {status === "converted" && <SelectItem value="converted">Converted</SelectItem>}
+                                    <SelectItem value="dropped">Close Enquiry</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
