@@ -510,10 +510,61 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
 }
 
 /**
- * Fetches enquiries (mock data for now)
+ * Fetches recent enquiries
  */
 export async function getEnquiries(): Promise<Enquiry[]> {
-  // In a real app, this would fetch from a 'messages' or 'enquiries' table
-  // For now, we'll return mock data as requested
-  return []
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  try {
+    const { data: enquiries } = await supabase
+      .from('enquiries')
+      .select('id, customer_name, message, created_at, status')
+      .eq('user_id', user.id)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (!enquiries) return []
+
+    return enquiries.map(enquiry => {
+      // Calculate time ago
+      const createdAt = new Date(enquiry.created_at)
+      const now = new Date()
+      const diffMs = now.getTime() - createdAt.getTime()
+      const diffMins = Math.floor(diffMs / 60000)
+      const diffHours = Math.floor(diffMs / 3600000)
+      const diffDays = Math.floor(diffMs / 86400000)
+
+      let timeAgo = ''
+      if (diffMins < 1) {
+        timeAgo = 'Just now'
+      } else if (diffMins < 60) {
+        timeAgo = `${diffMins} ${diffMins === 1 ? 'min' : 'mins'} ago`
+      } else if (diffHours < 24) {
+        timeAgo = `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`
+      } else {
+        timeAgo = `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`
+      }
+
+      // Map status loosely to satisfy the type, defaulting 'new' if matches, else cast
+      // The DB status might be 'new', 'needs_follow_up', etc.
+      // The UI expects 'new', 'read', 'replied'
+      let status: 'new' | 'read' | 'replied' = 'read'
+      if (enquiry.status === 'new') status = 'new'
+      else if (enquiry.status === 'replied' || enquiry.status === 'converted') status = 'replied'
+
+      return {
+        id: enquiry.id,
+        customerName: enquiry.customer_name || 'Unknown',
+        message: enquiry.message || '',
+        date: timeAgo,
+        status: status
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching enquiries:', error)
+    return []
+  }
 }
