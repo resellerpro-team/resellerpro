@@ -24,17 +24,17 @@ export function PaymentStatusChart({ orders }: PaymentStatusChartProps) {
     if (!orders || orders.length === 0) return []
 
     const statusRevenue: Record<string, number> = {}
-    
+
     orders.forEach(order => {
       const status = order.payment_status || 'unpaid'
       const amount = parseFloat(order.total_amount || '0')
-      
+
       if (!statusRevenue[status]) {
         statusRevenue[status] = 0
       }
       statusRevenue[status] += amount
     })
-    
+
     return Object.entries(statusRevenue).map(([status, value]) => ({
       name: status.charAt(0).toUpperCase() + status.slice(1),
       value: Math.round(value),
@@ -51,7 +51,7 @@ export function PaymentStatusChart({ orders }: PaymentStatusChartProps) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
+    <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <Pie
           data={chartData}
