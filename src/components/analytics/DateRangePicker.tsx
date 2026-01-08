@@ -20,19 +20,19 @@ export function DateRangePicker({
 }: React.HTMLAttributes<HTMLDivElement>) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
   // Initialize date from URL params or undefined (all time)
   const [date, setDate] = React.useState<DateRange | undefined>(() => {
     const from = searchParams.get('from')
     const to = searchParams.get('to')
-    
+
     if (from && to) {
       return {
         from: new Date(from),
         to: new Date(to),
       }
     }
-    
+
     // Default: undefined (show all time)
     return undefined
   })
@@ -42,7 +42,7 @@ export function DateRangePicker({
   // Update URL when date changes
   const handleDateChange = (newDate: DateRange | undefined) => {
     setDate(newDate)
-    
+
     if (newDate?.from && newDate?.to) {
       const params = new URLSearchParams(searchParams.toString())
       params.set('from', format(newDate.from, 'yyyy-MM-dd'))
@@ -76,7 +76,7 @@ export function DateRangePicker({
             id="date"
             variant={'outline'}
             className={cn(
-              'w-[300px] justify-start text-left font-normal',
+              'w-auto sm:w-[300px] justify-start text-left font-normal',
               !date && 'text-muted-foreground'
             )}
           >
@@ -94,8 +94,8 @@ export function DateRangePicker({
               <span>All Time</span>
             )}
             {date && (
-              <X 
-                className="ml-auto h-4 w-4 hover:text-destructive" 
+              <X
+                className="ml-auto h-4 w-4 hover:text-destructive"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleReset()

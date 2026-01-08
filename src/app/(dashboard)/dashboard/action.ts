@@ -47,6 +47,14 @@ export type DashboardAlerts = {
   monthlyTarget: number
 }
 
+export type Enquiry = {
+  id: string
+  customerName: string
+  message: string
+  date: string
+  status: 'new' | 'read' | 'replied'
+}
+
 // Internal types for database responses
 type OrderBasic = {
   total_amount: number
@@ -499,4 +507,13 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       monthlyTarget: 50000,
     }
   }
+}
+
+/**
+ * Fetches enquiries (mock data for now)
+ */
+export async function getEnquiries(): Promise<Enquiry[]> {
+  // In a real app, this would fetch from a 'messages' or 'enquiries' table
+  // For now, we'll return mock data as requested
+  return []
 }

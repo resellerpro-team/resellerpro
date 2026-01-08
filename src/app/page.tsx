@@ -1,18 +1,3 @@
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import {
-  Sparkles,
-  Zap,
-  Shield,
-  TrendingUp,
-  Users,
-  Package,
-  BarChart3,
-  ArrowRight,
-  Check,
-} from 'lucide-react'
 import Navbar from '@/components/landing/Navbar'
 import HeroSection from '@/components/landing/HeroSection'
 import FeaturesSection from '@/components/landing/FeaturesSection'

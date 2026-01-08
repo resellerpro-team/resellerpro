@@ -13,7 +13,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-2">
             <img
-              src="/icons/icon-512x512_imgupscaler.ai_V1(Fast)_2K.png"
+              src="/icons/icon-512x512.png"
               alt="ResellerPro Logo"
               className="h-10 w-10"
             />

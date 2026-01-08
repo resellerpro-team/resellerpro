@@ -1,6 +1,6 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
+import { useFormStatus, useFormState } from 'react-dom'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { login, type LoginFormState } from '@/app/(auth)/login/actions'
@@ -28,7 +28,6 @@ export default function LoginForm() {
   const [state, formAction] = useFormState(login, initialState)
 
   useEffect(() => {
-    // Only show a toast if there is an error message
     if (!state.success && state.message) {
       toast({
         title: 'Login Failed',
@@ -68,7 +67,11 @@ export default function LoginForm() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input id="password" name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-10 pr-10" required minLength={6} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
                 {state.errors?.password && <p className="text-sm text-destructive mt-1">{state.errors.password[0]}</p>}
@@ -79,7 +82,7 @@ export default function LoginForm() {
         </CardContent>
         <CardFooter className="flex-col space-y-4">
           <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            Don't have an account?{' '}
             <Link href="/signup" className="text-primary font-medium hover:underline">Sign up for free</Link>
           </p>
         </CardFooter>
