@@ -520,7 +520,6 @@ function ConversionFormContent({ enquiry, existingCustomer, onClose }: { enquiry
                             className="flex-[2]"
                             size="lg"
                             disabled={isPending || isUpdatingStatus}
-                            onClick={() => console.log("Submit Clicked")}
                         >
                             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
                             {isPending ? "Creating Order..." : (enquiry.status === "converted" ? "Complete Order" : "Create Order")}

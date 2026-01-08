@@ -147,12 +147,20 @@ export function PricingCards({
 
             <CardFooter>
               {isCurrent ? (
-                <Button variant="outline" className="w-full" disabled>
-                  Current Plan
+                <Button variant="outline" className="w-full bg-muted/50" disabled>
+                  Your Current Plan
                 </Button>
-              ) : isFree ? (
+              ) : isFree && !isPro ? (
+                // Only show Free plan button state if user is NOT on Pro
                 <Button variant="outline" className="w-full" disabled>
                   Free Forever
+                </Button>
+              ) : isFree && isPro ? (
+                // If user is on Pro, Free plan acts as downgrade path (but we hide it or disable it?)
+                // Requirement: "Free plan should only be reachable via cancel flow"
+                // So we disable it or make it look unselectable
+                <Button variant="ghost" className="w-full" disabled>
+                  Downgrade via Cancel
                 </Button>
               ) : (
                 <Button
