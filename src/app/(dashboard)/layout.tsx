@@ -9,6 +9,7 @@ type UserData = {
   name?: string | null;
   email?: string | null;
   avatarUrl?: string | null;
+  planName?: string | null;
 } | null
 
 export default async function DashboardLayout({
@@ -23,7 +24,7 @@ export default async function DashboardLayout({
   if (!user) {
     redirect('/login')
   }
-  
+
   // Fetch the user's profile from the 'profiles' table
   const { data: profile } = await supabase
     .from('profiles')
@@ -31,11 +32,21 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
+  // Fetch the user's subscription to get the plan name
+  const { data: subscription } = await supabase
+    .from('user_subscriptions')
+    .select('plan:subscription_plans(display_name)')
+    .eq('user_id', user.id)
+    .single()
+
   // Prepare the user data object to pass to client components
   const userData: UserData = {
     name: profile?.full_name,
     email: user.email,
     avatarUrl: profile?.avatar_url,
+    planName: (Array.isArray(subscription?.plan)
+      ? subscription?.plan[0]?.display_name
+      : (subscription?.plan as any)?.display_name) || 'Free Plan',
   }
 
   return (

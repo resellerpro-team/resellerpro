@@ -52,6 +52,7 @@ type UserData = {
   name?: string | null
   email?: string | null
   avatarUrl?: string | null
+  planName?: string | null
 } | null
 
 export default function Sidebar({ user }: { user: UserData }) {
@@ -70,6 +71,7 @@ export default function Sidebar({ user }: { user: UserData }) {
   }
 
   const displayName = user?.name || user?.email?.split('@')[0] || 'User'
+  const planName = user?.planName || 'Free Plan'
   const initials = getInitials(user?.name)
 
   useEffect(() => {
@@ -181,7 +183,7 @@ export default function Sidebar({ user }: { user: UserData }) {
                   <span className="font-medium truncate max-w-[140px]">
                     {displayName}
                   </span>
-                  <span className="text-xs text-muted-foreground">Free Plan</span>
+                  <span className="text-xs text-muted-foreground capitalize">{planName}</span>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </button>
