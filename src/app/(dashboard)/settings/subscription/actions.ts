@@ -184,18 +184,25 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Invalid payment signature' }
   }
 
-  const { data: transaction } = await supabase
+  // Use Admin Client for database updates to bypass RLS
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const adminSupabase = createAdminClient()
+
+  // Verify transaction ownership
+  const { data: transaction, error: fetchErr } = await adminSupabase
     .from('payment_transactions')
     .select('*')
     .eq('razorpay_order_id', razorpayOrderId)
     .eq('user_id', user.id)
     .single()
 
-  if (!transaction) {
+  if (fetchErr || !transaction) {
+    console.error('❌ Transaction fetch error:', fetchErr)
     return { success: false, message: 'Transaction not found' }
   }
 
-  await supabase
+  // Update Transaction
+  const { error: txUpdateError } = await adminSupabase
     .from('payment_transactions')
     .update({
       razorpay_payment_id: razorpayPaymentId,
@@ -203,6 +210,11 @@ export async function verifyPaymentAndActivate(
       status: 'success',
     })
     .eq('id', transaction.id)
+
+  if (txUpdateError) {
+    console.error('❌ Transaction update error:', txUpdateError)
+    return { success: false, message: 'Failed to update transaction' }
+  }
 
   const planId = (transaction.metadata as any)?.plan_id
   if (!planId) {
@@ -213,7 +225,8 @@ export async function verifyPaymentAndActivate(
   const periodEnd = new Date(now)
   periodEnd.setMonth(periodEnd.getMonth() + 1)
 
-  await supabase
+  // Update Subscription
+  const { error: subUpdateError } = await adminSupabase
     .from('user_subscriptions')
     .update({
       plan_id: planId,
@@ -223,6 +236,11 @@ export async function verifyPaymentAndActivate(
       cancel_at_period_end: false,
     })
     .eq('user_id', user.id)
+
+  if (subUpdateError) {
+    console.error('❌ Subscription update error:', subUpdateError)
+    return { success: false, message: 'Failed to update subscription' }
+  }
 
   revalidatePath('/settings/subscription')
   revalidatePath('/dashboard')
@@ -239,29 +257,14 @@ export async function cancelSubscription() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, message: 'Not authenticated' }
 
-  const { data: freePlan } = await supabase
-    .from('subscription_plans')
-    .select('id')
-    .eq('name', 'free')
-    .single()
-
-  if (!freePlan) {
-    return { success: false, message: 'Free plan not found' }
-  }
-
-  const now = new Date()
-  const futureDate = new Date(now)
-  futureDate.setFullYear(futureDate.getFullYear() + 10)
-
+  // Instead of immediate downgrade, we mark it to cancel at period end
   await supabase
     .from('user_subscriptions')
     .update({
-      plan_id: freePlan.id,
-      status: 'active',
-      current_period_start: now.toISOString(),
-      current_period_end: futureDate.toISOString(),
-      cancel_at_period_end: false,
-      razorpay_subscription_id: null,
+      cancel_at_period_end: true,
+      // We do NOT change plan_id or dates yet. 
+      // A background job or check should handle the actual downgrade when current_period_end passes.
+      // If the requirement implies strictly "keep access until end date", this is the correct way.
     })
     .eq('user_id', user.id)
 
