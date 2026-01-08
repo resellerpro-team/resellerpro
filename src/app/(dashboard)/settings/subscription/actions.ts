@@ -186,7 +186,7 @@ export async function verifyPaymentAndActivate(
 
   // Use Admin Client for database updates to bypass RLS
   const { createAdminClient } = await import('@/lib/supabase/admin')
-  const adminSupabase = createAdminClient()
+  const adminSupabase = await createAdminClient()
 
   // Verify transaction ownership
   const { data: transaction, error: fetchErr } = await adminSupabase
