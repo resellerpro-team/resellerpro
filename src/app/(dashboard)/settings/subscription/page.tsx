@@ -18,6 +18,21 @@ export default async function SubscriptionPage() {
   const subscription = await getSubscriptionData()
   const plans = await getAvailablePlans()
 
+  // Get wallet balance (simple fetch from Supabase)
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let walletBalance = 0
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('wallet_balance')
+      .eq('id', user.id)
+      .single()
+    walletBalance = parseFloat(profile?.wallet_balance || '0')
+  }
+
   if (!subscription) {
     return (
       <div className="space-y-6">
@@ -164,6 +179,7 @@ export default async function SubscriptionPage() {
           <PricingCards
             plans={plans}
             currentPlanName={subscription.plan?.name || 'free'}
+            walletBalance={walletBalance}
           />
         </div>
 

@@ -7,6 +7,8 @@ import {
   Building,
   CreditCard,
   Settings as SettingsIcon,
+  Wallet,
+  Gift,
 } from "lucide-react"
 import Link from 'next/link'
 import { usePathname } from "next/navigation"
@@ -27,6 +29,16 @@ const sidebarNavItems = [
     title: "Subscription",
     href: "/settings/subscription",
     icon: CreditCard,
+  },
+  {
+    title: "Wallet",
+    href: "/settings/wallet",
+    icon: Wallet,
+  },
+  {
+    title: "Referrals",
+    href: "/settings/referrals",
+    icon: Gift,
   },
   {
     title: "Preferences",
