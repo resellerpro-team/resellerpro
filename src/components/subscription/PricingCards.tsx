@@ -17,6 +17,7 @@ import {
   createCheckoutSession,
   verifyPaymentAndActivate,
 } from '@/app/(dashboard)/settings/subscription/actions'
+import { activateWithWallet } from '@/app/(dashboard)/settings/subscription/walletActions'
 
 type Plan = {
   id: string
@@ -29,9 +30,11 @@ type Plan = {
 export function PricingCards({
   plans,
   currentPlanName,
+  walletBalance = 0,
 }: {
   plans: Plan[]
   currentPlanName: string
+  walletBalance?: number
 }) {
   const { toast } = useToast()
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null)
@@ -48,6 +51,27 @@ export function PricingCards({
           description: result.message,
           variant: 'destructive',
         })
+        setLoadingPlanId(null)
+        return
+      }
+
+      // Handle wallet-only payment (no Razorpay needed)
+      if ((result as any).useWalletOnly) {
+        const walletResult = await activateWithWallet(planId)
+
+        if (walletResult.success) {
+          toast({
+            title: 'Success 🎉',
+            description: 'Subscription activated with wallet balance',
+          })
+          window.location.reload()
+        } else {
+          toast({
+            title: 'Activation Failed',
+            description: walletResult.message,
+            variant: 'destructive',
+          })
+        }
         setLoadingPlanId(null)
         return
       }

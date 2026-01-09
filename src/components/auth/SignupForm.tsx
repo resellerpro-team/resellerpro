@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, EyeOff, Loader2, Mail, Lock, User, Briefcase, Sparkles, Phone } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Mail, Lock, User, Briefcase, Sparkles, Phone, Gift, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,11 +14,21 @@ import { signup } from '@/app/(auth)/signup/actions'
 
 export default function SignupForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
 
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<string>('')
+  const [showReferralField, setShowReferralField] = useState(false)
+
+  // Check for referral code in URL
+  useEffect(() => {
+    const refCode = searchParams.get('ref')
+    if (refCode) {
+      setFormData(prev => ({ ...prev, referralCode: refCode }))
+      setShowReferralField(true)
+    }
+  }, [searchParams])
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -26,6 +36,7 @@ export default function SignupForm() {
     email: '',
     phone: '',
     password: '',
+    referralCode: '',
     agreeToTerms: false,
   })
 
@@ -46,7 +57,6 @@ export default function SignupForm() {
     }
 
     setIsLoading(true)
-    setDebugInfo('Sending data to server...')
 
     try {
       // Prepare FormData for server action
@@ -56,8 +66,7 @@ export default function SignupForm() {
       fd.append('email', formData.email)
       fd.append('phone', formData.phone)
       fd.append('password', formData.password)
-
-      setDebugInfo('Calling signup server action...')
+      fd.append('referralCode', formData.referralCode)
 
       const result = await signup({ success: false, message: '' }, fd)
 
@@ -71,21 +80,26 @@ export default function SignupForm() {
           variant: 'destructive'
         })
 
-        setDebugInfo('Error: ' + result.message)
         setIsLoading(false)
         return
       }
 
       // --------------------------
-      // Success
+      // Success with referral bonus
       // --------------------------
-      toast({
-        title: 'Account Created! 🎉',
-        description: 'Welcome to ResellerPro.',
-      })
+      if (result.referralCredited) {
+        toast({
+          title: '🎉 Account Created with Bonus!',
+          description: `Welcome to ResellerPro! You've received ₹${result.referralAmount} wallet credit.`,
+        })
+      } else {
+        toast({
+          title: 'Account Created! 🎉',
+          description: 'Welcome to ResellerPro.',
+        })
+      }
 
-      setDebugInfo('Redirecting to dashboard...')
-
+      // Redirect to dashboard
       setTimeout(() => {
         router.push('/dashboard')
         router.refresh()
@@ -99,9 +113,9 @@ export default function SignupForm() {
         description: error?.message || 'Unexpected error occurred.',
         variant: 'destructive'
       })
-    }
 
-    setIsLoading(false)
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -218,6 +232,35 @@ export default function SignupForm() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+            </div>
+
+            {/* Referral Code (Optional & Collapsed) */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowReferralField(!showReferralField)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                disabled={isLoading}
+              >
+                <Gift className="h-4 w-4" />
+                <span>Have a referral code? (Optional)</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showReferralField ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showReferralField && (
+                <div className="space-y-1">
+                  <Input
+                    id="referralCode"
+                    placeholder="Enter referral code"
+                    value={formData.referralCode}
+                    onChange={handleInputChange}
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Use a referral code to earn ₹50 wallet credit instantly.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Terms */}
