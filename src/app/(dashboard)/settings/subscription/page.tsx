@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, Check, TrendingUp, Zap, Package } from 'lucide-react'
 import { getSubscriptionData, getAvailablePlans, cancelSubscription } from './actions'
 import { PricingCards } from '@/components/subscription/PricingCards'
+import { ActivePlanCard } from '@/components/subscription/ActivePlanCard'
 import Script from 'next/script'
 
 export const metadata = {
@@ -58,133 +59,94 @@ export default async function SubscriptionPage() {
         </div>
 
         {/* Current Plan Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Current Plan</CardTitle>
-            <CardDescription>
-              Your active subscription details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Plan Overview */}
-            <div className="p-6 border rounded-lg bg-muted/50">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-2xl font-bold capitalize mb-1">
-                    {subscription.plan?.display_name || 'Free Plan'}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {isPro
-                      ? `Active until ${new Date(subscription.current_period_end).toLocaleDateString('en-IN', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}`
-                      : 'Free forever'}
-                  </p>
-                </div>
-                <Badge
-                  variant={subscription.status === 'active' ? 'default' : 'destructive'}
-                  className="text-xs"
-                >
-                  {subscription.status}
-                </Badge>
-              </div>
-
-              {/* Usage Bar (Only for free plan) */}
-              {!isPro && hasOrderLimit && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">Orders this month</span>
-                    <span className="font-semibold">
-                      {subscription.orders_this_month} / {subscription.plan?.order_limit}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                    <div
-                      className={`h-2.5 rounded-full transition-all duration-500 ${subscription.is_limit_reached
-                        ? 'bg-red-500'
-                        : isLimitWarning
-                          ? 'bg-yellow-500'
-                          : 'bg-primary'
-                        }`}
-                      style={{
-                        width: `${Math.min(subscription.usage_percentage, 100)}%`
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {subscription.is_limit_reached ? (
-                      <span className="text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        Limit reached! Upgrade to create more orders.
-                      </span>
-                    ) : isLimitWarning ? (
-                      <span className="text-yellow-600 dark:text-yellow-400 font-medium">
-                        ⚠️ You've used {subscription.usage_percentage}% of your monthly orders
-                      </span>
-                    ) : (
-                      `You've used ${subscription.usage_percentage}% of your free orders`
-                    )}
-                  </p>
-                </div>
-              )}
-
-              {/* Pro Plan Active Message */}
-              {isPro && (
-                <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-                  <div className="h-10 w-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  </div>
+        {isPro ? (
+          <ActivePlanCard
+            planName={subscription.plan?.display_name || 'Professional'}
+            status={subscription.status}
+            currentPeriodEnd={subscription.current_period_end}
+            isBusiness={isBusiness}
+          />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Current Plan</CardTitle>
+              <CardDescription>
+                Your active subscription details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Plan Overview */}
+              <div className="p-6 border rounded-lg bg-muted/50">
+                <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="font-semibold text-green-900 dark:text-green-100">
-                      {isBusiness ? 'Business Plan Active' : 'Professional Plan Active'}
-                    </p>
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      Unlimited orders & premium features enabled
+                    <h3 className="text-2xl font-bold capitalize mb-1">
+                      {subscription.plan?.display_name || 'Free Plan'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Free forever
                     </p>
                   </div>
+                  <Badge
+                    variant={subscription.status === 'active' ? 'default' : 'destructive'}
+                    className="text-xs"
+                  >
+                    {subscription.status}
+                  </Badge>
                 </div>
-              )}
-            </div>
 
-            {/* Limit Reached Alert */}
-            {subscription.is_limit_reached && !isPro && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  You've reached your monthly limit of {subscription.plan?.order_limit} orders.
-                  Upgrade to Professional for unlimited orders and advanced features.
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-
-          {/* Cancel Subscription Footer (Only for paid plans) */}
-          {isPro && (
-            <CardFooter className="flex justify-between items-center border-t pt-6">
-              <div>
-                <p className="text-sm font-medium">Need to cancel?</p>
-                <p className="text-xs text-muted-foreground">
-                  You'll be downgraded to the Free plan
-                </p>
+                {/* Usage Bar (Only for free plan) */}
+                {hasOrderLimit && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">Orders this month</span>
+                      <span className="font-semibold">
+                        {subscription.orders_this_month} / {subscription.plan?.order_limit}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className={`h-2.5 rounded-full transition-all duration-500 ${subscription.is_limit_reached
+                          ? 'bg-red-500'
+                          : isLimitWarning
+                            ? 'bg-yellow-500'
+                            : 'bg-primary'
+                          }`}
+                        style={{
+                          width: `${Math.min(subscription.usage_percentage, 100)}%`
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {subscription.is_limit_reached ? (
+                        <span className="text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          Limit reached! Upgrade to create more orders.
+                        </span>
+                      ) : isLimitWarning ? (
+                        <span className="text-yellow-600 dark:text-yellow-400 font-medium">
+                          ⚠️ You've used {subscription.usage_percentage}% of your monthly orders
+                        </span>
+                      ) : (
+                        `You've used ${subscription.usage_percentage}% of your free orders`
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
-              <form
-                action={async (formData: FormData) => {
-                  await cancelSubscription();
-                }}
-              >
-                <Button
-                  type="submit"
-                  variant="destructive"
-                  size="sm"
-                >
-                  Cancel Subscription
-                </Button>
-              </form>
-            </CardFooter>
-          )}
-        </Card>
+
+              {/* Limit Reached Alert */}
+              {subscription.is_limit_reached && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    You've reached your monthly limit of {subscription.plan?.order_limit} orders.
+                    Upgrade to Professional for unlimited orders and advanced features.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Pricing Plans */}
         <div>

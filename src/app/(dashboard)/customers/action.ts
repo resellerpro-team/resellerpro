@@ -74,8 +74,8 @@ export async function createCustomer(
     console.error('Supabase error:', error)
     // Handle unique constraint violation (duplicate phone)
     if (error.code === '23505') {
-      return { 
-        success: false, 
+      return {
+        success: false,
         message: 'A customer with this phone number already exists.',
         errors: { phone: ['This phone number is already registered.'] }
       }
@@ -121,7 +121,7 @@ export async function getCustomers(search?: string) {
   // Compute stats
   const total = customers.length
   const totalSpent = customers.reduce((sum, c) => sum + (c.total_spent ?? 0), 0)
-  const avgOrders = 
+  const avgOrders =
     customers.length > 0
       ? (customers.reduce((sum, c) => sum + (c.total_orders ?? 0), 0) / customers.length).toFixed(1)
       : 0
@@ -148,7 +148,7 @@ export async function updateCustomer(
   })
 
   // Validate inputs
-   const validated = CustomerUpdateSchema.safeParse({
+  const validated = CustomerUpdateSchema.safeParse({
     id: formData.get('id'),
     name: formData.get('name'),
     phone: formData.get('phone'),
@@ -181,8 +181,8 @@ export async function updateCustomer(
   if (error) {
     console.error('Supabase update error:', error)
     if (error.code === '23505') {
-      return { 
-        success: false, 
+      return {
+        success: false,
         message: 'A customer with this phone number already exists.',
         errors: { phone: ['This phone number is already registered.'] }
       }
@@ -296,4 +296,27 @@ export async function deleteCustomer(customerId: string): Promise<FormState> {
     success: true,
     message: 'Customer deleted successfully.',
   }
+}
+// --- Get Customer By Phone ---
+export async function getCustomerByPhone(phone: string) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: customer, error } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('phone', phone)
+    .single()
+
+  if (error) {
+    if (error.code !== 'PGRST116') { // PGRST116 is "The result contains 0 rows"
+      console.error('Error fetching customer by phone:', error)
+    }
+    return null
+  }
+
+  return customer
 }

@@ -88,6 +88,7 @@ export function OrdersClient() {
     }, 500)
 
     return () => clearTimeout(delayDebounce)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
 
   const handleSortChange = (value: string) => updateURL({ sort: value })
