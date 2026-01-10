@@ -141,28 +141,41 @@ export async function signup(
   }
 
   /* -------------------------------
-     6️⃣ PROCESS REFERRAL (NEW - SAFE)
-     This happens AFTER signup succeeds
+     6️⃣ PROCESS REFERRAL (FIXED - with proper delay and retry)
   -------------------------------- */
-  let referralResult = null
+  let referralResult: any = null
 
   if (referralCode && referralCode.trim()) {
+    await new Promise(resolve => setTimeout(resolve, 1000)) // Increased to 1 second
+
     try {
-      // Wait 500ms to ensure profile is created by trigger
-      await new Promise(resolve => setTimeout(resolve, 500))
+      let attempts = 0
+      const maxAttempts = 3
 
-      const { data: referralData, error: referralError } = await supabase
-        .rpc('process_signup_referral', {
-          p_user_id: authData.user.id
-        })
+      while (attempts < maxAttempts && !referralResult?.credited) {
+        attempts++
+        const { data: referralData, error: referralError } = await supabase
+          .rpc('process_signup_referral', {
+            p_user_id: authData.user.id
+          })
 
-      if (referralError) {
-        console.error('⚠️ REFERRAL PROCESSING ERROR (non-critical):', referralError.message)
-      } else {
-        referralResult = referralData
+        if (referralError) {
+          console.error(`⚠️ Referral attempt ${attempts} error:`, referralError.message)
+
+          // Wait before retry
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+          }
+        } else {
+          referralResult = referralData
+          // If successful or definitely failed (invalid code), break
+          if (referralData?.credited || referralData?.message === 'Invalid referral code') {
+            break
+          }
+        }
       }
+
     } catch (error: any) {
-      // Don't fail signup if referral processing fails
       console.error('⚠️ REFERRAL ERROR (non-critical):', error.message)
     }
   }
