@@ -28,7 +28,7 @@ export async function activateWithWallet(planId: string) {
         // Get wallet balance
         const { data: profile } = await supabase
             .from('profiles')
-            .select('wallet_balance')
+            .select('wallet_balance, is_referral_rewarded')
             .eq('id', user.id)
             .single()
 
@@ -42,7 +42,7 @@ export async function activateWithWallet(planId: string) {
         const { createAdminClient } = await import('@/lib/supabase/admin')
         const adminSupabase = await createAdminClient()
 
-        // Deduct wallet balance
+        // Deduct wallet balance        
         const { error: walletError } = await adminSupabase
             .rpc('add_wallet_transaction', {
                 p_user_id: user.id,
@@ -77,17 +77,24 @@ export async function activateWithWallet(planId: string) {
             return { success: false, message: 'Failed to update subscription' }
         }
 
-        // Process referral rewards
+        // Process referral rewards (CRITICAL: This credits the referrer)
         try {
-            await adminSupabase.rpc('process_referral_rewards', {
-                p_referee_id: user.id,
-            })
-        } catch (rewardError) {
-            console.error('❌ Referral reward error:', rewardError)
+            const { data: rewardResult, error: rewardError } = await adminSupabase
+                .rpc('process_referral_rewards', {
+                    p_referee_id: user.id,
+                })
+
+            if (rewardError) {
+                console.error('❌ Referral reward RPC error:', rewardError)
+            }
+        } catch (rewardError: any) {
+            console.error('❌ Referral reward exception:', rewardError.message)
+            // Don't fail subscription if referral reward fails
         }
 
         revalidatePath('/settings/subscription')
         revalidatePath('/settings/wallet')
+        revalidatePath('/settings/referrals')
         revalidatePath('/dashboard')
 
         return { success: true }
