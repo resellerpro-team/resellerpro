@@ -1,14 +1,36 @@
+'use client'
+
+import { useFormStatus, useFormState } from 'react-dom'
+import { useEffect } from 'react'
+import Link from 'next/link'
+import { sendResetEmail, type ForgotPasswordFormState } from './actions'
+import { Loader2, Mail, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
-export const metadata = {
-  title: 'Forgot Password - ResellerPro',
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Sending...
+        </>
+      ) : (
+        'Send Reset Link'
+      )}
+    </Button>
+  )
 }
 
 export default function ForgotPasswordPage() {
+  const initialState: ForgotPasswordFormState = { success: false, message: '', errors: {} }
+  const [state, formAction] = useFormState(sendResetEmail, initialState)
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -19,19 +41,51 @@ export default function ForgotPasswordPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
-          </div>
-          <Button type="submit" className="w-full">
-            Send Reset Link
-          </Button>
-        </CardContent>
-        <CardHeader className="text-center">
-            <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
+          {state.success ? (
+            <Alert className="border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-900">
+              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertDescription className="text-green-800 dark:text-green-200">
+                {state.message}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              {state.message && !state.success && (
+                <Alert variant="destructive">
+                  <AlertDescription>{state.message}</AlertDescription>
+                </Alert>
+              )}
+              <form action={formAction} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                  {state.errors?.email && (
+                    <p className="text-sm text-destructive">{state.errors.email[0]}</p>
+                  )}
+                </div>
+                <SubmitButton />
+              </form>
+            </>
+          )}
+          <div className="text-center">
+            <Link
+              href="/login"
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
               Back to Login
             </Link>
-        </CardHeader>
+          </div>
+        </CardContent>
       </Card>
     </div>
   )

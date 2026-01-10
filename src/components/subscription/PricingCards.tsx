@@ -1,190 +1,243 @@
+
 'use client'
 
 import { useState } from 'react'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Check, Zap, Loader2 } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
+import { createCheckoutSession } from '@/app/(dashboard)/settings/subscription/actions'
+import { activateWithWallet } from '@/app/(dashboard)/settings/subscription/walletActions'
+import { PaymentMethodDialog } from './PaymentMethodDialog'
 import { useToast } from '@/hooks/use-toast'
-import {
-  createCheckoutSession,
-  verifyPaymentAndActivate,
-} from '@/app/(dashboard)/settings/subscription/actions'
+import { useRouter } from 'next/navigation'
 
 type Plan = {
   id: string
   name: string
   display_name: string
   price: number
-  features: string[]
+  order_limit: number | null
+  features: any[]
 }
 
-export function PricingCards({
-  plans,
-  currentPlanName,
-}: {
+type PricingCardsProps = {
   plans: Plan[]
   currentPlanName: string
-}) {
-  const { toast } = useToast()
-  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null)
+  walletBalance: number
+}
 
-  const handleUpgrade = async (planId: string, plan: Plan) => {
-    setLoadingPlanId(planId)
+export function PricingCards({ plans, currentPlanName, walletBalance }: PricingCardsProps) {
+  const router = useRouter()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+
+  const handleUpgradeClick = (plan: Plan) => {
+    setSelectedPlan(plan)
+    setShowPaymentDialog(true)
+  }
+
+  const handlePaymentMethodSelected = async (method: 'wallet' | 'razorpay' | 'wallet+razorpay') => {
+    if (!selectedPlan) return
+
+    setIsLoading(true)
+    setShowPaymentDialog(false)
 
     try {
-      const result = await createCheckoutSession(planId)
+      if (method === 'wallet') {
+        // Pay with wallet only
+        const result = await activateWithWallet(selectedPlan.id)
 
-      if (!result.success) {
-        toast({
-          title: 'Error',
-          description: result.message,
-          variant: 'destructive',
-        })
-        setLoadingPlanId(null)
-        return
-      }
+        if (result.success) {
+          toast({
+            title: 'Subscription Activated! 🎉',
+            description: `You're now on the ${selectedPlan.display_name} plan.`,
+          })
+          router.refresh()
+        } else {
+          toast({
+            title: 'Activation Failed',
+            description: result.message,
+            variant: 'destructive',
+          })
+        }
+      } else if (method === 'razorpay' || method === 'wallet+razorpay') {
+        // Create checkout session (handles both Razorpay only and Wallet+Razorpay)
+        const session = await createCheckoutSession(selectedPlan.id)
 
-      // ✅ Real Razorpay Checkout
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-        amount: result.amount,
-        currency: result.currency,
-        name: 'ResellerPro',
-        description: `Subscribe to ${result.planName}`,
-        order_id: result.orderId,
-        prefill: {
-          name: result.customerDetails?.name ?? '',
-          email: result.customerDetails?.email ?? '',
-          contact: result.customerDetails?.contact ?? '',
-        },
-        theme: { color: '#000000' },
+        if (!session.success) {
+          toast({
+            title: 'Checkout Failed',
+            description: session.message,
+            variant: 'destructive',
+          })
+          setIsLoading(false)
+          return
+        }
 
-        handler: async function (response: any) {
-          const verifyResult = await verifyPaymentAndActivate(
-            response.razorpay_order_id,
-            response.razorpay_payment_id,
-            response.razorpay_signature
-          )
+        // If wallet covers everything (shouldn't happen with this method, but just in case)
+        if (session.useWalletOnly) {
+          const result = await activateWithWallet(selectedPlan.id)
 
-          if (verifyResult.success) {
+          if (result.success) {
             toast({
-              title: 'Success 🎉',
-              description: 'Subscription activated successfully',
+              title: 'Subscription Activated! 🎉',
+              description: `You're now on the ${selectedPlan.display_name} plan.`,
             })
-            window.location.reload()
-          } else {
-            toast({
-              title: 'Verification Failed',
-              description: verifyResult.message,
-              variant: 'destructive',
-            })
+            router.refresh()
           }
-        },
+          setIsLoading(false)
+          return
+        }
 
-        modal: {
-          ondismiss: () => setLoadingPlanId(null),
-        },
+        // Open Razorpay checkout
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: session.amount,
+          currency: session.currency,
+          name: 'ResellerPro',
+          description: `${session.planName} Subscription`,
+          order_id: session.orderId,
+          prefill: session.customerDetails,
+          theme: {
+            color: '#3b82f6',
+          },
+          handler: async function (response: any) {
+            const { verifyPaymentAndActivate } = await import(
+              '@/app/(dashboard)/settings/subscription/actions'
+            )
+
+            const result = await verifyPaymentAndActivate(
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature
+            )
+
+            if (result.success) {
+              toast({
+                title: 'Payment Successful! 🎉',
+                description: `You're now on the ${selectedPlan.display_name} plan.`,
+              })
+              router.refresh()
+            } else {
+              toast({
+                title: 'Payment Verification Failed',
+                description: result.message,
+                variant: 'destructive',
+              })
+            }
+            setIsLoading(false)
+          },
+          modal: {
+            ondismiss: function () {
+              toast({
+                title: 'Payment Cancelled',
+                description: 'You can try again anytime.',
+              })
+              setIsLoading(false)
+            },
+          },
+        }
+
+        const rzp = new (window as any).Razorpay(options)
+        rzp.open()
       }
-
-      const razorpay = new (window as any).Razorpay(options)
-      razorpay.open()
     } catch (error: any) {
+      console.error('Payment error:', error)
       toast({
         title: 'Error',
         description: error.message || 'Something went wrong',
         variant: 'destructive',
       })
-      setLoadingPlanId(null)
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="grid md:grid-cols-3 gap-6">
-      {plans.map((plan) => {
-        const isCurrent = plan.name === currentPlanName
-        const isPro = plan.name === 'professional'
-        const isFree = plan.name === 'free'
+    <>
+      <div className="grid md:grid-cols-3 gap-6">
+        {plans.map((plan) => {
+          const isCurrentPlan = plan.name === currentPlanName
+          const isPopular = plan.name === 'professional'
 
-        return (
-          <Card
-            key={plan.id}
-            className={`relative ${isPro ? 'border-primary shadow-lg scale-105' : ''
-              }`}
-          >
-            {isPro && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-primary">Most Popular</Badge>
-              </div>
-            )}
-
-            <CardHeader>
-              <CardTitle className="text-2xl">{plan.display_name}</CardTitle>
-              <CardDescription>
-                <span className="text-3xl font-bold">₹{plan.price}</span>
-                {!isFree && (
-                  <span className="text-muted-foreground"> / month</span>
-                )}
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              {Array.isArray(plan.features) &&
-                plan.features.map((feature, index) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-green-600 mt-0.5" />
-                    <span className="text-sm">{feature}</span>
-                  </div>
-                ))}
-            </CardContent>
-
-            <CardFooter>
-              {isCurrent ? (
-                <Button variant="outline" className="w-full bg-muted/50" disabled>
-                  Your Current Plan
-                </Button>
-              ) : isFree && !isPro ? (
-                // Only show Free plan button state if user is NOT on Pro
-                <Button variant="outline" className="w-full" disabled>
-                  Free Forever
-                </Button>
-              ) : isFree && isPro ? (
-                // If user is on Pro, Free plan acts as downgrade path (but we hide it or disable it?)
-                // Requirement: "Free plan should only be reachable via cancel flow"
-                // So we disable it or make it look unselectable
-                <Button variant="ghost" className="w-full" disabled>
-                  Downgrade via Cancel
-                </Button>
-              ) : (
-                <Button
-                  className="w-full gap-2"
-                  onClick={() => handleUpgrade(plan.id, plan)}
-                  disabled={loadingPlanId === plan.id}
-                >
-                  {loadingPlanId === plan.id ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4" />
-                      Upgrade Now
-                    </>
-                  )}
-                </Button>
+          return (
+            <Card
+              key={plan.id}
+              className={`relative ${isPopular ? 'border-primary shadow-lg' : ''
+                }`}
+            >
+              {isPopular && (
+                <div className="absolute -top-3 left-0 right-0 flex justify-center">
+                  <Badge className="px-3 py-1">Most Popular</Badge>
+                </div>
               )}
-            </CardFooter>
-          </Card>
-        )
-      })}
-    </div>
+
+              <CardHeader>
+                <CardTitle className="text-2xl">{plan.display_name}</CardTitle>
+                <CardDescription>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold">₹{plan.price}</span>
+                    {plan.price > 0 && <span className="text-muted-foreground">/month</span>}
+                  </div>
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent>
+                <ul className="space-y-3">
+                  {(plan.features as string[]).map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+
+              <CardFooter>
+                {isCurrentPlan ? (
+                  <Button className="w-full" disabled>
+                    Current Plan
+                  </Button>
+                ) : plan.name === 'free' ? (
+                  <Button className="w-full" variant="outline" disabled>
+                    Downgrade at period end
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full"
+                    onClick={() => handleUpgradeClick(plan)}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      'Upgrade Now'
+                    )}
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Payment Method Selection Dialog */}
+      {selectedPlan && (
+        <PaymentMethodDialog
+          open={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          planName={selectedPlan.display_name}
+          planPrice={selectedPlan.price}
+          walletBalance={walletBalance}
+          onConfirm={handlePaymentMethodSelected}
+          isLoading={isLoading}
+        />
+      )}
+    </>
   )
 }

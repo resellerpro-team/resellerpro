@@ -116,30 +116,53 @@ export async function createCheckoutSession(planId: string) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('full_name, phone')
+      .select('full_name, phone, wallet_balance')
       .eq('id', user.id)
       .single()
 
+    // Calculate wallet usage
+    const walletBalance = parseFloat(profile?.wallet_balance || '0')
+    const planPrice = plan.price
+    const walletApplied = Math.min(walletBalance, planPrice)
+    const payableAmount = planPrice - walletApplied
+
+    // If wallet covers entire amount, return special flag
+    if (payableAmount <= 0) {
+      return {
+        success: true,
+        useWalletOnly: true,
+        planId,
+        planName: plan.display_name,
+        totalPrice: planPrice,
+        walletApplied: planPrice,
+      }
+    }
+
+    // Create Razorpay order for remaining amount
     const order = await razorpay.orders.create({
-      amount: Math.round(plan.price * 100),
+      amount: Math.round(payableAmount * 100),
       currency: 'INR',
       receipt: `sub_${Date.now()}`,
       notes: {
         user_id: user.id,
         plan_id: planId,
         plan_name: plan.name,
+        wallet_applied: walletApplied.toString(),
+        total_price: planPrice.toString(),
       },
     })
 
     await supabase.from('payment_transactions').insert({
       user_id: user.id,
       razorpay_order_id: order.id,
-      amount: plan.price,
+      amount: payableAmount,
       currency: 'INR',
       status: 'pending',
       metadata: {
         plan_id: planId,
         plan_name: plan.name,
+        wallet_applied: walletApplied,
+        total_price: planPrice,
       },
     })
 
@@ -149,6 +172,8 @@ export async function createCheckoutSession(planId: string) {
       amount: order.amount,
       currency: order.currency,
       planName: plan.display_name,
+      walletApplied,
+      totalPrice: planPrice,
       customerDetails: {
         name: profile?.full_name || 'User',
         email: user.email!,
@@ -174,6 +199,8 @@ export async function verifyPaymentAndActivate(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, message: 'Not authenticated' }
 
+  console.log('🔐 Verifying payment for user:', user.id)
+
   const isValid = verifyPaymentSignature(
     razorpayOrderId,
     razorpayPaymentId,
@@ -183,6 +210,8 @@ export async function verifyPaymentAndActivate(
   if (!isValid) {
     return { success: false, message: 'Invalid payment signature' }
   }
+
+  console.log('✅ Payment signature verified')
 
   // Use Admin Client for database updates to bypass RLS
   const { createAdminClient } = await import('@/lib/supabase/admin')
@@ -201,6 +230,8 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Transaction not found' }
   }
 
+  console.log('📄 Transaction found:', transaction.id)
+
   // Update Transaction
   const { error: txUpdateError } = await adminSupabase
     .from('payment_transactions')
@@ -216,16 +247,44 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Failed to update transaction' }
   }
 
+  console.log('✅ Transaction updated')
+
   const planId = (transaction.metadata as any)?.plan_id
   if (!planId) {
     return { success: false, message: 'Plan ID missing in transaction' }
   }
 
+  const walletApplied = parseFloat((transaction.metadata as any)?.wallet_applied || '0')
+
+  console.log('💰 Wallet applied:', walletApplied)
+
   const now = new Date()
   const periodEnd = new Date(now)
   periodEnd.setMonth(periodEnd.getMonth() + 1)
 
+  // Deduct wallet balance if any was used
+  if (walletApplied > 0) {
+    console.log('💸 Deducting wallet:', walletApplied)
+
+    const { error: walletError } = await adminSupabase
+      .rpc('add_wallet_transaction', {
+        p_user_id: user.id,
+        p_amount: -walletApplied,
+        p_type: 'subscription_debit',
+        p_description: 'Subscription payment',
+      })
+
+    if (walletError) {
+      console.error('❌ Wallet deduction error:', walletError)
+      // Continue anyway, we don't want to fail the subscription
+    } else {
+      console.log('✅ Wallet deducted')
+    }
+  }
+
   // Update Subscription
+  console.log('🔄 Updating subscription to plan:', planId)
+
   const { error: subUpdateError } = await adminSupabase
     .from('user_subscriptions')
     .update({
@@ -242,8 +301,33 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Failed to update subscription' }
   }
 
+  console.log('✅ Subscription updated')
+
+  // Process referral rewards (credited ONLY after first successful paid subscription)
+  console.log('🎁 Processing referral rewards...')
+
+  try {
+    const { data: rewardResult, error: rewardError } = await adminSupabase
+      .rpc('process_referral_rewards', {
+        p_referee_id: user.id,
+      })
+
+    if (rewardError) {
+      console.error('❌ Referral reward RPC error:', rewardError)
+    } else {
+      console.log('✅ Referral rewards processed')
+    }
+  } catch (rewardError: any) {
+    console.error('❌ Referral reward exception:', rewardError.message)
+    // Don't fail subscription if referral reward fails
+  }
+
   revalidatePath('/settings/subscription')
+  revalidatePath('/settings/wallet')
+  revalidatePath('/settings/referrals')
   revalidatePath('/dashboard')
+
+  console.log('🎉 Payment verification completed')
 
   return { success: true }
 }
