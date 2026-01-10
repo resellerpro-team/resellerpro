@@ -17,7 +17,9 @@ type Transaction = {
 export default function WalletClient() {
     const [isLoading, setIsLoading] = useState(true)
     const [balance, setBalance] = useState(0)
-    const [transactions, setTransactions] = useState<Transaction[]>([])
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+    console.log('transactions', transactions);
 
     useEffect(() => {
         loadWalletData()
@@ -98,8 +100,8 @@ export default function WalletClient() {
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className={`h-10 w-10 rounded-full flex items-center justify-center ${transaction.amount > 0
-                                                ? 'bg-green-100 text-green-600'
-                                                : 'bg-red-100 text-red-600'
+                                            ? 'bg-green-100 text-green-600'
+                                            : 'bg-red-100 text-red-600'
                                             }`}>
                                             {transaction.amount > 0 ? (
                                                 <TrendingUp className="h-5 w-5" />

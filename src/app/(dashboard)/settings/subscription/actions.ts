@@ -199,6 +199,8 @@ export async function verifyPaymentAndActivate(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, message: 'Not authenticated' }
 
+  console.log('🔐 Verifying payment for user:', user.id)
+
   const isValid = verifyPaymentSignature(
     razorpayOrderId,
     razorpayPaymentId,
@@ -208,6 +210,8 @@ export async function verifyPaymentAndActivate(
   if (!isValid) {
     return { success: false, message: 'Invalid payment signature' }
   }
+
+  console.log('✅ Payment signature verified')
 
   // Use Admin Client for database updates to bypass RLS
   const { createAdminClient } = await import('@/lib/supabase/admin')
@@ -226,6 +230,8 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Transaction not found' }
   }
 
+  console.log('📄 Transaction found:', transaction.id)
+
   // Update Transaction
   const { error: txUpdateError } = await adminSupabase
     .from('payment_transactions')
@@ -241,6 +247,8 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Failed to update transaction' }
   }
 
+  console.log('✅ Transaction updated')
+
   const planId = (transaction.metadata as any)?.plan_id
   if (!planId) {
     return { success: false, message: 'Plan ID missing in transaction' }
@@ -248,12 +256,16 @@ export async function verifyPaymentAndActivate(
 
   const walletApplied = parseFloat((transaction.metadata as any)?.wallet_applied || '0')
 
+  console.log('💰 Wallet applied:', walletApplied)
+
   const now = new Date()
   const periodEnd = new Date(now)
   periodEnd.setMonth(periodEnd.getMonth() + 1)
 
   // Deduct wallet balance if any was used
   if (walletApplied > 0) {
+    console.log('💸 Deducting wallet:', walletApplied)
+
     const { error: walletError } = await adminSupabase
       .rpc('add_wallet_transaction', {
         p_user_id: user.id,
@@ -265,9 +277,14 @@ export async function verifyPaymentAndActivate(
     if (walletError) {
       console.error('❌ Wallet deduction error:', walletError)
       // Continue anyway, we don't want to fail the subscription
+    } else {
+      console.log('✅ Wallet deducted')
     }
   }
+
   // Update Subscription
+  console.log('🔄 Updating subscription to plan:', planId)
+
   const { error: subUpdateError } = await adminSupabase
     .from('user_subscriptions')
     .update({
@@ -284,18 +301,33 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Failed to update subscription' }
   }
 
+  console.log('✅ Subscription updated')
+
   // Process referral rewards (credited ONLY after first successful paid subscription)
+  console.log('🎁 Processing referral rewards...')
+
   try {
-    await adminSupabase.rpc('process_referral_rewards', {
-      p_referee_id: user.id,
-    })
-  } catch (rewardError) {
-    console.error('❌ Referral reward error:', rewardError)
+    const { data: rewardResult, error: rewardError } = await adminSupabase
+      .rpc('process_referral_rewards', {
+        p_referee_id: user.id,
+      })
+
+    if (rewardError) {
+      console.error('❌ Referral reward RPC error:', rewardError)
+    } else {
+      console.log('✅ Referral rewards processed')
+    }
+  } catch (rewardError: any) {
+    console.error('❌ Referral reward exception:', rewardError.message)
     // Don't fail subscription if referral reward fails
   }
 
   revalidatePath('/settings/subscription')
+  revalidatePath('/settings/wallet')
+  revalidatePath('/settings/referrals')
   revalidatePath('/dashboard')
+
+  console.log('🎉 Payment verification completed')
 
   return { success: true }
 }

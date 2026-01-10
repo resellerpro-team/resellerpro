@@ -17,24 +17,24 @@ export async function getWalletData() {
 
     if (!profile) return null
 
-    // Get wallet transactions
+    // Get wallet transactions (NO extra logic)
     const { data: transactionsData } = await supabase
         .from('wallet_transactions')
-        .select('*')
+        .select('id, amount, type, description, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50)
 
-    const transactions = (transactionsData || []).map((t) => ({
+    const transactions = (transactionsData || []).map((t: any) => ({
         id: t.id,
-        amount: parseFloat(t.amount),
+        amount: Number(t.amount),
         type: t.type,
-        description: t.description,
+        description: t.description, // ✅ backend-controlled
         created_at: t.created_at,
     }))
 
     return {
-        balance: parseFloat(profile.wallet_balance || 0),
+        balance: Number(profile.wallet_balance),
         transactions,
     }
 }
