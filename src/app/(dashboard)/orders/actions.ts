@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from '@/lib/services/notificationService'
 
 // Define allowed status transitions
 const STATUS_FLOW: Record<string, string[]> = {
@@ -17,7 +18,7 @@ const STATUS_FLOW: Record<string, string[]> = {
 // ========================================================
 async function canCreateOrder() {
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return { allowed: false, reason: 'Not authenticated' }
@@ -75,19 +76,19 @@ export async function createOrder(
   prevState: { success: boolean; message: string },
   formData: FormData
 ) {
-  
+
   const supabase = await createClient()
 
   // Authenticate user
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
 
   // Check subscription limits BEFORE creating order
   const orderCheck = await canCreateOrder()
-  
+
   if (!orderCheck.allowed) {
     return {
       success: false,
@@ -155,7 +156,7 @@ export async function createOrder(
         notes: notes || null,
         status: 'pending',
       })
-      .select() 
+      .select()
       .single()
 
 
@@ -199,6 +200,39 @@ export async function createOrder(
       }
     }
 
+    // --- Deduct Stock & Check Low Stock ---
+    try {
+      for (const item of items) {
+        if (!item.productId) continue
+
+        const { data: newQuantity, error: stockError } = await supabase
+          .rpc('deduct_product_stock', {
+            p_product_id: item.productId,
+            p_quantity: item.quantity,
+          })
+
+        if (stockError) {
+          console.error(`⚠️ Failed to deduct stock for product ${item.productId}:`, stockError)
+          continue
+        }
+
+        // Trigger LOW_STOCK notification if quantity <= 5
+        if (newQuantity !== null && newQuantity <= 5) {
+          await createNotification({
+            userId: user.id,
+            type: 'low_stock',
+            title: 'Low stock alert',
+            message: `${item.productName} is running low (${newQuantity} left)`,
+            entityType: 'product',
+            entityId: item.productId,
+            priority: 'high',
+          })
+        }
+      }
+    } catch (stockError) {
+      console.error('⚠️ Unexpected error during stock deduction:', stockError)
+    }
+
 
     // Revalidate pages
     revalidatePath('/orders')
@@ -227,7 +261,7 @@ export async function updateOrderStatus(formData: FormData) {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
@@ -259,19 +293,18 @@ export async function updateOrderStatus(formData: FormData) {
 
     // Validate status transition
     const allowedStatuses = STATUS_FLOW[currentStatus] || []
-    
+
     if (!allowedStatuses.includes(newStatus)) {
-      const allowedLabels = allowedStatuses.map(s => 
+      const allowedLabels = allowedStatuses.map(s =>
         s.charAt(0).toUpperCase() + s.slice(1)
       ).join(', ')
-      
-      return { 
-        success: false, 
-        message: `Cannot change status from "${currentStatus}" to "${newStatus}". ${
-          allowedStatuses.length > 0 
-            ? `Allowed transitions: ${allowedLabels}` 
-            : 'This order is in a final state and cannot be changed.'
-        }` 
+
+      return {
+        success: false,
+        message: `Cannot change status from "${currentStatus}" to "${newStatus}". ${allowedStatuses.length > 0
+          ? `Allowed transitions: ${allowedLabels}`
+          : 'This order is in a final state and cannot be changed.'
+          }`
       }
     }
 
@@ -326,9 +359,9 @@ export async function updateOrderStatus(formData: FormData) {
     revalidatePath('/orders')
     revalidatePath(`/orders/${orderId}`)
 
-    return { 
-      success: true, 
-      message: `Order #${order.order_number} status updated to "${newStatus}".` 
+    return {
+      success: true,
+      message: `Order #${order.order_number} status updated to "${newStatus}".`
     }
   } catch (error: any) {
     console.error('Error updating order status:', error)
@@ -344,7 +377,7 @@ export async function updateOrderStatus(formData: FormData) {
 // ========================================================
 export async function getAllowedStatusTransitions(orderId: string) {
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return { success: false, allowedStatuses: [] }
@@ -362,11 +395,11 @@ export async function getAllowedStatusTransitions(orderId: string) {
   }
 
   const allowedStatuses = STATUS_FLOW[order.status] || []
-  
-  return { 
-    success: true, 
+
+  return {
+    success: true,
     currentStatus: order.status,
-    allowedStatuses 
+    allowedStatuses
   }
 }
 
@@ -377,7 +410,7 @@ export async function updatePaymentStatus(formData: FormData) {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
@@ -434,7 +467,7 @@ export async function deleteOrder(orderId: string) {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
@@ -449,6 +482,17 @@ export async function deleteOrder(orderId: string) {
 
     if (error) {
       console.error('Error deleting order:', error)
+
+      // Trigger SYSTEM_ALERT
+      await createNotification({
+        userId: user.id,
+        type: 'system_alert',
+        title: 'System alert',
+        message: `Failed to delete order: ${error.message}`,
+        entityType: 'system',
+        priority: 'high',
+      })
+
       return { success: false, message: error.message }
     }
 
