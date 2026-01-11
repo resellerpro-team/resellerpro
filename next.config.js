@@ -22,8 +22,7 @@ const nextConfig = withPWA({
   },
   reactStrictMode: true,
 
-  // 👇 Add this line to tell Next.js to use Webpack instead of Turbopack
-  turbopack: {},
+
 });
 
 module.exports = nextConfig;
