@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { headers } from 'next/headers'
+import { createNotification } from '@/lib/services/notificationService'
 
 // -------------------------------
 // Validation schema
@@ -177,6 +178,18 @@ export async function signup(
 
     } catch (error: any) {
       console.error('⚠️ REFERRAL ERROR (non-critical):', error.message)
+    }
+
+    // 7. Create Notification for Signup Reward
+    if (referralResult?.credited && referralResult?.amount > 0) {
+      await createNotification({
+        userId: authData.user.id,
+        type: 'wallet_credited',
+        title: 'Wallet credited',
+        message: `₹${referralResult.amount} added to your wallet`,
+        entityType: 'wallet',
+        priority: 'high',
+      })
     }
   }
 

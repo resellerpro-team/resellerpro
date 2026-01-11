@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { razorpay, verifyPaymentSignature } from '@/lib/razorpay/razorpay'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from '@/lib/services/notificationService'
 
 // --------------------
 // Helper: Ensure subscription exists
@@ -314,8 +315,21 @@ export async function verifyPaymentAndActivate(
 
     if (rewardError) {
       console.error('❌ Referral reward RPC error:', rewardError)
+    } else if (rewardResult && rewardResult.length > 0) {
+      console.log('✅ Referral rewards processed for referrer:', rewardResult[0].referrer_id)
+
+      // Create notification for the referrer
+      const reward = rewardResult[0]
+      await createNotification({
+        userId: reward.referrer_id,
+        type: 'wallet_credited',
+        title: 'Wallet credited',
+        message: `₹${reward.amount} added to your wallet (Referral reward)`,
+        entityType: 'wallet',
+        priority: 'high',
+      })
     } else {
-      console.log('✅ Referral rewards processed')
+      console.log('✅ No referral rewards to process')
     }
   } catch (rewardError: any) {
     console.error('❌ Referral reward exception:', rewardError.message)
