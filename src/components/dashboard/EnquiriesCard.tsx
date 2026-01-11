@@ -109,7 +109,7 @@ export function EnquiriesCard({ enquiries }: EnquiriesCardProps) {
                                 <div className="flex gap-2">
                                     <Sparkles size={14} className="text-blue-400 shrink-0 mt-0.5" />
                                     <p className="text-[11px] text-blue-600/80 dark:text-blue-400/80 leading-relaxed">
-                                        Tip: After replying on WhatsApp, mark as replied to keep your dashboard accurate.
+                                        Tip: After replying on WhatsApp, mark as contacted to keep your dashboard accurate.
                                     </p>
                                 </div>
                             </div>
