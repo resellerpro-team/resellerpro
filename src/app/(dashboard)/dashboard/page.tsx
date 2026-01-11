@@ -66,17 +66,17 @@ export default async function DashboardPage() {
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <StatsCard
+          type="revenue"
           title="Today's Revenue"
-          value={`₹${stats?.todayRevenue.toLocaleString('en-IN') || 0}`}
-          change={`${stats?.revenueChange && stats.revenueChange > 0 ? '+' : ''}${stats?.revenueChange || 0}%`}
-          trend={stats?.revenueChange && stats.revenueChange >= 0 ? 'up' : 'down'}
+          value={stats?.todayRevenue || 0}
+          change={stats?.revenueChange || 0}
           icon={DollarSign}
         />
         <StatsCard
+          type="profit"
           title="Today's Profit"
-          value={`₹${stats?.todayProfit.toLocaleString('en-IN') || 0}`}
-          change={`${stats?.profitChange && stats.profitChange > 0 ? '+' : ''}${stats?.profitChange || 0}%`}
-          trend={stats?.profitChange && stats.profitChange >= 0 ? 'up' : 'down'}
+          value={stats?.todayProfit || 0}
+          change={stats?.profitChange || 0}
           icon={TrendingUp}
         />
       </div>
@@ -242,37 +242,53 @@ function TopProductsSkeleton() {
 }
 
 function StatsCard({
+  type,
   title,
   value,
   change,
-  trend,
   icon: Icon,
 }: {
+  type: 'revenue' | 'profit'
   title: string
-  value: string
-  change: string
-  trend: 'up' | 'down'
+  value: number
+  change: number
   icon: React.ComponentType<{ className?: string }>
 }) {
+  const isPositive = change > 0
+  const isNeutral = change === 0
+  const formattedValue = `₹${value.toLocaleString('en-IN')}`
+
+  // Icon styling based on type
+  const iconBg = type === 'revenue'
+    ? 'bg-blue-500/10 text-blue-600'
+    : 'bg-emerald-500/10 text-emerald-600'
+
   return (
-    <Card>
+    <Card className="overflow-hidden border border-slate-200/60 shadow-none hover:shadow-sm transition-all duration-200 bg-white">
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium text-nowrap">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <CardTitle className="text-[13px] font-medium text-muted-foreground tracking-tight">{title}</CardTitle>
+        <div className={`p-2 rounded-lg ${iconBg}`}>
+          <Icon className="h-4 w-4" />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1 text-nowrap">
-          {trend === 'up' ? (
-            <TrendingUp className="h-3 w-3 text-green-500" />
-          ) : (
-            <TrendingDown className="h-3 w-3 text-red-500" />
+        <div className={`text-2xl font-bold tracking-tight ${type === 'profit' && value > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+          {formattedValue}
+        </div>
+        <div className="flex items-center gap-1.5 mt-1">
+          {!isNeutral && (
+            isPositive ? (
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <TrendingDown className="h-3.5 w-3.5 text-rose-500" />
+            )
           )}
-          <span className={trend === 'up' ? 'text-green-500' : 'text-red-500'}>
-            {change}
+          <span className={`text-[12px] font-medium ${isNeutral ? 'text-muted-foreground' : (isPositive ? 'text-emerald-500' : 'text-rose-500')
+            }`}>
+            {isNeutral ? 'No change' : `${isPositive ? '+' : ''}${change}%`}
           </span>
-          <span>from yesterday</span>
-        </p>
+          <span className="text-[12px] text-muted-foreground/70">from yesterday</span>
+        </div>
       </CardContent>
     </Card>
   )
