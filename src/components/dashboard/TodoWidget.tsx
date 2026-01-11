@@ -41,7 +41,7 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [newTodoText, setNewTodoText] = useState('')
-  const [showSuggestions, setShowSuggestions] = useState(true)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
 
   const incompleteTodos = initialTodos.filter((t) => !t.completed)
@@ -247,38 +247,40 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
             </Button>
 
             {showSuggestions && (
-              <div className="space-y-2 animate-fade-in">
-                {suggestions.map((suggestion) => {
-                  const SourceIcon = getSourceIcon(suggestion.source_type)
-                  return (
-                    <div
-                      key={suggestion.id}
-                      className="flex items-start gap-2 p-2 rounded-md bg-primary/5 border border-primary/10 group hover:bg-primary/10 transition-colors"
-                    >
-                      <SourceIcon className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${getPriorityColor(suggestion.priority)}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium leading-tight">
-                          {suggestion.text}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] h-4 px-1 mt-1 ${getPriorityColor(suggestion.priority)}`}
-                        >
-                          {suggestion.priority}
-                        </Badge>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleAddSuggestion(suggestion)}
-                        className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              <ScrollArea className="max-h-[200px]">
+                <div className="space-y-2 animate-fade-in pr-4">
+                  {suggestions.map((suggestion) => {
+                    const SourceIcon = getSourceIcon(suggestion.source_type)
+                    return (
+                      <div
+                        key={suggestion.id}
+                        className="flex items-start gap-2 p-2 rounded-md bg-primary/5 border border-primary/10 group hover:bg-primary/10 transition-colors"
                       >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )
-                })}
-              </div>
+                        <SourceIcon className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${getPriorityColor(suggestion.priority)}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium leading-tight">
+                            {suggestion.text}
+                          </p>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] h-4 px-1 mt-1 ${getPriorityColor(suggestion.priority)}`}
+                          >
+                            {suggestion.priority}
+                          </Badge>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleAddSuggestion(suggestion)}
+                          className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </ScrollArea>
             )}
           </div>
         )}

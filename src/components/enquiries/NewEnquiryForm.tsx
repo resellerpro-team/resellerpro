@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast"; // Fixed import path
+import { useToast } from "@/hooks/use-toast"; // Fixed import path
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import Link from "next/link";
 
@@ -38,15 +38,17 @@ export default function NewEnquiryForm() {
         }, {
             onSuccess: () => {
                 toast({
-                    title: "Enquiry Created",
+                    title: "✅ Enquiry Saved Successfully",
                     description: `Added enquiry from ${finalName}`,
+                    duration: 4000,
+                    className: "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-900",
                 });
                 router.push("/enquiries");
                 router.refresh();
             },
             onError: (error) => {
                 toast({
-                    title: "Error",
+                    title: "❌ Failed to Save",
                     description: error.message,
                     variant: "destructive",
                 });

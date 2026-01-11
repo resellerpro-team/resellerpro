@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { createNotification } from "@/lib/services/notificationService";
 
 export async function convertEnquiryToOrder(formData: FormData) {
     const supabase = await createClient();
@@ -140,6 +141,39 @@ export async function convertEnquiryToOrder(formData: FormData) {
             // ROLLBACK ORDER
             await supabase.from("orders").delete().eq("id", newOrder.id);
             throw new Error(`Order items failed: ${itemsError.message}`);
+        }
+
+        // --- Deduct Stock & Check Low Stock ---
+        try {
+            for (const item of items) {
+                if (!item.productId) continue
+
+                const { data: newQuantity, error: stockError } = await supabase
+                    .rpc('deduct_product_stock', {
+                        p_product_id: item.productId,
+                        p_quantity: item.quantity,
+                    })
+
+                if (stockError) {
+                    console.error(`⚠️ Failed to deduct stock for product ${item.productId}:`, stockError)
+                    continue
+                }
+
+                // Trigger LOW_STOCK notification if quantity <= 5
+                if (newQuantity !== null && newQuantity <= 5) {
+                    await createNotification({
+                        userId: user.id,
+                        type: 'low_stock',
+                        title: 'Low stock alert',
+                        message: `${item.productName} is running low (${newQuantity} left)`,
+                        entityType: 'product',
+                        entityId: item.productId,
+                        priority: 'high',
+                    })
+                }
+            }
+        } catch (stockError) {
+            console.error('⚠️ Unexpected error during stock deduction:', stockError)
         }
 
         // 4. Update Enquiry
