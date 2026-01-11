@@ -52,7 +52,7 @@ export type Enquiry = {
   customerName: string
   message: string
   date: string
-  status: 'new' | 'read' | 'replied'
+  status: 'new' | 'read' | 'replied' | 'converted' | 'dropped'
 }
 
 // Internal types for database responses
@@ -551,9 +551,11 @@ export async function getEnquiries(): Promise<Enquiry[]> {
       // Map status loosely to satisfy the type, defaulting 'new' if matches, else cast
       // The DB status might be 'new', 'needs_follow_up', etc.
       // The UI expects 'new', 'read', 'replied'
-      let status: 'new' | 'read' | 'replied' = 'read'
+      let status: 'new' | 'read' | 'replied' | 'converted' | 'dropped' = 'read'
       if (enquiry.status === 'new') status = 'new'
-      else if (enquiry.status === 'replied' || enquiry.status === 'converted') status = 'replied'
+      else if (enquiry.status === 'converted') status = 'converted'
+      else if (enquiry.status === 'dropped') status = 'dropped'
+      else if (enquiry.status === 'replied') status = 'replied'
 
       return {
         id: enquiry.id,
