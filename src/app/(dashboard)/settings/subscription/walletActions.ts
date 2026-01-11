@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from '@/lib/services/notificationService'
 
 /**
  * Activate subscription using ONLY wallet balance (no Razorpay)
@@ -79,13 +80,26 @@ export async function activateWithWallet(planId: string) {
 
         // Process referral rewards (CRITICAL: This credits the referrer)
         try {
-            const { data: rewardResult, error: rewardError } = await adminSupabase
+            const { data: rewardData, error: rewardError } = await adminSupabase
                 .rpc('process_referral_rewards', {
                     p_referee_id: user.id,
                 })
 
             if (rewardError) {
                 console.error('❌ Referral reward RPC error:', rewardError)
+            } else if (rewardData && rewardData.length > 0) {
+                console.log('✅ Referral rewards processed for referrer:', rewardData[0].referrer_id)
+
+                // Create notification for the referrer
+                const reward = rewardData[0]
+                await createNotification({
+                    userId: reward.referrer_id,
+                    type: 'wallet_credited',
+                    title: 'Wallet credited',
+                    message: `₹${reward.amount} added to your wallet (Referral reward)`,
+                    entityType: 'wallet',
+                    priority: 'high',
+                })
             }
         } catch (rewardError: any) {
             console.error('❌ Referral reward exception:', rewardError.message)

@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { useTheme } from 'next-themes'
+import { NotificationDrawer } from '@/components/notifications/NotificationDrawer'
 
 export default function Header() {
   const router = useRouter()
@@ -44,43 +45,7 @@ export default function Header() {
         </Button>
 
         {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center">
-                3
-              </Badge>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="max-h-96 overflow-y-auto">
-              <NotificationItem
-                title="New order received"
-                description="Order #1234 from Rahul Sharma"
-                time="2 min ago"
-                unread
-              />
-              <NotificationItem
-                title="Low stock alert"
-                description="Wireless Earbuds - Only 5 left"
-                time="1 hour ago"
-                unread
-              />
-              <NotificationItem
-                title="Payment received"
-                description="₹2,499 from Priya Singh"
-                time="3 hours ago"
-              />
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="justify-center text-primary">
-              View all notifications
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <NotificationDrawer />
       </div>
 
       {/* Search Section (Bottom on mobile, Left on desktop) */}
