@@ -355,9 +355,15 @@ export default async function OrderDetailsPage({
                     orderStatus={order.status}
                     paymentStatus={order.payment_status}
                     totalAmount={parseFloat(order.total_amount).toFixed(2)}
-                    itemsText={order.order_items
-                      ?.map((item: any, idx: number) => `${idx + 1}. ${item.product_name} (₹${parseFloat(item.unit_selling_price).toFixed(2)} x ${item.quantity})`)
-                      .join('\n') || 'Order items'}
+                    itemsText={
+                      order.order_items && order.order_items.length > 0
+                        ? order.order_items
+                            .map((item: any, idx: number) => 
+                              `${idx + 1}. ${item.product_name} - ₹${parseFloat(item.unit_selling_price).toFixed(0)} x ${item.quantity} = ₹${parseFloat(item.subtotal).toFixed(0)}`
+                            )
+                            .join('\n')
+                        : 'Order items'
+                    }
                     trackingNumber={order.tracking_number}
                     courierService={order.courier_service}
                     shopName={businessName}
