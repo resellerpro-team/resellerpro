@@ -113,33 +113,44 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
   const downloadProductCard = async () => {
     setDownloading(true)
     try {
-      const html2canvas = (await import('html2canvas')).default
+      // Get the current image URL
+      const imageUrl = allImages[selectedImageIndex]
       
-      if (cardRef.current) {
-        const canvas = await html2canvas(cardRef.current, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          logging: false,
-          useCORS: true,
-        })
-        
-        const link = document.createElement('a')
-        const imageName = allImages.length > 1 
-          ? `${product.name.replace(/[^a-z0-9]/gi, '_')}_image_${selectedImageIndex + 1}.png`
-          : `${product.name.replace(/[^a-z0-9]/gi, '_')}.png`
-        link.download = imageName
-        link.href = canvas.toDataURL()
-        link.click()
-        
+      if (!imageUrl) {
         toast({
-          title: 'Downloaded!',
-          description: `Product card ${allImages.length > 1 ? `(Image ${selectedImageIndex + 1})` : ''} saved successfully.`,
+          title: 'No Image',
+          description: 'No image available to download',
+          variant: 'destructive',
         })
+        setDownloading(false)
+        return
       }
+
+      // Fetch the image
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      
+      // Create download link
+      const link = document.createElement('a')
+      const imageName = allImages.length > 1 
+        ? `${product.name.replace(/[^a-z0-9]/gi, '_')}_image_${selectedImageIndex + 1}.png`
+        : `${product.name.replace(/[^a-z0-9]/gi, '_')}.png`
+      
+      link.download = imageName
+      link.href = URL.createObjectURL(blob)
+      link.click()
+      
+      // Clean up
+      URL.revokeObjectURL(link.href)
+      
+      toast({
+        title: 'Downloaded!',
+        description: `Product image ${allImages.length > 1 ? `${selectedImageIndex + 1}` : ''} saved successfully.`,
+      })
     } catch (error) {
       toast({
         title: 'Download Failed',
-        description: 'Could not generate product card. Please try sharing as text.',
+        description: 'Could not download image. Please try again.',
         variant: 'destructive',
       })
     } finally {
@@ -358,15 +369,15 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                 ) : (
                   <>
                     <Download className="h-4 w-4 mr-2" />
-                    Download {allImages.length > 1 ? `Image ${selectedImageIndex + 1}` : 'Product Card'}
+                    Download {allImages.length > 1 ? `Image ${selectedImageIndex + 1}` : 'Image'}
                   </>
                 )}
               </Button>
               
               <p className="text-xs text-center text-muted-foreground">
                 {allImages.length > 1 
-                  ? `💡 Download each image separately, then share on WhatsApp` 
-                  : `💡 After downloading, open WhatsApp and send the image`
+                  ? `💡 Downloads clean product image without text overlays` 
+                  : `💡 Downloads the product image only, without title or price`
                 }
               </p>
             </div>
