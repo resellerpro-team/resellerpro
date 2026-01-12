@@ -9,7 +9,7 @@ import { PaymentStatusChart } from '@/components/analytics/PaymentStatusChart'
 import { OrderStatusChart } from '@/components/analytics/OrderStatusChart'
 import { ExportButton } from '@/components/analytics/ExportButton'
 import {
-    DollarSign,
+    IndianRupee,
     ShoppingCart,
     Users,
     TrendingUp,
@@ -98,7 +98,7 @@ export function AnalyticsClient() {
                     title="Total Revenue"
                     value={`₹${safeStats.currentRevenue.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
                     change={`${safeStats.revenueChange} ${dateRanges?.periodLabel || ''}`}
-                    icon={DollarSign}
+                    icon={IndianRupee}
                     trend={safeStats.revenueChange.startsWith('+') ? 'up' : safeStats.revenueChange.startsWith('-') ? 'down' : 'neutral'}
                 />
                 <StatsCard

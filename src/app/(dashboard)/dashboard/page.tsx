@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
+  IndianRupee,
   ShoppingCart,
   Users,
   Package,
@@ -70,7 +70,7 @@ export default async function DashboardPage() {
           title="Today's Revenue"
           value={stats?.todayRevenue || 0}
           change={stats?.revenueChange || 0}
-          icon={DollarSign}
+          icon={IndianRupee}
         />
         <StatsCard
           type="profit"

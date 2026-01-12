@@ -6,7 +6,7 @@ import {
   Edit,
   MessageSquare,
   Phone,
-  DollarSign,
+  IndianRupee,
   ShoppingCart,
   Mail,
   MapPin,
@@ -139,7 +139,7 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <span className="text-[20px]" >₹</span>
+              <IndianRupee className="h-4 w-4" />
               Total Spent
             </CardTitle>
           </CardHeader>
