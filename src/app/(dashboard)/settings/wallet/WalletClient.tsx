@@ -19,8 +19,6 @@ export default function WalletClient() {
     const [balance, setBalance] = useState(0)
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-    console.log('transactions', transactions);
-
     useEffect(() => {
         loadWalletData()
     }, [])
