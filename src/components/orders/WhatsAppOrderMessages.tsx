@@ -109,92 +109,117 @@ export function WhatsAppOrderMessages({
   }
 
   /**
-   * Generate message based on template type
+   * Generate message based on template type with proper product details
    */
   const generateMessage = (template: MessageTemplate): string => {
     const firstName = customerName.split(' ')[0]
+    
+    // Format product list nicely
+    const productsFormatted = itemsText || 'Your order items'
 
     switch (template) {
       case 'order_confirmation':
         return `Hi ${firstName}! 👋
 
-Your order #${orderNumber} has been confirmed! ✅
+Your order #${orderNumber} has been *CONFIRMED!* ✅
 
-📦 *Order Details:*
-${itemsText}
+📦 *Order Summary:*
+━━━━━━━━━━━━━━━━━
+${productsFormatted}
+━━━━━━━━━━━━━━━━━
 
-💰 *Total:* ₹${totalAmount}
+💰 *Total Amount:* ₹${totalAmount}
 🚚 *Expected Delivery:* ${getDeliveryDate()}
 
-We'll keep you updated throughout the process!
+We'll keep you updated at every step!
 
-Thank you for choosing ${shopName}! 🙏`
+Thank you for choosing *${shopName}*! 🙏`
 
       case 'payment_reminder':
         return `Hi ${firstName}! 
 
-Your order #${orderNumber} is ready to be processed! 📦
+Your order #${orderNumber} is ready! 📦
+
+📋 *Items:*
+${productsFormatted}
 
 ⚠️ *Pending Payment:* ₹${totalAmount}
 
-Please complete the payment to proceed with shipping.
+Please complete the payment so we can ship your order.
 
-Need help? Reply to this message!
+💬 Need help? Just reply to this message!
 
 Thank you,
-${shopName}`
+*${shopName}*`
 
       case 'shipped_update':
         return `Great news, ${firstName}! 📦✈️
 
-Your order #${orderNumber} has been shipped!
+Your order #${orderNumber} has been *SHIPPED!*
 
-${trackingNumber ? `
-🔍 *Tracking Number:* ${trackingNumber}${courierService ? `
-🚛 *Courier:* ${courierService}` : ''}
+📋 *Items on the way:*
+${productsFormatted}
 
-You can track your order in real-time!` : `
-We'll share tracking details soon.`}
+${trackingNumber ? `🔍 *Tracking Details:*
+Tracking Number: ${trackingNumber}${courierService ? `
+Courier: ${courierService}` : ''}
+
+Track your order in real-time!` : `🚚 Tracking details will be shared soon.`}
 
 🎯 *Expected Delivery:* ${getDeliveryDate()}
+💰 *Order Value:* ₹${totalAmount}
 
 Your order is on its way! 🚀
 
-${shopName}`
+*${shopName}*`
 
       case 'delivered_confirmation':
         return `Hi ${firstName}! 🎉
 
-Your order #${orderNumber} has been delivered successfully!
+Fantastic news! Your order #${orderNumber} has been *DELIVERED SUCCESSFULLY!*
 
-We hope you love your purchase! ✨
+📦 *Delivered Items:*
+${productsFormatted}
 
-⭐ *Quick Feedback:*
-How was your experience? Your feedback helps us serve you better!
+💰 *Order Value:* ₹${totalAmount}
 
-Reply with: 
-⭐⭐⭐⭐⭐ (1-5 stars)
+We hope you absolutely love your purchase! ✨
 
-Thank you for shopping with ${shopName}! 
+⭐ *Quick Feedback Request:*
+How was your experience with us?
+
+Please rate: ⭐⭐⭐⭐⭐ (1-5 stars)
+Your feedback means a lot! 💙
+
+Thank you for choosing *${shopName}*! 
 We look forward to serving you again! 🙏`
 
       case 'follow_up':
         return `Hi ${firstName}! 👋
 
-Thank you for your recent purchase with ${shopName}!
+Thank you for your recent order #${orderNumber} with *${shopName}*!
 
-We hope you're enjoying your order! 😊
+📦 *Your Recent Purchase:*
+${productsFormatted}
 
-🆕 *New Arrivals:*
-We've just added fresh stock! Check out our latest collection.
+We hope you're loving it! 😊
 
-💬 *Need anything?*
-Feel free to reach out - we're here to help!
+🆕 *What's New:*
+✨ Fresh stock just arrived
+🎁 Exclusive deals for our valued customers
+📦 New product categories
 
-Stay tuned for exclusive offers! 🎁
+💬 *Need Support?*
+• Questions about your order?
+• Looking for something specific?
+• Want product recommendations?
+
+Just reply - we're here to help! 🤝
+
+Stay connected for special offers! 🎁
 
 Best regards,
-${shopName}`
+*${shopName}* Team`
 
       default:
         return ''
