@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { TrendingUp, DollarSign, ShoppingCart, Package, Users, BarChart3, Sparkles } from 'lucide-react'
+import { TrendingUp, IndianRupee, ShoppingCart, Package, Users, BarChart3, Sparkles } from 'lucide-react'
 
 export function FirstVisitLoader() {
   const [isFirstVisit, setIsFirstVisit] = useState(false)
@@ -12,14 +12,14 @@ export function FirstVisitLoader() {
   useEffect(() => {
     // Check if user has visited before
     const hasVisited = localStorage.getItem('resellerpro_visited')
-    
+
     if (!hasVisited) {
       setIsFirstVisit(true)
-      
+
       // Animation sequence
       const steps = [0, 1, 2, 3]
       let stepIndex = 0
-      
+
       const interval = setInterval(() => {
         stepIndex++
         if (stepIndex < steps.length) {
@@ -58,13 +58,13 @@ export function FirstVisitLoader() {
             {[...Array(15)].map((_, i) => (
               <motion.div
                 key={i}
-                initial={{ 
-                  y: '100vh', 
+                initial={{
+                  y: '100vh',
                   x: Math.random() * window.innerWidth,
                   opacity: 0.3,
                   rotate: 0
                 }}
-                animate={{ 
+                animate={{
                   y: '-10vh',
                   rotate: 360,
                   opacity: [0.3, 0.6, 0.3]
@@ -77,7 +77,7 @@ export function FirstVisitLoader() {
                 }}
                 className="absolute text-white/20"
               >
-                <DollarSign size={Math.random() * 30 + 20} />
+                <IndianRupee size={Math.random() * 30 + 20} />
               </motion.div>
             ))}
 
@@ -85,7 +85,7 @@ export function FirstVisitLoader() {
             <svg className="absolute inset-0 w-full h-full opacity-10">
               <defs>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5"/>
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5" />
                 </pattern>
               </defs>
               <rect width="100%" height="100%" fill="url(#grid)" />
@@ -98,11 +98,11 @@ export function FirstVisitLoader() {
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ 
-                type: 'spring', 
-                stiffness: 200, 
+              transition={{
+                type: 'spring',
+                stiffness: 200,
                 damping: 20,
-                duration: 0.8 
+                duration: 0.8
               }}
               className="mb-8"
             >
@@ -120,7 +120,7 @@ export function FirstVisitLoader() {
                   }}
                   className="absolute inset-0 bg-white/30 rounded-full blur-2xl"
                 />
-                
+
                 {/* Icon Circle */}
                 <div className="relative bg-white rounded-full p-6 shadow-2xl">
                   <motion.div
@@ -164,7 +164,7 @@ export function FirstVisitLoader() {
               transition={{ delay: 0.5, duration: 0.6 }}
               className="space-y-4"
             >
-              <motion.h1 
+              <motion.h1
                 className="text-5xl md:text-6xl font-bold text-white mb-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -215,22 +215,20 @@ export function FirstVisitLoader() {
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, x: -20 }}
-                  animate={{ 
+                  animate={{
                     opacity: currentStep >= i ? 1 : 0.3,
                     x: 0
                   }}
                   transition={{ delay: 1.4 + (i * 0.1) }}
                   className="flex items-center justify-center gap-3"
                 >
-                  <step.icon 
-                    className={`w-5 h-5 ${
-                      currentStep >= i ? 'text-green-300' : 'text-white/40'
-                    }`} 
+                  <step.icon
+                    className={`w-5 h-5 ${currentStep >= i ? 'text-green-300' : 'text-white/40'
+                      }`}
                   />
-                  <span 
-                    className={`text-sm ${
-                      currentStep >= i ? 'text-white font-medium' : 'text-white/40'
-                    }`}
+                  <span
+                    className={`text-sm ${currentStep >= i ? 'text-white font-medium' : 'text-white/40'
+                      }`}
                   >
                     {step.text}
                   </span>

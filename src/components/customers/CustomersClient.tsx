@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
-import { Plus, Search, Filter, Users, TrendingUp, DollarSign } from "lucide-react";
+import { Plus, Search, Filter, Users, TrendingUp, IndianRupee } from "lucide-react";
 
 import Link from "next/link";
 import CustomerCard from "@/components/customers/CustomerCard";
@@ -51,18 +51,18 @@ export function CustomersClient() {
       customers.length === 0
         ? 0
         : Math.round(
-            (customers.filter((c: any) => (c.total_orders ?? 0) > 1).length /
-              customers.length) *
-              100
-          ),
+          (customers.filter((c: any) => (c.total_orders ?? 0) > 1).length /
+            customers.length) *
+          100
+        ),
 
     avgValue:
       customers.length === 0
         ? 0
         : Math.round(
-            customers.reduce((s: number, c: any) => s + (c.total_spent ?? 0), 0) /
-              customers.length
-          ),
+          customers.reduce((s: number, c: any) => s + (c.total_spent ?? 0), 0) /
+          customers.length
+        ),
   };
 
   // ---------- Update URL ----------
@@ -126,7 +126,7 @@ export function CustomersClient() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Avg. Customer Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹{stats.avgValue}</div>
