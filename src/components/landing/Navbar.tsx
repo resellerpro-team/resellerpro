@@ -39,9 +39,9 @@ export default function Navbar() {
             >
               Workflow
             </a>
-            <Link href="/signup">
+            <Link href="/signin">
               <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium shadow-sm hover:shadow-md">
-                Get Started
+                Sign in
               </button>
             </Link>
           </div>

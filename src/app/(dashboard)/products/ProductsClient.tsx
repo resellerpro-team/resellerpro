@@ -25,7 +25,7 @@ import {
 
 import {
   Package,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Download,
   Grid3x3,
@@ -106,12 +106,12 @@ export function ProductsClient() {
       typedProducts.length === 0
         ? 0
         : (
-            typedProducts.reduce((acc: number, p: Product) => {
-              const margin =
-                ((p.selling_price - p.cost_price) / p.selling_price) * 100;
-              return acc + margin;
-            }, 0) / typedProducts.length
-          ).toFixed(1),
+          typedProducts.reduce((acc: number, p: Product) => {
+            const margin =
+              ((p.selling_price - p.cost_price) / p.selling_price) * 100;
+            return acc + margin;
+          }, 0) / typedProducts.length
+        ).toFixed(1),
   };
 
   // -------------------- URL UPDATE --------------------
@@ -181,7 +181,7 @@ export function ProductsClient() {
         <StatsCard
           title="Inventory Value"
           value={`₹${stats.totalValue.toLocaleString()}`}
-          icon={DollarSign}
+          icon={IndianRupee}
         />
         <StatsCard
           title="Total Profit"

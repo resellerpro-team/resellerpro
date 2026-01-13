@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
+  IndianRupee,
   ShoppingCart,
   Users,
   Package,
@@ -64,11 +64,6 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Enquiries Section */}
-      <section>
-        <EnquiriesCard enquiries={enquiries} />
-      </section>
-
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <StatsCard
@@ -76,7 +71,7 @@ export default async function DashboardPage() {
           title="Today's Revenue"
           value={stats?.todayRevenue || 0}
           change={stats?.revenueChange || 0}
-          icon={DollarSign}
+          icon={IndianRupee}
         />
         <StatsCard
           type="profit"
@@ -86,6 +81,11 @@ export default async function DashboardPage() {
           icon={TrendingUp}
         />
       </div>
+
+      {/* Enquiries Section */}
+      <section>
+        <EnquiriesCard enquiries={enquiries} />
+      </section>
 
       {/* Quick Actions, Alerts & Daily Tasks */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -146,12 +146,61 @@ export default async function DashboardPage() {
                 href="/products"
               />
             )}
-            <AlertItem
-              type="success"
-              message={revenueTargetMessage}
-              action="View Analytics"
-              href="/analytics"
-            />
+            {(() => {
+              const now = new Date()
+              const daysElapsed = now.getDate()
+              const totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+              const forecastRevenue = (alerts.monthlyRevenue / daysElapsed) * totalDaysInMonth
+              const isOnTrack = forecastRevenue >= alerts.monthlyTarget
+
+              const milestones = [10000, 25000, 50000, 75000, 100000, 250000, 500000, 1000000]
+              const lastMilestone = [...milestones].reverse().find(m => m <= alerts.monthlyRevenue)
+
+              if (alerts.totalOrders === 0) {
+                return (
+                  <AlertItem
+                    type="info"
+                    message="Your revenue insights will appear once you start receiving orders."
+                    action="View Analytics"
+                    href="/analytics"
+                  />
+                )
+              }
+
+              // Special "Just Hit" celebration - if within 5% of the last milestone or if exactly the milestone
+              const isJustHit = lastMilestone && (alerts.monthlyRevenue <= lastMilestone * 1.05)
+
+              if (isJustHit) {
+                return (
+                  <AlertItem
+                    type="success"
+                    message={`Congratulations! You've crossed the ₹${lastMilestone.toLocaleString('en-IN')} milestone!`}
+                    action="View Analytics"
+                    href="/analytics"
+                  />
+                )
+              }
+
+              if (isOnTrack && alerts.monthlyRevenue > 0) {
+                return (
+                  <AlertItem
+                    type="success"
+                    message={`At this pace, you may cross ₹${alerts.monthlyTarget.toLocaleString('en-IN')} this month.`}
+                    action="View Analytics"
+                    href="/analytics"
+                  />
+                )
+              }
+
+              return (
+                <AlertItem
+                  type="info"
+                  message={`You’ve earned ₹${alerts.monthlyRevenue.toLocaleString('en-IN')} so far this month.`}
+                  action="View Analytics"
+                  href="/analytics"
+                />
+              )
+            })()}
           </CardContent>
         </Card>
 

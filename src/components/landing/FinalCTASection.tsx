@@ -30,7 +30,7 @@ export default function FinalCTASection() {
 
           {/* Main Heading */}
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight max-w-4xl mx-auto">
-            Ready to Stop the WhatsApp Chaos?
+            Ready to Turn WhatsApp Enquiries into Orders?
           </h2>
 
           {/* Subheading */}
