@@ -58,11 +58,6 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Enquiries Section */}
-      <section>
-        <EnquiriesCard enquiries={enquiries} />
-      </section>
-
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <StatsCard
@@ -80,6 +75,11 @@ export default async function DashboardPage() {
           icon={TrendingUp}
         />
       </div>
+
+      {/* Enquiries Section */}
+      <section>
+        <EnquiriesCard enquiries={enquiries} />
+      </section>
 
       {/* Quick Actions, Alerts & Daily Tasks */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
