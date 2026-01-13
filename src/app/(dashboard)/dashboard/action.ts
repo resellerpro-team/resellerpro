@@ -45,6 +45,7 @@ export type DashboardAlerts = {
   lowStockProducts: number
   monthlyRevenue: number
   monthlyTarget: number
+  totalOrders: number
 }
 
 export type Enquiry = {
@@ -457,6 +458,7 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       lowStockProducts: 0,
       monthlyRevenue: 0,
       monthlyTarget: 50000,
+      totalOrders: 0,
     }
   }
 
@@ -475,6 +477,12 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       .eq('user_id', user.id)
       .eq('stock_status', 'low_stock')
 
+    // Count total orders (all time)
+    const { count: totalOrders } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
     // Calculate monthly revenue
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
@@ -491,11 +499,16 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       0
     ) || 0
 
+    // Dynamic milestones
+    const milestones = [10000, 25000, 50000, 75000, 100000, 250000, 500000, 1000000]
+    const nextMilestone = milestones.find(m => m > monthlyRevenue) || milestones[milestones.length - 1]
+
     return {
       pendingOrders: pendingOrders || 0,
       lowStockProducts: lowStockProducts || 0,
       monthlyRevenue: Math.round(monthlyRevenue),
-      monthlyTarget: 50000, // Can be made dynamic based on user settings
+      monthlyTarget: nextMilestone,
+      totalOrders: totalOrders || 0,
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
@@ -505,6 +518,7 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       lowStockProducts: 0,
       monthlyRevenue: 0,
       monthlyTarget: 50000,
+      totalOrders: 0,
     }
   }
 }

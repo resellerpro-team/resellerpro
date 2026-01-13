@@ -16,7 +16,7 @@ export default async function BusinessPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login')
+    redirect('/signin')
   }
 
   // Fetch user profile with business data

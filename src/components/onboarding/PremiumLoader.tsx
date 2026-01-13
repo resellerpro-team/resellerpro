@@ -2,7 +2,7 @@
 
 // import { useEffect, useState } from 'react'
 // import { motion, AnimatePresence } from 'framer-motion'
-// import { TrendingUp, DollarSign, ShoppingCart, Package, Users, BarChart3, Sparkles } from 'lucide-react'
+// import { TrendingUp, IndianRupee, ShoppingCart, Package, Users, BarChart3, Sparkles } from 'lucide-react'
 // import { usePathname } from 'next/navigation'
 
 // export function AppLoader() {
@@ -16,7 +16,7 @@
     
 //     // Only show on dashboard/main app pages, not on auth pages
 //     const shouldShow = !hasShownThisSession && 
-//                        pathname !== '/login' && 
+//                        pathname !== '/signin' && 
 //                        pathname !== '/signup'
 
 //     if (shouldShow) {
@@ -84,7 +84,7 @@
 //                 className="absolute"
 //                 style={{ left: 0 }}
 //               >
-//                 <DollarSign 
+//                 <IndianRupee 
 //                   size={Math.random() * 30 + 20} 
 //                   className="text-white/20"
 //                 />

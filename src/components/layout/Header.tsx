@@ -16,18 +16,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { useTheme } from 'next-themes'
 import { NotificationDrawer } from '@/components/notifications/NotificationDrawer'
+import { GlobalSearch } from '@/components/layout/GlobalSearch'
 
 export default function Header() {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
-  const [searchQuery, setSearchQuery] = useState('')
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
-    }
-  }
 
   return (
     <header className="flex flex-wrap items-center justify-between px-4 border-b">
@@ -49,19 +42,8 @@ export default function Header() {
       </div>
 
       {/* Search Section (Bottom on mobile, Left on desktop) */}
-      <div className="order-2 sm:order-1 flex h-16 w-full sm:w-[60%] items-center gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <form onSubmit={handleSearch} className="flex-1 w-full">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search products, customers, orders..."
-              className="pl-8 pr-2 h-10 w-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </form>
+      <div className="order-2 sm:order-1 flex h-16 w-full sm:w-[50%] items-center gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <GlobalSearch />
 
         {/* Quick Add */}
         <DropdownMenu>
