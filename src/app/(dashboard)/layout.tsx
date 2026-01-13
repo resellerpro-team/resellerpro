@@ -22,7 +22,7 @@ export default async function DashboardLayout({
 
   // If no user is logged in, redirect to login page immediately
   if (!user) {
-    redirect('/login')
+    redirect('/signin')
   }
 
   // Fetch the user's profile from the 'profiles' table

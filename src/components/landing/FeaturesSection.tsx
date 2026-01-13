@@ -25,7 +25,7 @@ function FeatureCard({
 }) {
   return (
     <div
-      className="group relative p-8 bg-white rounded-2xl border border-gray-100 hover:border-blue-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+      className="group relative p-8 bg-white rounded-2xl border border-gray-100 cursor-pointer hover:border-blue-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
       style={{ animationDelay: `${index * 100}ms` }}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-transparent to-cyan-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -41,10 +41,10 @@ function FeatureCard({
 
         <p className="text-gray-600 leading-relaxed mb-4">{description}</p>
 
-        <div className="flex items-center space-x-2 text-blue-600 font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        {/* <div className="flex items-center space-x-2 text-blue-600 font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <span>Learn more</span>
           <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-        </div>
+        </div> */}
       </div>
 
       <div className="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full opacity-0 group-hover:opacity-10 blur-2xl transition-opacity duration-300" />
@@ -85,9 +85,10 @@ export default function FeaturesSection() {
     },
     {
       icon: TrendingUp,
-      title: 'Scale Unlimited',
-      description: 'Start with 10 orders/month free. Upgrade as you grow. No limits on success.',
-    },
+      title: 'Scale as You Grow',
+      description:
+        'Start free with up to 50 enquiries & orders. Upgrade anytime as your business grows.',
+    }
   ]
 
   return (

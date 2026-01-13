@@ -16,7 +16,7 @@
     
 //     // Only show on dashboard/main app pages, not on auth pages
 //     const shouldShow = !hasShownThisSession && 
-//                        pathname !== '/login' && 
+//                        pathname !== '/signin' && 
 //                        pathname !== '/signup'
 
 //     if (shouldShow) {

@@ -79,10 +79,10 @@ export default function ForgotPasswordPage() {
           )}
           <div className="text-center">
             <Link
-              href="/login"
+              href="/signin"
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
-              Back to Login
+              Back to Sign in
             </Link>
           </div>
         </CardContent>

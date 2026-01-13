@@ -36,12 +36,12 @@ export async function middleware(request: NextRequest) {
   // 🔒 Redirect logged-out users away from dashboard
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = '/signin'
     return NextResponse.redirect(url)
   }
 
   // 🔁 Redirect logged-in users away from login/signup
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+  if (user && (request.nextUrl.pathname === '/signin' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
