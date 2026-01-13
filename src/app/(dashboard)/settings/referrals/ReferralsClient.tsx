@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useReferrals } from '@/lib/react-query/hooks/useReferrals'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Gift, Copy, Check, Users } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { getReferralData } from './actions'
 
 type Referral = {
     id: string
@@ -19,28 +19,12 @@ type Referral = {
 
 export default function ReferralsClient() {
     const { toast } = useToast()
-    const [isLoading, setIsLoading] = useState(true)
+    const { data, isLoading } = useReferrals()
     const [copied, setCopied] = useState(false)
-    const [referralCode, setReferralCode] = useState('')
-    const [referralLink, setReferralLink] = useState('')
-    const [referrals, setReferrals] = useState<Referral[]>([])
 
-    useEffect(() => {
-        loadReferralData()
-    }, [])
-
-    const loadReferralData = async () => {
-        setIsLoading(true)
-        const data = await getReferralData()
-
-        if (data) {
-            setReferralCode(data.referralCode)
-            setReferralLink(data.referralLink)
-            setReferrals(data.referrals)
-        }
-
-        setIsLoading(false)
-    }
+    const referralCode = data?.referralCode ?? ''
+    const referralLink = data?.referralLink ?? ''
+    const referrals: Referral[] = data?.referrals ?? []
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text)

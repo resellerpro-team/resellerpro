@@ -27,12 +27,12 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const checkRecoverySession = async () => {
       const supabase = createClient()
-      
+
       // First check URL hash for access_token (this is how Supabase sends it)
       const hashFragment = window.location.hash
       const hashParams = new URLSearchParams(hashFragment.substring(1))
       const type = hashParams.get('type')
-      
+
       if (type === 'recovery') {
         // Recovery link detected - session should be automatically set
         // Wait a moment for Supabase to process it
@@ -41,7 +41,7 @@ export default function ResetPasswordPage() {
 
       // Now verify we have a valid session
       const { data: { session }, error } = await supabase.auth.getSession()
-      
+
       if (error || !session) {
         setVerificationError(
           'No password reset session found. Please click the reset link from your email again. IMPORTANT: The link must open in the SAME browser where you are viewing this message.'
@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
 
       if (error) {
         console.error('Password update error:', error)
-        
+
         if (error.message.includes('session')) {
           setFormError('Session expired. Please click the reset link from your email again.')
         } else {
@@ -93,9 +93,9 @@ export default function ResetPasswordPage() {
       }
 
       setSuccess(true)
-      
+
       setTimeout(() => {
-        router.push('/login')
+        router.push('/signin')
       }, 2000)
 
     } catch (error: any) {
@@ -134,7 +134,7 @@ export default function ResetPasswordPage() {
               <AlertTitle>No Reset Session</AlertTitle>
               <AlertDescription>{verificationError}</AlertDescription>
             </Alert>
-            
+
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Important Instructions</AlertTitle>
@@ -183,7 +183,7 @@ export default function ResetPasswordPage() {
             <Alert className="border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-900">
               <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertDescription className="text-green-800 dark:text-green-200">
-                Password updated successfully! Redirecting to login...
+                Password updated successfully! Redirecting to sign in...
               </AlertDescription>
             </Alert>
           ) : (

@@ -16,7 +16,7 @@ export default async function InvoicePage({
   // ✅ 1️⃣ Get authenticated user
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
-    redirect('/login')
+    redirect('/signin')
   }
 
   // ✅ 2️⃣ Fetch user's business profile

@@ -30,7 +30,6 @@ export async function getReferralData() {
         .order('created_at', { ascending: false })
 
     const referrals = (referralsData || []).map((r: any) => {
-        console.log("referral data: ", r);
         return ({
             id: r.id,
             referee_name: r.referee?.full_name || 'User',

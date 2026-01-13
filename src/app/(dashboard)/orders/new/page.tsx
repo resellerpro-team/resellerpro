@@ -20,9 +20,9 @@ export default async function NewOrderPage({
 
   // Get authenticated user
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
-    redirect('/login')
+    redirect('/signin')
   }
 
   // Fetch customers for selection
