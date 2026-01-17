@@ -151,152 +151,159 @@ function getDateRanges(from?: string, to?: string) {
 }
 
 export async function GET(req: NextRequest) {
-    const supabase = await createClient()
+    try {
+        const supabase = await createClient()
 
-    // Get authenticated user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+        // Get authenticated user
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) {
+            console.error('Auth Error:', authError)
+            return NextResponse.json({ error: 'Unauthorized', details: authError?.message }, { status: 401 })
+        }
 
-    const searchParams = req.nextUrl.searchParams
-    const from = searchParams.get('from') || undefined
-    const to = searchParams.get('to') || undefined
+        const searchParams = req.nextUrl.searchParams
+        const from = searchParams.get('from') || undefined
+        const to = searchParams.get('to') || undefined
 
-    const dateRanges = getDateRanges(from, to)
+        const dateRanges = getDateRanges(from, to)
 
-    // Build query for current period
-    let currentQuery = supabase
-        .from('orders')
-        .select(`
-      *,
-      customers (id, name),
-      order_items (
-        *,
-        products (id, name, category)
-      )
-    `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
+        // Build query for current period
+        let currentQuery = supabase
+            .from('orders')
+            .select(`
+          *,
+          customers (id, name, city, state, pincode, phone),
+          order_items (
+            *,
+            products (id, name, category)
+          )
+        `)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: true })
 
-    if (dateRanges.hasFilter) {
-        currentQuery = currentQuery
-            .gte('created_at', dateRanges.currentStart)
-            .lte('created_at', dateRanges.currentEnd)
-    }
+        if (dateRanges.hasFilter) {
+            currentQuery = currentQuery
+                .gte('created_at', dateRanges.currentStart)
+                .lte('created_at', dateRanges.currentEnd)
+        }
 
-    const { data: currentOrders, error } = await currentQuery
+        const { data: currentOrders, error } = await currentQuery
 
-    if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+        if (error) {
+            console.error('Current Query Error:', error)
+            return NextResponse.json({ error: error.message }, { status: 500 })
+        }
 
-    // Build query for previous period
-    let previousQuery = supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', user.id)
+        // Build query for previous period
+        let previousQuery = supabase
+            .from('orders')
+            .select('*')
+            .eq('user_id', user.id)
 
-    // Previous query ALWAYS uses dates in the original logic
-    // (Line 153 in page.tsx: if hasFilter ... else ... both branches do the same thing effectively for previousQuery logic, except range duration differs)
-    // Wait, in page.tsx line 153:
-    /*
-    if (dateRanges.hasFilter) {
-      previousQuery = ...
-    } else {
-      previousQuery = ...
-    }
-    */
-    // Both blocks have identical .gte and .lte calls.
-    previousQuery = previousQuery
-        .gte('created_at', dateRanges.lastStart)
-        .lte('created_at', dateRanges.lastEnd)
+        // Previous query ALWAYS uses dates in the original logic
+        previousQuery = previousQuery
+            .gte('created_at', dateRanges.lastStart)
+            .lte('created_at', dateRanges.lastEnd)
 
-    const { data: previousOrders } = await previousQuery
+        const { data: previousOrders, error: prevError } = await previousQuery
 
-    // Calculate current period metrics
-    const currentRevenue = currentOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0
-    const currentProfit = currentOrders?.reduce((sum, o) => sum + parseFloat(o.profit || 0), 0) || 0
-    const currentOrderCount = currentOrders?.length || 0
-    const currentAvgOrderValue = currentOrderCount > 0 ? currentRevenue / currentOrderCount : 0
-    const profitMargin = currentRevenue > 0 ? (currentProfit / currentRevenue) * 100 : 0
-    const pendingOrdersValue = currentOrders?.filter((o: any) => o.status === 'pending').reduce((sum: number, o: any) => sum + parseFloat(o.total_amount || 0), 0) || 0
+        if (prevError) {
+            console.error('Previous Query Error:', prevError)
+            // We can treat previousOrders as empty if it fails, or return error. 
+            // For now, let's just log and continue with empty array to avoid crash, OR fail.
+            // Given it's 500 debugging, let's expose it if it is the scaler.
+            // Actually, the original code had NO error check here, so if it failed, previousOrders was null.
+        }
 
-    // Calculate previous period metrics
-    const previousRevenue = previousOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0
-    const previousProfit = previousOrders?.reduce((sum, o) => sum + parseFloat(o.profit || 0), 0) || 0
-    const previousOrderCount = previousOrders?.length || 0
-    const previousAvgOrderValue = previousOrderCount > 0 ? previousRevenue / previousOrderCount : 0
-    const previousProfitMargin = previousRevenue > 0 ? (previousProfit / previousRevenue) * 100 : 0
+        // Calculate current period metrics
+        const currentRevenue = currentOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0
+        const currentProfit = currentOrders?.reduce((sum, o) => sum + parseFloat(o.profit || 0), 0) || 0
+        const currentOrderCount = currentOrders?.length || 0
+        const currentAvgOrderValue = currentOrderCount > 0 ? currentRevenue / currentOrderCount : 0
+        const profitMargin = currentRevenue > 0 ? (currentProfit / currentRevenue) * 100 : 0
+        const pendingOrdersValue = currentOrders?.filter((o: any) => o.status === 'pending').reduce((sum: number, o: any) => sum + parseFloat(o.total_amount || 0), 0) || 0
 
-    // Calculate changes
-    const revenueChange = calculatePercentageChange(currentRevenue, previousRevenue)
-    const profitChange = calculatePercentageChange(currentProfit, previousProfit)
-    const orderCountChange = `${currentOrderCount - previousOrderCount >= 0 ? '+' : ''}${currentOrderCount - previousOrderCount}`
-    const avgOrderValueChange = calculatePercentageChange(currentAvgOrderValue, previousAvgOrderValue)
-    const profitMarginChange = calculatePercentageChange(profitMargin, previousProfitMargin)
+        // Calculate previous period metrics
+        // Handle previousOrders potentially being null/undefined from error or no data
+        const safePrevOrders = previousOrders || []
+        const previousRevenue = safePrevOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0
+        const previousProfit = safePrevOrders.reduce((sum, o) => sum + parseFloat(o.profit || 0), 0) || 0
+        const previousOrderCount = safePrevOrders.length || 0
+        const previousAvgOrderValue = previousOrderCount > 0 ? previousRevenue / previousOrderCount : 0
+        const previousProfitMargin = previousRevenue > 0 ? (previousProfit / previousRevenue) * 100 : 0
 
-    // Calculate top selling products
-    const productSales: Record<string, { name: string; revenue: number; quantity: number }> = {}
+        // Calculate changes
+        const revenueChange = calculatePercentageChange(currentRevenue, previousRevenue)
+        const profitChange = calculatePercentageChange(currentProfit, previousProfit)
+        const orderCountChange = `${currentOrderCount - previousOrderCount >= 0 ? '+' : ''}${currentOrderCount - previousOrderCount}`
+        const avgOrderValueChange = calculatePercentageChange(currentAvgOrderValue, previousAvgOrderValue)
+        const profitMarginChange = calculatePercentageChange(profitMargin, previousProfitMargin)
 
-    currentOrders?.forEach((order: any) => {
-        order.order_items?.forEach((item: any) => {
-            const productId = item.product_id
-            const productName = item.products?.name || item.product_name || 'Unknown Product'
-            const revenue = parseFloat(item.subtotal || 0)
-            const quantity = item.quantity || 0
+        // Calculate top selling products
+        const productSales: Record<string, { name: string; revenue: number; quantity: number }> = {}
 
-            if (!productSales[productId]) {
-                productSales[productId] = { name: productName, revenue: 0, quantity: 0 }
-            }
-            productSales[productId].revenue += revenue
-            productSales[productId].quantity += quantity
+        currentOrders?.forEach((order: any) => {
+            order.order_items?.forEach((item: any) => {
+                const productId = item.product_id
+                const productName = item.products?.name || item.product_name || 'Unknown Product'
+                const revenue = parseFloat(item.subtotal || 0)
+                const quantity = item.quantity || 0
+
+                if (!productSales[productId]) {
+                    productSales[productId] = { name: productName, revenue: 0, quantity: 0 }
+                }
+                productSales[productId].revenue += revenue
+                productSales[productId].quantity += quantity
+            })
         })
-    })
 
-    const topProducts = Object.values(productSales)
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5)
+        const topProducts = Object.values(productSales)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5)
 
-    // Calculate top customers
-    const customerSpending: Record<string, { name: string; spending: number; orderCount: number }> = {}
+        // Calculate top customers
+        const customerSpending: Record<string, { name: string; spending: number; orderCount: number }> = {}
 
-    currentOrders?.forEach((order: any) => {
-        const customerId = order.customer_id
-        const customerName = order.customers?.name || 'Unknown Customer'
-        const spending = parseFloat(order.total_amount || 0)
+        currentOrders?.forEach((order: any) => {
+            const customerId = order.customer_id
+            const customerName = order.customers?.name || 'Unknown Customer'
+            const spending = parseFloat(order.total_amount || 0)
 
-        if (!customerSpending[customerId]) {
-            customerSpending[customerId] = { name: customerName, spending: 0, orderCount: 0 }
-        }
-        customerSpending[customerId].spending += spending
-        customerSpending[customerId].orderCount += 1
-    })
+            if (!customerSpending[customerId]) {
+                customerSpending[customerId] = { name: customerName, spending: 0, orderCount: 0 }
+            }
+            customerSpending[customerId].spending += spending
+            customerSpending[customerId].orderCount += 1
+        })
 
-    const topCustomers = Object.values(customerSpending)
-        .sort((a, b) => b.spending - a.spending)
-        .slice(0, 5)
+        const topCustomers = Object.values(customerSpending)
+            .sort((a, b) => b.spending - a.spending)
+            .slice(0, 5)
 
-    return NextResponse.json({
-        orders: currentOrders, // We need to return orders for the charts (SalesProfitChart, RevenueByCategoryChart etc)
-        stats: {
-            currentRevenue,
-            currentProfit,
-            profitMargin,
-            currentOrderCount,
-            currentAvgOrderValue,
-            pendingOrdersValue,
-            revenueChange,
-            profitChange,
-            orderCountChange,
-            avgOrderValueChange,
-            profitMarginChange,
-        },
-        topProducts,
-        topCustomers,
-        dateRanges: {
-            hasFilter: dateRanges.hasFilter,
-            periodLabel: dateRanges.periodLabel
-        }
-    })
+        return NextResponse.json({
+            orders: currentOrders,
+            stats: {
+                currentRevenue,
+                currentProfit,
+                profitMargin,
+                currentOrderCount,
+                currentAvgOrderValue,
+                pendingOrdersValue,
+                revenueChange,
+                profitChange,
+                orderCountChange,
+                avgOrderValueChange,
+                profitMarginChange,
+            },
+            topProducts,
+            topCustomers,
+            dateRanges: {
+                hasFilter: dateRanges.hasFilter,
+                periodLabel: dateRanges.periodLabel
+            }
+        })
+    } catch (e: any) {
+        console.error('API Error:', e)
+        return NextResponse.json({ error: e.message, stack: e.stack }, { status: 500 })
+    }
 }
