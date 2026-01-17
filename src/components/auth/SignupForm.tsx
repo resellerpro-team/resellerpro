@@ -119,106 +119,122 @@ export default function SignupForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4 ">
+      {/* Animated background elements */}
+    
 
-      <Card className="w-full max-w-md relative z-10 border-2">
-        <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-            <Sparkles className="h-8 w-8" />
+      <Card className="w-full max-w-4xl relative z-10 backdrop-blur-sm shadow-lg border">
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          {/* Left Side - Logo and Description */}
+          <div className="hidden md:flex flex-col items-center justify-center p-6 bg-blue-600 rounded-t-xl">
+            <div className="flex h-16 w-16 items-center justify-center bg-white/20 backdrop-blur-sm shadow-lg mb-4">
+              <Sparkles className="h-8 w-8 rounded-lg text-white" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-white text-center mb-2">
+              Create Account
+            </CardTitle>
+            <CardDescription className="text-base text-white/90 text-center">
+              Start your reselling journey today
+            </CardDescription>
+          </div>
+            
+          <div className="block md:hidden items-center justify-center p-6  rounded-t-xl">
+            <CardTitle className="text-2xl font-bold text-black text-center mb-2">
+              Create Account
+            </CardTitle>
+            <CardDescription className="text-base text-black text-center">
+              Start your reselling journey today
+            </CardDescription>
           </div>
 
-          <div className="space-y-2">
-            <CardTitle className="text-3xl font-bold">Create Account</CardTitle>
-            <CardDescription className="text-base">Start your reselling journey today</CardDescription>
-          </div>
-        </CardHeader>
+          {/* Right Side - Form Fields */}
+          <CardContent className="pt-3 pb-3">
+            <div className="space-y-3">
+            {/* Two Column Layout for Name and Business */}
+            <div className="grid grid-cols-1 gap-4">
+              {/* Full Name */}
+              <div className="space-y-1">
+                <Label htmlFor="fullName" className="text-sm font-medium">Full Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
+                  <Input
+                    id="fullName"
+                    placeholder="Rahul Kumar"
+                    className="pl-10 h-8"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-
-            {/* Full Name */}
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
-                <Input
-                  id="fullName"
-                  placeholder="Rahul Kumar"
-                  className="pl-10"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                />
+              {/* Business Name */}
+              <div className="space-y-1">
+                <Label htmlFor="businessName" className="text-sm font-medium">Business Name (Optional)</Label>
+                <div className="relative">
+                  <Briefcase className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
+                  <Input
+                    id="businessName"
+                    placeholder="Rahul's Store"
+                    className="pl-10 h-8"
+                    value={formData.businessName}
+                    onChange={handleInputChange}
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Business Name */}
-            <div className="space-y-2">
-              <Label htmlFor="businessName">Business Name (Optional)</Label>
-              <div className="relative">
-                <Briefcase className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
-                <Input
-                  id="businessName"
-                  placeholder="Rahul's Store"
-                  className="pl-10"
-                  value={formData.businessName}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                />
+            {/* Two Column Layout for Email and Phone */}
+            <div className="grid grid-cols-1 gap-4">
+              {/* Email */}
+              <div className="space-y-1">
+                <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    className="pl-10 h-8"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  className="pl-10"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            {/* Phone */}
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="9876543210"
-                  className="pl-10"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                />
+              {/* Phone */}
+              <div className="space-y-1">
+                <Label htmlFor="phone" className="text-sm font-medium">Phone Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="9876543210"
+                    className="pl-10 h-8"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
             </div>
 
             {/* Password */}
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+            <div className="space-y-1">
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="At least 6 characters"
-                  className="pl-10 pr-10"
+                  className="pl-10 pr-10 h-8"
                   value={formData.password}
                   onChange={handleInputChange}
                   required
@@ -234,75 +250,69 @@ export default function SignupForm() {
               </div>
             </div>
 
-            {/* Referral Code (Optional & Collapsed) */}
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => setShowReferralField(!showReferralField)}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            {/* Referral Code */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 mb-1">
+                <Gift className="h-4 w-4 text-gray" />
+                <Label htmlFor="referralCode" className="text-sm font-medium">Referral Code (Optional)</Label>
+              </div>
+              <Input
+                id="referralCode"
+                placeholder="Enter referral code"
+                className="h-8"
+                value={formData.referralCode}
+                onChange={handleInputChange}
                 disabled={isLoading}
-              >
-                <Gift className="h-4 w-4" />
-                <span>Have a referral code? (Optional)</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${showReferralField ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showReferralField && (
-                <div className="space-y-1">
-                  <Input
-                    id="referralCode"
-                    placeholder="Enter referral code"
-                    value={formData.referralCode}
-                    onChange={handleInputChange}
-                    disabled={isLoading}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Use a referral code to earn ₹50 wallet credit instantly.
-                  </p>
-                </div>
-              )}
+              />
+              <p className="text-xs text-black font-small">
+                Use a referral code to earn ₹50 wallet credit instantly.
+              </p>
             </div>
 
             {/* Terms */}
-            <div className="flex items-start space-x-2">
+            <div className="flex items-start space-x-2 p-2.5 bg-gray-50 dark:bg-gray-800/50">
               <Checkbox
                 id="terms"
                 checked={formData.agreeToTerms}
                 onCheckedChange={(checked) => setFormData({ ...formData, agreeToTerms: checked as boolean })}
                 disabled={isLoading}
+                className="mt-0.5"
               />
-              <label htmlFor="terms" className="text-sm text-muted-foreground">
+              <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
                 I agree to the{' '}
-                <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>
+                <Link href="/terms" className="text-blue-600 font-medium hover:underline">Terms of Service</Link>
                 {' '}and{' '}
-                <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+                <Link href="/privacy" className="text-blue-600 font-medium hover:underline">Privacy Policy</Link>
               </label>
             </div>
 
             {/* Submit */}
-            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+            <Button 
+              onClick={handleSubmit}
+              className="w-full h-9 text-sm font-semibold bg-blue-600" 
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   Creating account...
                 </>
               ) : (
                 'Create Free Account'
               )}
             </Button>
-
-          </form>
+          </div>
         </CardContent>
 
-        <CardFooter>
-          <p className="w-full text-center text-sm text-muted-foreground">
+        <CardFooter className="border-t pt-3 md:col-span-2">
+          <p className="w-full text-center text-sm font-bold text-muted-foreground">
             Already have an account?{' '}
             <Link href="/signin" className="text-primary font-medium hover:underline">
               Sign in
             </Link>
           </p>
         </CardFooter>
-
+        </div>
       </Card>
     </div>
   )
