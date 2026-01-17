@@ -45,6 +45,7 @@ export type DashboardAlerts = {
   lowStockProducts: number
   monthlyRevenue: number
   monthlyTarget: number
+  totalOrders: number
 }
 
 export type Enquiry = {
@@ -52,7 +53,7 @@ export type Enquiry = {
   customerName: string
   message: string
   date: string
-  status: 'new' | 'read' | 'replied'
+  status: 'new' | 'read' | 'replied' | 'converted' | 'dropped'
 }
 
 // Internal types for database responses
@@ -457,6 +458,7 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       lowStockProducts: 0,
       monthlyRevenue: 0,
       monthlyTarget: 50000,
+      totalOrders: 0,
     }
   }
 
@@ -475,6 +477,12 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       .eq('user_id', user.id)
       .eq('stock_status', 'low_stock')
 
+    // Count total orders (all time)
+    const { count: totalOrders } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
     // Calculate monthly revenue
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
@@ -491,11 +499,16 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       0
     ) || 0
 
+    // Dynamic milestones
+    const milestones = [10000, 25000, 50000, 75000, 100000, 250000, 500000, 1000000]
+    const nextMilestone = milestones.find(m => m > monthlyRevenue) || milestones[milestones.length - 1]
+
     return {
       pendingOrders: pendingOrders || 0,
       lowStockProducts: lowStockProducts || 0,
       monthlyRevenue: Math.round(monthlyRevenue),
-      monthlyTarget: 50000, // Can be made dynamic based on user settings
+      monthlyTarget: nextMilestone,
+      totalOrders: totalOrders || 0,
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
@@ -505,15 +518,69 @@ export async function getDashboardAlerts(): Promise<DashboardAlerts> {
       lowStockProducts: 0,
       monthlyRevenue: 0,
       monthlyTarget: 50000,
+      totalOrders: 0,
     }
   }
 }
 
 /**
- * Fetches enquiries (mock data for now)
+ * Fetches recent enquiries
  */
 export async function getEnquiries(): Promise<Enquiry[]> {
-  // In a real app, this would fetch from a 'messages' or 'enquiries' table
-  // For now, we'll return mock data as requested
-  return []
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  try {
+    const { data: enquiries } = await supabase
+      .from('enquiries')
+      .select('id, customer_name, message, created_at, status')
+      .eq('user_id', user.id)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (!enquiries) return []
+
+    return enquiries.map(enquiry => {
+      // Calculate time ago
+      const createdAt = new Date(enquiry.created_at)
+      const now = new Date()
+      const diffMs = now.getTime() - createdAt.getTime()
+      const diffMins = Math.floor(diffMs / 60000)
+      const diffHours = Math.floor(diffMs / 3600000)
+      const diffDays = Math.floor(diffMs / 86400000)
+
+      let timeAgo = ''
+      if (diffMins < 1) {
+        timeAgo = 'Just now'
+      } else if (diffMins < 60) {
+        timeAgo = `${diffMins} ${diffMins === 1 ? 'min' : 'mins'} ago`
+      } else if (diffHours < 24) {
+        timeAgo = `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`
+      } else {
+        timeAgo = `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`
+      }
+
+      // Map status loosely to satisfy the type, defaulting 'new' if matches, else cast
+      // The DB status might be 'new', 'needs_follow_up', etc.
+      // The UI expects 'new', 'read', 'replied'
+      let status: 'new' | 'read' | 'replied' | 'converted' | 'dropped' = 'read'
+      if (enquiry.status === 'new') status = 'new'
+      else if (enquiry.status === 'converted') status = 'converted'
+      else if (enquiry.status === 'dropped') status = 'dropped'
+      else if (enquiry.status === 'replied') status = 'replied'
+
+      return {
+        id: enquiry.id,
+        customerName: enquiry.customer_name || 'Unknown',
+        message: enquiry.message || '',
+        date: timeAgo,
+        status: status
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching enquiries:', error)
+    return []
+  }
 }

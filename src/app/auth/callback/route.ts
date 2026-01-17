@@ -37,5 +37,5 @@ export async function GET(request: NextRequest) {
     }
 
     // No code present, redirect to login
-    return NextResponse.redirect(new URL('/login', requestUrl.origin))
+    return NextResponse.redirect(new URL('/signin', requestUrl.origin))
 }

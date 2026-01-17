@@ -6,7 +6,7 @@ import {
   Edit,
   MessageSquare,
   Phone,
-  DollarSign,
+  IndianRupee,
   ShoppingCart,
   Mail,
   MapPin,
@@ -139,7 +139,7 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <span className="text-[20px]" >₹</span>
+              <IndianRupee className="h-4 w-4" />
               Total Spent
             </CardTitle>
           </CardHeader>
@@ -252,7 +252,7 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
             <CardDescription>Recent orders from this customer</CardDescription>
           </div>
           <Button asChild>
-            <Link href={`/orders/new?customer=${id}`}>New Order</Link>
+            <Link href={`/orders/new?customerId=${id}`}>New Order</Link>
           </Button>
         </CardHeader>
         <CardContent>
@@ -261,7 +261,7 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
               <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground">No orders yet</p>
               <Button className="mt-4" asChild>
-                <Link href={`/orders/new?customer=${id}`}>Create First Order</Link>
+                <Link href={`/orders/new?customerId=${id}`}>Create First Order</Link>
               </Button>
             </div>
           ) : (
@@ -279,8 +279,8 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
                           order.status === 'delivered'
                             ? 'default'
                             : order.status === 'cancelled'
-                            ? 'destructive'
-                            : 'secondary'
+                              ? 'destructive'
+                              : 'secondary'
                         }
                       >
                         {order.status}

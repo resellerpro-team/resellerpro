@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useWallet } from '@/lib/react-query/hooks/useWallet'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Wallet as WalletIcon, TrendingUp, TrendingDown, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { getWalletData } from './actions'
 
 type Transaction = {
     id: string
@@ -15,27 +14,10 @@ type Transaction = {
 }
 
 export default function WalletClient() {
-    const [isLoading, setIsLoading] = useState(true)
-    const [balance, setBalance] = useState(0)
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const { data, isLoading } = useWallet()
 
-    console.log('transactions', transactions);
-
-    useEffect(() => {
-        loadWalletData()
-    }, [])
-
-    const loadWalletData = async () => {
-        setIsLoading(true)
-        const data = await getWalletData()
-
-        if (data) {
-            setBalance(data.balance)
-            setTransactions(data.transactions)
-        }
-
-        setIsLoading(false)
-    }
+    const balance = data?.balance ?? 0
+    const transactions: Transaction[] = data?.transactions ?? []
 
     if (isLoading) {
         return (

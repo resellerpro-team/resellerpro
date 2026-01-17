@@ -22,6 +22,7 @@ import Link from 'next/link'
 import { OrderStatusUpdate } from '@/components/orders/OrderStatusUpdate'
 import { PaymentStatusUpdate } from '@/components/orders/PaymentStatusUpdate'
 import { CollapsibleSection } from '@/components/orders/CollapsibleSection'
+import { WhatsAppOrderMessages } from '@/components/orders/WhatsAppOrderMessages'
 
 //  FIXED: params is now a Promise
 export default async function OrderDetailsPage({
@@ -345,6 +346,28 @@ export default async function OrderDetailsPage({
                       View Customer
                     </Link>
                   </Button>
+
+                  {/* WhatsApp Order Messages */}
+                  <WhatsAppOrderMessages
+                    orderNumber={order.order_number}
+                    customerName={order.customers.name}
+                    customerPhone={order.customers.phone}
+                    orderStatus={order.status}
+                    paymentStatus={order.payment_status}
+                    totalAmount={parseFloat(order.total_amount).toFixed(2)}
+                    itemsText={
+                      order.order_items && order.order_items.length > 0
+                        ? order.order_items
+                            .map((item: any, idx: number) => 
+                              `${idx + 1}. ${item.product_name} - ₹${parseFloat(item.unit_selling_price).toFixed(0)} x ${item.quantity} = ₹${parseFloat(item.subtotal).toFixed(0)}`
+                            )
+                            .join('\n')
+                        : 'Order items'
+                    }
+                    trackingNumber={order.tracking_number}
+                    courierService={order.courier_service}
+                    shopName={businessName}
+                  />
                 </CardContent>
               </Card>
             )}

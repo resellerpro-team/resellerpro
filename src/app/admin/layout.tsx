@@ -15,7 +15,7 @@ export default async function AdminLayout({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/admin/login')
+    redirect('/admin/signin')
   }
 
   // ✅ Check Role
@@ -32,7 +32,7 @@ export default async function AdminLayout({
   // ✅ Auth Passed → Render Admin Layout
   return (
     <div className="min-h-screen flex flex-col bg-[#0f172a] text-gray-100">
-     
+
 
       {/* ===== Layout Body ===== */}
       <div className="flex flex-1 overflow-hidden">

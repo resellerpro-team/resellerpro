@@ -14,5 +14,5 @@ export async function logout() {
 
   // Redirect the user to the login page after signing out
   // The middleware will also ensure they can't access dashboard pages
-  return redirect('/login')
+  return redirect('/signin')
 }

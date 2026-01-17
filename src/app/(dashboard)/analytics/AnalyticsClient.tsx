@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { DateRangePicker } from '@/components/analytics/DateRangePicker'
@@ -9,7 +10,7 @@ import { PaymentStatusChart } from '@/components/analytics/PaymentStatusChart'
 import { OrderStatusChart } from '@/components/analytics/OrderStatusChart'
 import { ExportButton } from '@/components/analytics/ExportButton'
 import {
-    DollarSign,
+    IndianRupee,
     ShoppingCart,
     Users,
     TrendingUp,
@@ -25,11 +26,36 @@ import Link from 'next/link'
 import { Progress } from '@/components/ui/progress'
 import { format } from 'date-fns'
 import { useAnalytics } from '@/lib/react-query/hooks/useAnalytics'
+import { createClient } from '@/lib/supabase/client'
 
 export function AnalyticsClient() {
     const searchParams = useSearchParams()
     const from = searchParams.get('from') || undefined
     const to = searchParams.get('to') || undefined
+
+    const [businessName, setBusinessName] = useState<string>('ResellerPro')
+
+    // Fetch business name from user profile
+    useEffect(() => {
+        async function fetchBusinessName() {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('business_name')
+                    .eq('id', user.id)
+                    .single()
+
+                if (profile?.business_name) {
+                    setBusinessName(profile.business_name)
+                }
+            }
+        }
+
+        fetchBusinessName()
+    }, [])
 
     const { data, isLoading, error } = useAnalytics({ from, to })
 
@@ -49,7 +75,7 @@ export function AnalyticsClient() {
         )
     }
 
-    const { orders = [], stats, topProducts = [], topCustomers = [], dateRanges } = data
+    const { orders = [], stats, topProducts = [], topCustomers = [], dateRanges } = data || {}
 
     // Provide fallback stats if API returns undefined (though it shouldn't)
     const safeStats = stats || {
@@ -87,6 +113,7 @@ export function AnalyticsClient() {
                     <ExportButton
                         orders={orders}
                         dateRange={{ from, to }}
+                        businessName={businessName}
                     />
                     <DateRangePicker />
                 </div>
@@ -98,7 +125,7 @@ export function AnalyticsClient() {
                     title="Total Revenue"
                     value={`₹${safeStats.currentRevenue.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
                     change={`${safeStats.revenueChange} ${dateRanges?.periodLabel || ''}`}
-                    icon={DollarSign}
+                    icon={IndianRupee}
                     trend={safeStats.revenueChange.startsWith('+') ? 'up' : safeStats.revenueChange.startsWith('-') ? 'down' : 'neutral'}
                 />
                 <StatsCard

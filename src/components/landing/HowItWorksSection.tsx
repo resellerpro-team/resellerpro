@@ -82,48 +82,70 @@ function StepCard({
 }
 
 export default function HowItWorksSection() {
+
   const steps = [
     {
       number: 1,
-      icon: Copy,
-      title: 'Smart Paste from WhatsApp',
-      description: 'Copy customer messages from WhatsApp and paste directly into Reseller Pro.',
+      icon: MessageSquare,
+      title: 'Add WhatsApp Enquiries',
+      description:
+        'When you receive a customer message on WhatsApp, quickly add it as an enquiry in ResellerPro.',
       details: [
-        'Auto-extracts name, phone & address',
-        'No manual typing needed',
-        'Works in seconds',
+        'Save customer name & phone number',
+        'Track every enquiry in one place',
+        'Never forget to follow up',
       ],
     },
     {
       number: 2,
-      icon: Package,
-      title: 'Track Orders Centrally',
-      description: 'Manage all orders in one organized dashboard with complete visibility.',
+      icon: CheckCircle,
+      title: 'Track Enquiry Status',
+      description:
+        'Manage enquiry progress clearly and stay on top of pending leads.',
       details: [
-        'See order status at a glance',
-        'Track from processing to delivery',
-        'Update customers instantly',
+        'Mark as Contacted, Converted, or Dropped',
+        'Get reminders for unattended enquiries',
+        'Stay organized as enquiries grow',
       ],
     },
     {
       number: 3,
-      icon: MessageSquare,
-      title: 'Message Dealers Instantly',
-      description: 'Send pre-formatted messages to dealers with one click via WhatsApp.',
+      icon: Copy,
+      title: 'Convert Enquiry to Order',
+      description:
+        'Once a customer confirms, instantly convert the enquiry into an order.',
       details: [
-        'Pre-built message templates',
-        'One-click WhatsApp integration',
-        'Save hours on communication',
+        'Smart paste customer details or enter manually',
+        'Select products and quantities easily',
+        'Create orders in seconds',
       ],
     },
     {
       number: 4,
+      icon: Package,
+      title: 'Update Orders & Message Customers',
+      description:
+        'Manage order status and send updates to customers via WhatsApp.',
+      details: [
+        'Update status: Processing, Shipped, Delivered',
+        'Use ready-made WhatsApp message templates',
+        'One-click WhatsApp messaging',
+      ],
+    },
+    {
+      number: 5,
       icon: FileText,
-      title: 'Generate Branded Invoices',
-      description: 'Create professional invoices with your business name and logo automatically.',
-      details: ['Custom branded design', 'Instant generation', 'Look more professional'],
+      title: 'View Analytics & Reports',
+      description:
+        'Understand how your business is performing with clear reports.',
+      details: [
+        'Daily, weekly & monthly reports',
+        'Track revenue and order trends',
+        'Make better business decisions',
+      ],
     },
   ]
+
 
   return (
     <section

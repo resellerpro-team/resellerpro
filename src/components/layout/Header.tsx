@@ -15,18 +15,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { useTheme } from 'next-themes'
+import { NotificationDrawer } from '@/components/notifications/NotificationDrawer'
+import { GlobalSearch } from '@/components/layout/GlobalSearch'
 
 export default function Header() {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
-  const [searchQuery, setSearchQuery] = useState('')
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
-    }
-  }
 
   return (
     <header className="flex flex-wrap items-center justify-between px-4 border-b">
@@ -44,59 +38,12 @@ export default function Header() {
         </Button>
 
         {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center">
-                3
-              </Badge>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="max-h-96 overflow-y-auto">
-              <NotificationItem
-                title="New order received"
-                description="Order #1234 from Rahul Sharma"
-                time="2 min ago"
-                unread
-              />
-              <NotificationItem
-                title="Low stock alert"
-                description="Wireless Earbuds - Only 5 left"
-                time="1 hour ago"
-                unread
-              />
-              <NotificationItem
-                title="Payment received"
-                description="₹2,499 from Priya Singh"
-                time="3 hours ago"
-              />
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="justify-center text-primary">
-              View all notifications
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <NotificationDrawer />
       </div>
 
       {/* Search Section (Bottom on mobile, Left on desktop) */}
-      <div className="order-2 sm:order-1 flex h-16 w-full sm:w-[60%] items-center gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <form onSubmit={handleSearch} className="flex-1 w-full">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search products, customers, orders..."
-              className="pl-8 pr-2 h-10 w-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </form>
+      <div className="order-2 sm:order-1 flex h-16 w-full sm:w-[50%] items-center gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <GlobalSearch />
 
         {/* Quick Add */}
         <DropdownMenu>

@@ -25,7 +25,7 @@ import {
 
 import {
   Package,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Download,
   Grid3x3,
@@ -38,6 +38,7 @@ import {
 import Link from "next/link";
 import { ProductCard } from "@/components/products/ProductCard";
 import { ProductRow } from "@/components/products/ProductRow";
+import { ExportProducts } from "@/components/products/ExportProducts";
 import ProductsLoading from "./loading";
 
 // ---------------- TYPES ----------------
@@ -106,12 +107,12 @@ export function ProductsClient() {
       typedProducts.length === 0
         ? 0
         : (
-            typedProducts.reduce((acc: number, p: Product) => {
-              const margin =
-                ((p.selling_price - p.cost_price) / p.selling_price) * 100;
-              return acc + margin;
-            }, 0) / typedProducts.length
-          ).toFixed(1),
+          typedProducts.reduce((acc: number, p: Product) => {
+            const margin =
+              ((p.selling_price - p.cost_price) / p.selling_price) * 100;
+            return acc + margin;
+          }, 0) / typedProducts.length
+        ).toFixed(1),
   };
 
   // -------------------- URL UPDATE --------------------
@@ -128,33 +129,7 @@ export function ProductsClient() {
     });
   };
 
-  // -------------------- CSV EXPORT --------------------
-  const exportCSV = () => {
-    if (typedProducts.length === 0) return;
 
-    const headers = ["Name", "Category", "Cost", "Sell", "Qty", "Status"];
-
-    const rows = typedProducts.map((p: Product) => [
-      `"${p.name}"`,
-      p.category || "",
-      p.cost_price,
-      p.selling_price,
-      p.stock_quantity,
-      p.stock_status,
-    ]);
-
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "products.csv";
-    a.click();
-
-    URL.revokeObjectURL(url);
-  };
 
   // -------------------- UI --------------------
   return (
@@ -164,10 +139,7 @@ export function ProductsClient() {
         <h1 className="text-3xl font-bold">Products</h1>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={exportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          <ExportProducts products={typedProducts} />
 
           <Button asChild>
             <Link href="/products/new">+ Add Product</Link>
@@ -181,7 +153,7 @@ export function ProductsClient() {
         <StatsCard
           title="Inventory Value"
           value={`₹${stats.totalValue.toLocaleString()}`}
-          icon={DollarSign}
+          icon={IndianRupee}
         />
         <StatsCard
           title="Total Profit"
