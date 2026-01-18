@@ -91,29 +91,29 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
   }
 
   // Get all available images
-  const allImages = product.images && product.images.length > 0 
-    ? product.images 
-    : product.image_url 
-    ? [product.image_url] 
-    : []
+  const allImages = product.images && product.images.length > 0
+    ? product.images
+    : product.image_url
+      ? [product.image_url]
+      : []
 
   const formatProductMessage = () => {
-    const stockStatus = product.stock_status === 'in_stock' 
-      ? '✅ In Stock' 
-      : product.stock_status === 'low_stock' 
-      ? '⚠️ Low Stock' 
-      : '❌ Out of Stock'
+    const stockStatus = product.stock_status === 'in_stock'
+      ? '✅ In Stock'
+      : product.stock_status === 'low_stock'
+        ? '⚠️ Low Stock'
+        : '❌ Out of Stock'
 
     let message = `🛍️ *${product.name}*\n`
     message += `━━━━━━━━━━━━━━━━━━━\n\n`
-    
+
     if (product.description) {
       message += `📝 ${product.description}\n\n`
     }
-    
+
     message += `💰 *Price:* ₹${product.selling_price.toLocaleString()}\n`
     message += `📦 *Availability:* ${stockStatus}\n`
-    
+
     if (product.category) {
       message += `🏷️ *Category:* ${product.category}\n`
     }
@@ -157,7 +157,7 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
     try {
       // Get the current image URL
       const imageUrl = allImages[selectedImageIndex]
-      
+
       if (!imageUrl) {
         toast({
           title: 'No Image',
@@ -171,20 +171,20 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
       // Fetch the image
       const response = await fetch(imageUrl)
       const blob = await response.blob()
-      
+
       // Create download link
       const link = document.createElement('a')
-      const imageName = allImages.length > 1 
+      const imageName = allImages.length > 1
         ? `${product.name.replace(/[^a-z0-9]/gi, '_')}_image_${selectedImageIndex + 1}.png`
         : `${product.name.replace(/[^a-z0-9]/gi, '_')}.png`
-      
+
       link.download = imageName
       link.href = URL.createObjectURL(blob)
       link.click()
-      
+
       // Clean up
       URL.revokeObjectURL(link.href)
-      
+
       toast({
         title: 'Downloaded!',
         description: `Product image ${allImages.length > 1 ? `${selectedImageIndex + 1}` : ''} saved successfully.`,
@@ -211,7 +211,7 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
     }
 
     const cleanNumber = phoneNumber.replace(/[^\d+]/g, '')
-    
+
     if (cleanNumber.replace('+', '').length < 10) {
       toast({
         title: 'Invalid Phone Number',
@@ -224,14 +224,14 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
     const message = formatProductMessage()
     const encodedMessage = encodeURIComponent(message)
     const whatsappUrl = `https://wa.me/${cleanNumber.replace('+', '')}?text=${encodedMessage}`
-    
+
     window.open(whatsappUrl, '_blank')
-    
+
     toast({
       title: 'Opening WhatsApp...',
       description: 'Message will be sent with product details and images.',
     })
-    
+
     setPhoneNumber('')
   }
 
@@ -289,16 +289,15 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
             {allImages.length > 1 && (
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Select Image to Download</Label>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {allImages.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImageIndex(idx)}
-                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                        selectedImageIndex === idx 
-                          ? 'border-blue-600 ring-2 ring-blue-600' 
+                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx
+                          ? 'border-blue-600 ring-2 ring-blue-600'
                           : 'border-gray-200 hover:border-gray-400'
-                      }`}
+                        }`}
                     >
                       <Image
                         src={img}
@@ -323,12 +322,11 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
 
             <div className="space-y-3">
               <Label className="text-base font-semibold">Product Card Preview</Label>
-              
+
               {/* Downloadable Product Card */}
-              <div 
+              <div
                 ref={cardRef}
-                className="bg-white p-6 rounded-lg border-2 space-y-4"
-                style={{ width: '500px' }}
+                className="bg-white p-6 rounded-lg border-2 space-y-4 w-full max-w-[500px] mx-auto"
               >
                 {/* Header */}
                 <div className="space-y-2">
@@ -357,7 +355,7 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                     <p className="text-sm text-gray-500 uppercase tracking-wide">Price</p>
                     <p className="text-3xl font-bold text-blue-600">₹{product.selling_price.toLocaleString()}</p>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-gray-500 uppercase">Availability</p>
@@ -415,10 +413,10 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                   </>
                 )}
               </Button>
-              
+
               <p className="text-xs text-center text-muted-foreground">
-                {allImages.length > 1 
-                  ? `💡 Downloads clean product image without text overlays` 
+                {allImages.length > 1
+                  ? `💡 Downloads clean product image without text overlays`
                   : `💡 Downloads the product image only, without title or price`
                 }
               </p>
