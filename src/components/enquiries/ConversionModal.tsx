@@ -29,6 +29,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { SearchableSelect, SearchableSelectOption } from "@/components/ui/searchable-select"
 import { useToast } from "@/components/ui/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Sparkles, ChevronDown, ChevronRight, Trash2, CheckCircle2, ArrowRight } from "lucide-react";
@@ -407,20 +408,20 @@ function ConversionFormContent({ enquiry, existingCustomer, onClose }: { enquiry
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Add Product</label>
-                                <Select onValueChange={addProduct}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Search product..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {/* @ts-expect-error - products map type check */}
-                                        {products.map((p) => (
-                                            <SelectItem key={p.id} value={p.id} disabled={p.stock_quantity === 0}>
-                                                {p.name} - ₹{p.selling_price}
-                                                {p.stock_quantity === 0 ? " (Out)" : ""}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <SearchableSelect
+                                    options={products.map((p: any): SearchableSelectOption => ({
+                                        value: p.id,
+                                        label: `${p.name} - ₹${p.selling_price}`,
+                                        subtitle: p.stock_quantity <= 10
+                                            ? `⚠️ Low Stock: ${p.stock_quantity} units`
+                                            : `Stock: ${p.stock_quantity} units`,
+                                    }))}
+                                    value=""
+                                    onValueChange={addProduct}
+                                    placeholder="Search product..."
+                                    searchPlaceholder="Search products..."
+                                    emptyMessage="No products found."
+                                />
                             </div>
 
                             <div className="space-y-3">

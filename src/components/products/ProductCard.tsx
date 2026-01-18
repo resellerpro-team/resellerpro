@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -46,6 +47,7 @@ type Product = {
 
 export function ProductCard({ product }: { product: Product }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { toast } = useToast()
   const supabase = createClient()
 
@@ -194,6 +196,8 @@ export function ProductCard({ product }: { product: Product }) {
         description: `Created a copy of "${product.name}"`,
       })
 
+      // Invalidate react-query cache to refresh the list immediately
+      queryClient.invalidateQueries({ queryKey: ['products'] })
       router.refresh()
     } catch (error: any) {
       toast({

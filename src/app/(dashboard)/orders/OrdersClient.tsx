@@ -30,7 +30,9 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { OrdersTable } from '@/components/orders/OrderTable'
+import { Pagination } from '@/components/shared/Pagination'
 import { useOrders } from '@/lib/react-query/hooks/useOrders'
+import { useOrdersStats } from '@/lib/react-query/hooks/stats-hooks'
 
 export function OrdersClient() {
   const router = useRouter()
@@ -43,34 +45,36 @@ export function OrdersClient() {
   const sortParam = searchParams.get('sort') || '-created_at'
 
   const [search, setSearch] = useState(searchParam)
+  const [page, setPage] = useState(1)
 
   // 📡 Fetch Data via React Query
-  const { data: orders = [], isLoading } = useOrders({
+  const { data: ordersData, isLoading } = useOrders({
     search: searchParam,
     status: statusParam === 'all' ? undefined : statusParam,
     payment: paymentParam === 'all' ? undefined : paymentParam,
-    sort: sortParam
+    sort: sortParam,
+    page,
+    limit: 20
   })
 
-  // 📊 Calculate Stats (Memoized)
-  const stats = useMemo(() => {
-    const totalOrders = orders.length
-    const totalRevenue = orders.reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0)
-    const totalProfit = orders.reduce((sum: number, o: any) => sum + (o.total_profit || 0), 0)
-    const pendingOrders = orders.filter((o: any) => o.status === 'pending').length
-    const completedOrders = orders.filter((o: any) => o.status === 'completed').length
+  const orders = ordersData?.data || []
+  const totalCount = ordersData?.total || 0
+  const totalPages = Math.ceil(totalCount / 20)
 
-    return {
-      totalOrders,
-      totalRevenue,
-      totalProfit,
-      pendingOrders,
-      completedOrders,
-    }
-  }, [orders])
+  // 📊 Global Stats (Server-side)
+  const { data: statsData } = useOrdersStats()
+  
+  const stats = {
+    totalOrders: totalCount, // Filtered count
+    totalRevenue: statsData?.totalRevenue || 0,
+    totalProfit: statsData?.totalProfit || 0,
+    pendingOrders: statsData?.pendingOrders || 0,
+    completedOrders: statsData?.completedOrders || 0,
+  }
 
   // 🔁 Update URL with new params
   const updateURL = (params: Record<string, string>) => {
+    setPage(1) // Reset to page 1 on filter change
     const newParams = new URLSearchParams(searchParams.toString())
     Object.entries(params).forEach(([key, value]) => {
       if (value && value !== 'all') newParams.set(key, value)
@@ -228,6 +232,17 @@ export function OrdersClient() {
               }`}
           >
             <OrdersTable orders={orders} />
+            <div className="p-4 border-t">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={(p) => {
+                  setPage(p)
+                  // Scroll to top of table
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+              />
+            </div>
           </div>
         ) : (
           isLoading ? (

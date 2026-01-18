@@ -10,7 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Edit, Eye, Trash, Package } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useQueryClient } from '@tanstack/react-query'
+import { useToast } from '@/hooks/use-toast'
+import { MoreVertical, Edit, Eye, Trash, Copy, Package } from 'lucide-react'
 import { WhatsAppShare } from './WhatsAppShare'
 
 type Product = {
@@ -36,6 +40,103 @@ export function ProductRow({ product }: { product: Product }) {
     in_stock: 'bg-green-500',
     low_stock: 'bg-yellow-500',
     out_of_stock: 'bg-red-500',
+  }
+
+  const router = useRouter()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const supabase = createClient()
+
+  // DUPLICATE HANDLER
+  const handleDuplicate = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        toast({
+          title: 'Authentication Error',
+          description: 'You must be logged in',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Create duplicate with "(Copy)" suffix
+      const { data, error } = await supabase
+        .from('products')
+        .insert({
+          user_id: user.id,
+          name: `${product.name} (Copy)`,
+          description: product.description,
+          category: product.category,
+          sku: product.sku ? `${product.sku}-COPY` : null,
+          cost_price: product.cost_price,
+          selling_price: product.selling_price,
+          stock_quantity: product.stock_quantity || 0,
+          stock_status: product.stock_status,
+          image_url: product.image_url,
+          images: product.images,
+        })
+        .select()
+
+      if (error) {
+        toast({
+          title: 'Duplicate Failed',
+          description: error.message,
+          variant: 'destructive',
+        })
+        return
+      }
+
+      toast({
+        title: 'Product Duplicated ✓',
+        description: `Created a copy of "${product.name}"`,
+      })
+
+      // Invalidate react-query cache to refresh the list immediately
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      router.refresh()
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // DELETE HANDLER
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', product.id)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      toast({
+        title: 'Product Deleted',
+        description: `"${product.name}" has been removed.`,
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['products-stats'] }) // Refresh stats too
+      router.refresh()
+    } catch (error: any) {
+      toast({
+        title: 'Delete Failed',
+        description: error.message,
+        variant: 'destructive',
+      })
+    }
   }
 
   return (
@@ -80,8 +181,8 @@ export function ProductRow({ product }: { product: Product }) {
       </div>
 
       {/* Pricing */}
-      <div className="hidden sm:flex flex-col items-end gap-1 min-w-[120px]">
-        <div className="text-sm text-muted-foreground">
+      <div className="flex flex-col items-end gap-1 min-w-[80px] sm:min-w-[120px]">
+        <div className="text-sm text-muted-foreground hidden sm:block">
           Cost: ₹{product.cost_price.toFixed(2)}
         </div>
         <div className="text-lg font-semibold text-primary">
@@ -140,8 +241,12 @@ export function ProductRow({ product }: { product: Product }) {
               Edit Product
             </Link>
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDuplicate}>
+            <Copy className="mr-2 h-4 w-4" />
+            Duplicate
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-red-600">
+          <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={handleDelete}>
             <Trash className="mr-2 h-4 w-4" />
             Delete
           </DropdownMenuItem>

@@ -12,7 +12,10 @@ import { Plus, Search, Filter, Users, TrendingUp, IndianRupee } from "lucide-rea
 
 import Link from "next/link";
 import CustomerCard from "@/components/customers/CustomerCard";
+import { Pagination } from "@/components/shared/Pagination";
 import { useCustomers } from "@/lib/react-query/hooks/useCustomers";
+import { useCustomersStats } from "@/lib/react-query/hooks/stats-hooks";
+import { useState } from "react";
 
 // -----------------------------------------
 
@@ -20,53 +23,40 @@ export function CustomersClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [page, setPage] = useState(1);
 
   // Read URL params
   const search = searchParams.get("search") || "";
   const sort = searchParams.get("sort") || "-created_at";
 
   // Build querystring
-  const qs = searchParams.toString();
+  const params = new URLSearchParams(searchParams.toString());
+  params.set('page', page.toString());
+  params.set('limit', '20');
+  const qs = params.toString();
 
   // Fetch customers
-  const { data: customers = [], isLoading } = useCustomers(qs);
+  const { data: customersData, isLoading } = useCustomers(qs);
+  
+  const customers = customersData?.data || [];
+  const totalCount = customersData?.total || 0;
+  const totalPages = Math.ceil(totalCount / 20);
 
   // ---------- CLIENT-SIDE STATS ----------
+  // Global Stats (Server-side)
+  const { data: statsData } = useCustomersStats();
+
   const stats = {
-    total: customers.length,
-    newThisMonth: customers.filter((c: any) => {
-      const date = c.created_at ? new Date(c.created_at) : null;
-      if (!date) return false;
-
-      const now = new Date();
-      return (
-        date.getMonth() === now.getMonth() &&
-        date.getFullYear() === now.getFullYear()
-      );
-    }).length,
-
-    repeat: customers.filter((c: any) => (c.total_orders ?? 0) > 1).length,
-
-    retentionRate:
-      customers.length === 0
-        ? 0
-        : Math.round(
-          (customers.filter((c: any) => (c.total_orders ?? 0) > 1).length /
-            customers.length) *
-          100
-        ),
-
-    avgValue:
-      customers.length === 0
-        ? 0
-        : Math.round(
-          customers.reduce((s: number, c: any) => s + (c.total_spent ?? 0), 0) /
-          customers.length
-        ),
+    total: totalCount,
+    newThisMonth: statsData?.newThisMonth || 0,
+    repeat: statsData?.repeat || 0,
+    retentionRate: statsData?.retentionRate || 0,
+    avgValue: statsData?.avgValue || 0,
   };
 
   // ---------- Update URL ----------
   const updateURL = (updates: Record<string, string>) => {
+    setPage(1);
     const params = new URLSearchParams(searchParams.toString());
 
     Object.entries(updates).forEach(([k, v]) => {
@@ -181,20 +171,33 @@ export function CustomersClient() {
           </div>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {customers.map((c: any) => (
-            <CustomerCard
-              key={c.id}
-              id={c.id}
-              name={c.name}
-              phone={c.phone}
-              email={c.email || "N/A"}
-              orders={c.total_orders ?? 0}
-              totalSpent={c.total_spent ?? 0}
-              lastOrder={c.last_order_date}
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {customers.map((c: any) => (
+              <CustomerCard
+                key={c.id}
+                id={c.id}
+                name={c.name}
+                phone={c.phone}
+                email={c.email || "N/A"}
+                orders={c.total_orders ?? 0}
+                totalSpent={c.total_spent ?? 0}
+                lastOrder={c.last_order_date}
+              />
+            ))}
+          </div>
+
+          <div className="py-4 border-t">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(p) => {
+                setPage(p);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
             />
-          ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
