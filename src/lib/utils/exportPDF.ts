@@ -1,5 +1,3 @@
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import { getDateRangeString, formatDateTime } from './dateHelpers'
 
 interface SummaryData {
@@ -13,7 +11,11 @@ interface SummaryData {
     businessName?: string
 }
 
-export function exportToPDF(data: SummaryData, filename: string) {
+export async function exportToPDF(data: SummaryData, filename: string) {
+    // Dynamic import to reduce initial bundle size
+    const jsPDF = (await import('jspdf')).default
+    const autoTable = (await import('jspdf-autotable')).default
+
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()

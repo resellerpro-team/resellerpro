@@ -42,6 +42,8 @@ import { ProductRow } from "@/components/products/ProductRow";
 import { ExportProducts } from "@/components/products/ExportProducts";
 import { Pagination } from "@/components/shared/Pagination";
 import ProductsLoading from "./loading";
+import { ProductsSkeleton } from "@/components/shared/skeletons/ProductsSkeleton";
+import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
 
 // ---------------- TYPES ----------------
 export type Product = {
@@ -237,11 +239,25 @@ export function ProductsClient() {
 
       {/* PRODUCTS DISPLAY */}
       {isLoading ? (
-        <ProductsLoading />
+        <ProductsSkeleton view={view} />
       ) : typedProducts.length === 0 ? (
-        <p className="text-center text-muted-foreground py-20">
-          No products found.
-        </p>
+        search || category ? (
+          <FilteredEmptyState
+            onClearFilters={() => {
+              updateURL({ search: "", category: "" });
+            }}
+          />
+        ) : (
+          <EmptyState
+            icon={Package}
+            title="No products yet"
+            description="Start adding products to your inventory to track stock and manage sales."
+            action={{
+              label: "Add Product",
+              href: "/products/new"
+            }}
+          />
+        )
       ) : view === "grid" ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {typedProducts.map((p) => (

@@ -1,100 +1,46 @@
 'use client'
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Download, Loader2 } from 'lucide-react'
-import { useSubscription } from '@/lib/hooks/useSubscription'
-import { ProBadge } from '@/components/shared/ProBadge'
-import { UpgradePrompt } from '@/components/shared/UpgradePrompt'
-
-type Product = {
-  name: string
-  cost_price: number
-  selling_price: number
-  stock_quantity?: number
-  stock_status: string
-  category?: string
-}
+import { ExportButton } from '@/components/shared/ExportButton'
+import { exportToCSV } from '@/lib/utils/export'
+import { formatCurrency } from '@/lib/utils/formatters'
+import { Product } from '@/types'
 
 export function ExportProducts({ products }: { products: Product[] }) {
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
-  const [isExporting, setIsExporting] = useState(false)
-  const { isPremium, isLoading: isCheckingSubscription } = useSubscription()
 
-  const handleExport = () => {
-    // Check subscription before export
-    if (!isPremium) {
-      setShowUpgradePrompt(true)
-      return
-    }
-
-    setIsExporting(true)
+  const handleExport = async () => {
+    // Simulate a small delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 500))
     
-    // Simulate a small delay for better UX or just proceed
-    setTimeout(() => {
-        try {
-            // Prepare CSV data
-            const headers = ['Name', 'Cost Price', 'Selling Price', 'Profit', 'Margin %', 'Stock', 'Status', 'Category']
-            
-            const rows = products.map(p => {
-            const profit = p.selling_price - p.cost_price
-            const margin = ((profit / p.selling_price) * 100).toFixed(2)
-            
-            return [
-                p.name,
-                p.cost_price,
-                p.selling_price,
-                profit,
-                margin,
-                p.stock_quantity || 0,
-                p.stock_status,
-                p.category || 'Uncategorized'
-            ]
-            })
+    const exportData = products.map(p => {
+        const profit = p.selling_price - p.cost_price
+        const margin = p.selling_price > 0 ? ((profit / p.selling_price) * 100).toFixed(2) : '0.00'
+        const stockValue = (p.stock_quantity || 0) * p.cost_price
 
-            // Create CSV content
-            const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-            ].join('\n')
-
-            // Download
-            const blob = new Blob([csvContent], { type: 'text/csv' })
-            const url = window.URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `products-${new Date().toISOString().split('T')[0]}.csv`
-            a.click()
-            window.URL.revokeObjectURL(url)
-        } catch (error) {
-            console.error('Export failed:', error)
-        } finally {
-            setIsExporting(false)
+        return {
+        'Product Name': p.name,
+        'Category': p.category || 'Uncategorized',
+        'SKU': p.sku || '-',
+        'Stock Status': p.stock_status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        'Stock Qty': p.stock_quantity || 0,
+        'Cost Price': formatCurrency(p.cost_price),
+        'Selling Price': formatCurrency(p.selling_price),
+        'Profit': formatCurrency(profit),
+        'Margin %': `${margin}%`,
+        'Total Stock Value': formatCurrency(stockValue)
         }
-    }, 500)
+    })
+
+    exportToCSV(exportData, 'Products_Inventory', {
+        reportType: 'Inventory Report',
+        generatedOn: new Date().toLocaleString('en-IN'),
+        totalRecords: products.length
+    })
   }
 
   return (
-    <>
-      <Button 
-        variant="outline" 
-        onClick={handleExport}
-        disabled={isExporting || isCheckingSubscription}
-      >
-        {isExporting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-            <Download className="mr-2 h-4 w-4" />
-        )}
-        Export CSV
-        {!isCheckingSubscription && !isPremium && <ProBadge />}
-      </Button>
-
-      <UpgradePrompt 
-        open={showUpgradePrompt} 
-        onOpenChange={setShowUpgradePrompt}
-        feature="exporting products"
-      />
-    </>
+    <ExportButton 
+      onExport={handleExport}
+      featureName="exporting products"
+    />
   )
 }

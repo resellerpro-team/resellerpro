@@ -110,6 +110,8 @@ export function OrderStatusUpdate({
   const [lastUpdatedStatus, setLastUpdatedStatus] = useState('')
   const [lastCourierName, setLastCourierName] = useState('')
   const [lastTrackingNumber, setLastTrackingNumber] = useState('')
+  const [undoTimeout, setUndoTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [previousStatus, setPreviousStatus] = useState('')
 
   // Get allowed statuses based on current status
   const allowedStatuses = STATUS_FLOW[currentStatus] || []
@@ -150,27 +152,51 @@ export function OrderStatusUpdate({
 
       const result = await updateOrderStatus(formData)
       if (result.success) {
-        toast({
-          title: 'Success ✅',
-          description: result.message || 'Order status updated successfully',
+        // Store previous status for undo
+        setPreviousStatus(currentStatus)
+        
+        // Clear any existing undo timeout
+        if (undoTimeout) {
+          clearTimeout(undoTimeout)
+        }
+
+        // Show toast with undo button
+        const { dismiss } = toast({
+          title: '✅ Status Updated',
+          description: `Order status changed to ${STATUS_CONFIG[selectedStatus as keyof typeof STATUS_CONFIG]?.label}.`,
+          action: (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                handleUndo(currentStatus, selectedStatus)
+                dismiss()
+              }}
+            >
+              Undo
+            </Button>
+          ),
+          duration: 5000,
         })
 
-        // Show WhatsApp button after successful update for ALL statuses
+        // Set timeout to clear undo ability after 5 seconds
+        const timeout = setTimeout(() => {
+          setPreviousStatus('')
+        }, 5000)
+        setUndoTimeout(timeout)
+
+        // Show WhatsApp button after successful update
         setLastUpdatedStatus(selectedStatus)
         
-        // Store courier and tracking info if provided
         if (selectedStatus === 'shipped') {
           setLastCourierName(courierName)
           setLastTrackingNumber(trackingNumber)
         }
 
-        // Auto-open the collapsible section
         openSection('order-status')
-
-        // Notify parent via callback (if provided) before we reset local state
         onStatusUpdated?.(selectedStatus)
 
-        // Reset form but keep the status info for WhatsApp
+        // Reset form
         setSelectedStatus('')
         setNotes('')
         setCourierName('')
@@ -183,6 +209,48 @@ export function OrderStatusUpdate({
           description: result.message || 'Failed to update order status',
           variant: 'destructive',
         })
+      }
+    })
+  }
+
+  // Undo handler - only updates if API call succeeds
+  const handleUndo = async (oldStatus: string, newStatus: string) => {
+    // Clear the timeout immediately
+    if (undoTimeout) {
+      clearTimeout(undoTimeout)
+      setUndoTimeout(null)
+    }
+
+    startTransition(async () => {
+      const formData = new FormData()
+      formData.append('orderId', orderId)
+      formData.append('status', oldStatus)
+      formData.append('isUndo', 'true') // Flag to bypass validation
+      formData.append('notes', `Reverted from ${STATUS_CONFIG[newStatus as keyof typeof STATUS_CONFIG]?.label} back to ${STATUS_CONFIG[oldStatus as keyof typeof STATUS_CONFIG]?.label}`)
+
+      const result = await updateOrderStatus(formData)
+      
+      if (result.success) {
+        // SUCCESS: Update state only after successful revert
+        toast({
+          title: '↩️ Status Reverted',
+          description: `Order restored to ${STATUS_CONFIG[oldStatus as keyof typeof STATUS_CONFIG]?.label}.`,
+        })
+
+        setPreviousStatus('')
+        setLastUpdatedStatus('')
+        
+        onStatusUpdated?.(oldStatus)
+        router.refresh()
+      } else {
+        // FAILURE: Show error but don't change anything
+        toast({
+          title: 'Undo Failed',
+          description: result.message || 'Could not revert. Status remains unchanged.',
+          variant: 'destructive',
+        })
+        // Reset undo state but keep current status
+        setPreviousStatus('')
       }
     })
   }

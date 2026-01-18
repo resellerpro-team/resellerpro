@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { ThemeProvider } from '../components/providers/theme-provider'
 // import { AppLoader } from '@/components/onboarding/PremiumLoader'
 import { Providers } from './providers'
+import { OfflineBanner } from '@/components/shared/OfflineBanner'
 // Or, if using absolute imports, ensure your tsconfig.json has the correct "paths" and "baseUrl" set.
 
 const inter = Inter({ subsets: ['latin'] })
@@ -86,6 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* <AppLoader /> */}
         <Providers>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <OfflineBanner />
             {children}
             <Toaster />
           </ThemeProvider>

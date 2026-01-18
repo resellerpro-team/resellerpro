@@ -28,7 +28,17 @@ export function exportToCSV(data: any[], filename: string, metadata?: CSVMetadat
     ...data.map(row => headers.map(header => {
       const value = row[header]
       if (value === null || value === undefined) return ''
-      const stringValue = String(value)
+
+      let stringValue = String(value)
+
+      // Auto-format phone numbers and long numeric strings to text to prevent scientific notation
+      const isPhoneHeader = /phone|mobile|tel|contact/i.test(header)
+      const isLongNumeric = /^\d{10,}$/.test(stringValue)
+
+      if ((isPhoneHeader || isLongNumeric) && !stringValue.startsWith('\t')) {
+        stringValue = `\t${stringValue}`
+      }
+
       if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
         return `"${stringValue.replace(/"/g, '""')}"`
       }

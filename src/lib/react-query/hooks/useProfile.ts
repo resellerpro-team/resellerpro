@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-export function useProfile() {
+export function useProfile(initialData?: any) {
     return useQuery({
         queryKey: ['profile'],
         queryFn: async () => {
@@ -8,5 +8,6 @@ export function useProfile() {
             if (!res.ok) throw new Error('Failed to fetch profile')
             return res.json()
         },
+        initialData: initialData,
     })
 }

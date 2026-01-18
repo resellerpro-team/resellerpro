@@ -37,6 +37,7 @@ import { useState } from "react";
 import { ConversionModal } from "./ConversionModal";
 import { fetchCustomers } from "@/lib/react-query/hooks/useCustomers";
 import { Loader2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 export function EnquiryRow({ enquiry }: EnquiryRowProps) {
     const { toast } = useToast();
@@ -45,6 +46,12 @@ export function EnquiryRow({ enquiry }: EnquiryRowProps) {
     const [isConversionSheetOpen, setIsConversionSheetOpen] = useState(false);
     const [isConverting, setIsConverting] = useState(false);
     const [foundCustomer, setFoundCustomer] = useState<any>(null);
+    const [confirmDialog, setConfirmDialog] = useState<{
+        open: boolean;
+        action: () => void;
+        title: string;
+        description: string;
+    }>({ open: false, action: () => {}, title: "", description: "" });
 
     const handleConversionClick = async () => {
         setIsConverting(true);
@@ -77,25 +84,43 @@ export function EnquiryRow({ enquiry }: EnquiryRowProps) {
         }
     };
 
-    const updateStatus = (status: string) => {
-        updateEnquiry({
-            id: enquiry.id,
-            status: status as "new" | "needs_follow_up" | "converted" | "dropped",
-        }, {
-            onSuccess: () => {
-                toast({
-                    title: "Status Updated",
-                    description: `Enquiry marked as ${status.replace(/_/g, " ")}.`,
-                });
-            },
-            onError: (error) => {
-                toast({
-                    title: "Error",
-                    description: error.message,
-                    variant: "destructive",
-                });
-            }
-        });
+    const updateStatus = (status: string, requireConfirmation = true) => {
+        const statusLabels: Record<string, string> = {
+            needs_follow_up: "contacted",
+            dropped: "dropped"
+        };
+
+        const performUpdate = () => {
+            updateEnquiry({
+                id: enquiry.id,
+                status: status as "new" | "needs_follow_up" | "converted" | "dropped",
+            }, {
+                onSuccess: () => {
+                    toast({
+                        title: "Status Updated",
+                        description: `Enquiry marked as ${statusLabels[status] || status.replace(/_/g, " ")}.`,
+                    });
+                },
+                onError: (error) => {
+                    toast({
+                        title: "Error",
+                        description: error.message,
+                        variant: "destructive",
+                    });
+                }
+            });
+        };
+
+        if (requireConfirmation && status === "dropped") {
+            setConfirmDialog({
+                open: true,
+                action: performUpdate,
+                title: "Close Enquiry?",
+                description: "This will mark the enquiry as dropped. You can still view it in the filtered list."
+            });
+        } else {
+            performUpdate();
+        }
     };
 
     const getStatusColor = (status: string) => {
@@ -219,6 +244,19 @@ export function EnquiryRow({ enquiry }: EnquiryRowProps) {
                     }}
                 />
             )}
+
+            <ConfirmDialog
+                open={confirmDialog.open}
+                onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+                title={confirmDialog.title}
+                description={confirmDialog.description}
+                onConfirm={() => {
+                    confirmDialog.action();
+                    setConfirmDialog({ ...confirmDialog, open: false });
+                }}
+                variant="destructive"
+                confirmLabel="Confirm"
+            />
         </>
     );
 }

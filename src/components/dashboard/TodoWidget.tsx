@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useOptimistic } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -37,49 +36,105 @@ interface TodoWidgetProps {
   suggestions: TodoSuggestion[]
 }
 
+type TodoAction = 
+  | { type: 'add'; payload: Todo }
+  | { type: 'toggle'; payload: { id: string; completed: boolean } }
+  | { type: 'delete'; payload: string }
+
 export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps) {
   const router = useRouter()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isPending, startTransition] = useTransition()
   const [newTodoText, setNewTodoText] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
 
-  const incompleteTodos = initialTodos.filter((t) => !t.completed)
-  const completedTodos = initialTodos.filter((t) => t.completed)
+  // ⚡ OPTIMISTIC UI STATE
+  const [optimisticTodos, dispatchOptimistic] = useOptimistic(
+    initialTodos,
+    (state: Todo[], action: TodoAction) => {
+      switch (action.type) {
+        case 'add':
+          return [action.payload, ...state]
+        case 'toggle':
+          return state.map((t) =>
+            t.id === action.payload.id ? { ...t, completed: action.payload.completed } : t
+          )
+        case 'delete':
+          return state.filter((t) => t.id !== action.payload)
+        default:
+          return state
+      }
+    }
+  )
+
+  const incompleteTodos = optimisticTodos.filter((t) => !t.completed)
+  const completedTodos = optimisticTodos.filter((t) => t.completed)
 
   const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTodoText.trim() || isAdding) return
 
+    const tempId = crypto.randomUUID()
+    const text = newTodoText
+    
+    // 1. Optimistic Update
     setIsAdding(true)
-    const result = await createTodo(newTodoText)
+    setNewTodoText('') // Clear input immediately for better UX
+    
+    dispatchOptimistic({
+      type: 'add',
+      payload: {
+        id: tempId,
+        text: text,
+        completed: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: 'optimistic',
+        priority: 'medium',
+        is_auto_generated: false,
+        source_type: null,
+        source_id: null
+      }
+    })
+
+    // 2. Server Action
+    const result = await createTodo(text)
     
     if (result.success) {
-      setNewTodoText('')
       toast.success('Task added!')
       startTransition(() => {
         router.refresh()
       })
     } else {
       toast.error(result.error || 'Failed to add task')
+      // Revert is automatic on refresh failure usually, or we'd need a revert mechanism
+      // For simple apps, router.refresh() syncs back to source of truth
+      router.refresh()
     }
     setIsAdding(false)
   }
 
   const handleToggleTodo = async (id: string, completed: boolean) => {
+    // 1. Optimistic Update (Instant!)
+    dispatchOptimistic({ type: 'toggle', payload: { id, completed: !completed } })
+
+    // 2. Server Action
     const result = await toggleTodo(id, !completed)
     
     if (result.success) {
-      toast.success(completed ? 'Task reopened' : 'Task completed! 🎉')
-      startTransition(() => {
-        router.refresh()
-      })
+      // toast.success(completed ? 'Task reopened' : 'Task completed! 🎉') // Optional: remove toast for "speed" feel
     } else {
       toast.error(result.error || 'Failed to update task')
+      router.refresh() // Revert
     }
   }
 
   const handleDeleteTodo = async (id: string) => {
+    // 1. Optimistic Update
+    dispatchOptimistic({ type: 'delete', payload: id })
+
+    // 2. Server Action
     const result = await deleteTodo(id)
     
     if (result.success) {
@@ -89,10 +144,29 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
       })
     } else {
       toast.error(result.error || 'Failed to delete task')
+      router.refresh() // Revert
     }
   }
 
   const handleAddSuggestion = async (suggestion: TodoSuggestion) => {
+    // Optimistic Add for Suggestion
+    const tempId = crypto.randomUUID()
+    dispatchOptimistic({
+      type: 'add',
+      payload: {
+        id: tempId,
+        text: suggestion.text,
+        completed: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: 'optimistic',
+        priority: suggestion.priority,
+        is_auto_generated: true,
+        source_type: suggestion.source_type,
+        source_id: suggestion.source_id
+      }
+    })
+
     const result = await createTodoFromSuggestion(
       suggestion.text,
       suggestion.source_type,
@@ -107,6 +181,7 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
       })
     } else {
       toast.error(result.error || 'Failed to add task')
+      router.refresh()
     }
   }
 
@@ -303,6 +378,10 @@ function TodoItem({
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
+    // Optimistic delete is handled by parent, so we don't need local Loading state blocking UI, 
+    // but we can show it for feedback if needed.
+    // However, parent optimistic update removes it from the list instantly, so this component unmounts.
+    // So we don't need 'isDeleting' state really, but let's keep it for safety if logic changes
     setIsDeleting(true)
     await onDelete(todo.id)
   }
@@ -316,6 +395,7 @@ function TodoItem({
       <button
         onClick={() => onToggle(todo.id, todo.completed)}
         className="mt-0.5 flex-shrink-0 hover:scale-110 transition-transform"
+        aria-label={todo.completed ? "Mark as incomplete" : "Mark as complete"}
       >
         {todo.completed ? (
           <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -348,6 +428,7 @@ function TodoItem({
         onClick={handleDelete}
         disabled={isDeleting}
         className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+        aria-label="Delete task"
       >
         {isDeleting ? (
           <Loader2 className="h-3 w-3 animate-spin" />
