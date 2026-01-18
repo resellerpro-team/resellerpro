@@ -36,7 +36,8 @@ function AuthCallbackContent() {
             }
 
             // 3. Verify Session Exists
-            let { data: { session }, error } = await supabase.auth.getSession()
+            const { data: { session: initialSession }, error } = await supabase.auth.getSession()
+            let session = initialSession
 
             // 3b. Manual Hash Parsing Fallback (Implicit Flow)
             if (!session) {

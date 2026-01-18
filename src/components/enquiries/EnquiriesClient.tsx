@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEnquiries, Enquiry } from "@/lib/react-query/hooks/useEnquiries";
+import { useEnquiries } from "@/lib/react-query/hooks/useEnquiries";
 import { useEnquiriesStats } from "@/lib/react-query/hooks/stats-hooks";
 import { Pagination } from "@/components/shared/Pagination";
+import { EnquiriesSkeleton } from "@/components/shared/skeletons/EnquiriesSkeleton";
+import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
 import { EnquiryRow } from "./EnquiryRow";
 import {
     Search,
@@ -20,6 +22,9 @@ import {
     XCircle,
     Inbox
 } from "lucide-react";
+import { ExportEnquiries } from '@/components/enquiries/ExportEnquiries';
+import { StatsCard } from "@/components/shared/StatsCard"
+import { Enquiry } from "@/types"
 
 export function EnquiriesClient() {
     const router = useRouter();
@@ -38,11 +43,11 @@ export function EnquiriesClient() {
 
     const { data: enquiriesData, isLoading } = useEnquiries(qs);
     // Explicitly cast to any if necessary, or assume hook handles generic
-    const enquiriesDataAny = enquiriesData as any; 
+    // const enquiriesDataAny = enquiriesData as any; // No longer needed with types
     
     // Handle both old array format (safety) and new object format
-    const enquiries = Array.isArray(enquiriesData) ? enquiriesData : (enquiriesDataAny?.data || []);
-    const totalCount = Array.isArray(enquiriesData) ? enquiriesData.length : (enquiriesDataAny?.total || 0);
+    const enquiries = (Array.isArray(enquiriesData) ? enquiriesData : (enquiriesData as any)?.data || []) as Enquiry[];
+    const totalCount = Array.isArray(enquiriesData) ? enquiriesData.length : ((enquiriesData as any)?.total || 0);
     const totalPages = Math.ceil(totalCount / 20);
 
     // Stats Calculation
@@ -69,42 +74,45 @@ export function EnquiriesClient() {
 
     return (
         <div className="space-y-6">
-            {/* ONE: Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Enquiries</h1>
-                    <p className="text-muted-foreground">Manage ongoing customer conversations and leads</p>
-                </div>
-                <Button onClick={() => router.push('/enquiries/new')}>
-                    <MessageSquare className="mr-2 h-4 w-4" /> Add Enquiry
-                </Button>
-            </div>
+      {/* ONE: Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Enquiries</h1>
+          <p className="text-muted-foreground">Manage ongoing customer conversations and leads</p>
+        </div>
+        <div className="flex items-center gap-2">
+            <ExportEnquiries enquiries={enquiries} />
+            <Button onClick={() => router.push('/enquiries/new')}>
+                <MessageSquare className="mr-2 h-4 w-4" /> Add Enquiry
+            </Button>
+        </div>
+      </div>
 
             {/* TWO: Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatsCard
-                    label="New Enquiries"
+                    title="New Enquiries"
                     value={stats.new}
                     icon={Inbox}
-                    color="text-blue-500"
+                    className="text-blue-500"
                 />
                 <StatsCard
-                    label="Following Up"
+                    title="Following Up"
                     value={stats.followUp}
                     icon={Clock}
-                    color="text-orange-500"
+                    className="text-orange-500"
                 />
                 <StatsCard
-                    label="Converted"
+                    title="Converted"
                     value={stats.converted}
                     icon={CheckCircle2}
-                    color="text-green-500"
+                    className="text-green-500"
                 />
                 <StatsCard
-                    label="Total"
+                    title="Total"
                     value={stats.total}
                     icon={MessageSquare}
-                    color="text-gray-500"
+                    className="text-gray-500"
                 />
             </div>
 
@@ -140,43 +148,45 @@ export function EnquiriesClient() {
             </Card>
 
             {/* FOUR: List */}
-            <div className="space-y-4">
-                {isLoading ? (
-                    <div className="text-center py-10 text-muted-foreground">Loading enquiries...</div>
-                ) : enquiries.length === 0 ? (
-                    <div className="text-center py-10 text-muted-foreground">No enquiries found.</div>
+            {isLoading ? (
+                <EnquiriesSkeleton />
+            ) : enquiries.length === 0 ? (
+                search || statusFilter !== "all" ? (
+                    <FilteredEmptyState
+                        onClearFilters={() => updateURL({ search: "", status: "all" })}
+                    />
                 ) : (
-                    <>
-                        {enquiries.map((enquiry: Enquiry) => (
-                            <EnquiryRow key={enquiry.id} enquiry={enquiry} />
-                        ))}
-                         <div className="py-4 border-t">
-                            <Pagination
-                                currentPage={page}
-                                totalPages={totalPages}
-                                onPageChange={(p) => {
-                                    setPage(p);
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
-                            />
-                        </div>
-                    </>
-                )}
-            </div>
-        </div>
-    );
-}
-
-function StatsCard({ label, value, icon: Icon, color }: any) {
-    return (
-        <Card>
-            <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                    <p className="text-sm font-medium text-muted-foreground">{label}</p>
-                    <p className="text-2xl font-bold">{value}</p>
+                    <EmptyState
+                        icon={MessageSquare}
+                        title="No enquiries yet"
+                        description="Start receiving customer enquiries to convert them into sales opportunities."
+                        action={{
+                            label: "Add Enquiry",
+                            href: "/enquiries/new"
+                        }}
+                    />
+                )
+            ) : (
+                <div className="space-y-4">
+                    {enquiries.map((enquiry: Enquiry) => (
+                        <EnquiryRow key={enquiry.id} enquiry={enquiry} />
+                    ))}
                 </div>
-                <Icon className={`h-8 w-8 opacity-20 ${color}`} />
-            </CardContent>
-        </Card>
+            )}
+            
+            {/* Pagination */}
+            {!isLoading && enquiries.length > 0 && (
+                <div className="py-4 border-t">
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        onPageChange={(p) => {
+                            setPage(p);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                    />
+                </div>
+            )}
+        </div>
     );
 }

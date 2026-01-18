@@ -31,6 +31,7 @@ import { format, subDays } from 'date-fns'
 import { useAnalytics } from '@/lib/react-query/hooks/useAnalytics'
 import { createClient } from '@/lib/supabase/client'
 import { useSubscription } from '@/lib/hooks/useSubscription'
+import { AnalyticsSkeleton } from '@/components/shared/skeletons/AnalyticsSkeleton'
 
 export function AnalyticsClient() {
     const searchParams = useSearchParams()
@@ -115,11 +116,7 @@ export function AnalyticsClient() {
     
     // Show loading while checking subscription OR fetching data
     if (isCheckingSubscription || !isReady || isLoading) {
-        return (
-            <div className="flex h-[80vh] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-        )
+        return <AnalyticsSkeleton />
     }
 
     if (error) {

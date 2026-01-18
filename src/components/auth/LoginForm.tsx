@@ -19,16 +19,26 @@ import {
 } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 
+import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus'
+
 function SubmitButton() {
   const { pending } = useFormStatus()
+  const isOnline = useOnlineStatus()
 
   return (
-    <Button type="submit" className="w-full" size="lg" disabled={pending}>
+    <Button 
+      type="submit" 
+      className="w-full" 
+      size="lg" 
+      disabled={pending || !isOnline}
+    >
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Signing in...
         </>
+      ) : !isOnline ? (
+        'Offline'
       ) : (
         'Sign in'
       )}
@@ -54,20 +64,39 @@ export default function LoginForm() {
     errors: {},
   }
 
-  const [state, formAction] = useFormState(login, initialState)
+  const [formState, formAction] = useFormState(login, initialState)
+  const state = formState || initialState
 
   useEffect(() => {
     if (!state.success && state.message) {
+      const isNetwork = state.message.includes('Network') || state.message.includes('fetch')
+      
       toast({
         title: 'Sign in failed',
         description: state.message,
         variant: 'destructive',
+        action: isNetwork ? (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.reload()}
+            className="border-white text-white hover:bg-white/20"
+          >
+            Check Connection
+          </Button>
+        ) : undefined
       })
     }
   }, [state, toast])
 
+  const isOnline = useOnlineStatus()
+
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isOnline) {
+      toast({ title: 'Offline', description: 'Please check your internet connection', variant: 'destructive' })
+      return
+    }
     if (!otpEmail) {
       toast({ title: 'Error', description: 'Please enter your email', variant: 'destructive' })
       return
@@ -90,6 +119,10 @@ export default function LoginForm() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isOnline) {
+      toast({ title: 'Offline', description: 'Please check your internet connection', variant: 'destructive' })
+      return
+    }
     if (!otpCode) return
     setOtpLoading(true)
     try {
@@ -235,8 +268,8 @@ export default function LoginForm() {
                       />
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" size="lg" disabled={otpLoading}>
-                    {otpLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : 'Send OTP Code'}
+                  <Button type="submit" className="w-full" size="lg" disabled={otpLoading || !isOnline}>
+                    {otpLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : !isOnline ? 'Offline' : 'Send OTP Code'}
                   </Button>
                 </form>
               ) : (
@@ -262,8 +295,8 @@ export default function LoginForm() {
                     </div>
                     <p className="text-sm text-muted-foreground">Check your email for the code to sign in.</p>
                   </div>
-                  <Button type="submit" className="w-full" size="lg" disabled={otpLoading}>
-                    {otpLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</> : 'Verify & Sign In'}
+                  <Button type="submit" className="w-full" size="lg" disabled={otpLoading || !isOnline}>
+                    {otpLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</> : !isOnline ? 'Offline' : 'Verify & Sign In'}
                   </Button>
                 </form>
               )}

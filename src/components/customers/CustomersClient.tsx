@@ -12,10 +12,14 @@ import { Plus, Search, Filter, Users, TrendingUp, IndianRupee } from "lucide-rea
 
 import Link from "next/link";
 import CustomerCard from "@/components/customers/CustomerCard";
+import { ExportCustomers } from "@/components/customers/ExportCustomers";
 import { Pagination } from "@/components/shared/Pagination";
 import { useCustomers } from "@/lib/react-query/hooks/useCustomers";
 import { useCustomersStats } from "@/lib/react-query/hooks/stats-hooks";
 import { useState } from "react";
+import { CustomersSkeleton } from "@/components/shared/skeletons/CustomersSkeleton";
+import { StatsCard } from "@/components/shared/StatsCard";
+import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
 
 // -----------------------------------------
 
@@ -72,6 +76,8 @@ export function CustomersClient() {
   // -----------------------------------------
 
   return (
+
+
     <div className="space-y-6">
       {/* HEADER */}
       <div className="flex items-center justify-between">
@@ -80,49 +86,40 @@ export function CustomersClient() {
           <p className="text-muted-foreground">Manage your customer relationships</p>
         </div>
 
-        <Button asChild>
-          <Link href="/customers/new">
-            <Plus className="mr-2 h-4 w-4" /> Add Customer
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <ExportCustomers customers={customers} />
+          
+          <Button asChild>
+            <Link href="/customers/new">
+              <Plus className="mr-2 h-4 w-4" /> Add Customer
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* STATS */}
+
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">
-              +{stats.newThisMonth} new this month
-            </p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Total Customers"
+          value={stats.total}
+          icon={Users}
+          description={`+${stats.newThisMonth} new this month`}
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Repeat Customers</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.repeat}</div>
-            <p className="text-xs text-muted-foreground">{stats.retentionRate}% retention rate</p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Repeat Customers"
+          value={stats.repeat}
+          icon={TrendingUp}
+          description={`${stats.retentionRate}% retention rate`}
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Customer Value</CardTitle>
-            <IndianRupee className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{stats.avgValue}</div>
-            <p className="text-xs text-muted-foreground">Lifetime value</p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Avg. Customer Value"
+          value={`₹${stats.avgValue}`}
+          icon={IndianRupee}
+          description="Lifetime value"
+        />
       </div>
 
       {/* SEARCH & FILTER */}
@@ -152,24 +149,23 @@ export function CustomersClient() {
 
       {/* CUSTOMER LIST */}
       {isLoading ? (
-        <p className="text-center py-20 text-muted-foreground">Loading customers...</p>
+        <CustomersSkeleton />
       ) : customers.length === 0 ? (
-        <Card className="p-12">
-          <div className="text-center space-y-3">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h3 className="text-lg font-semibold">No customers found</h3>
-            <p className="text-muted-foreground">
-              {search ? "Try adjusting your search" : "Start by adding your first customer"}
-            </p>
-            {!search && (
-              <Button asChild>
-                <Link href="/customers/new">
-                  <Plus className="mr-2 h-4 w-4" /> Add Customer
-                </Link>
-              </Button>
-            )}
-          </div>
-        </Card>
+        search ? (
+          <FilteredEmptyState
+            onClearFilters={() => updateURL({ search: "" })}
+          />
+        ) : (
+          <EmptyState
+            icon={Users}
+            title="No customers yet"
+            description="Add your first customer to start building relationships and tracking sales."
+            action={{
+              label: "Add Customer",
+              href: "/customers/new"
+            }}
+          />
+        )
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

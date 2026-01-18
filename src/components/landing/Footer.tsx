@@ -2,6 +2,7 @@
 
 import { Mail, Phone, Facebook, Instagram, MessageCircle, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function Footer() {
   return (
@@ -16,9 +17,11 @@ export default function Footer() {
           {/* Logo + About */}
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <img
+              <Image
                 src="/icons/icon-512x512.png"
                 alt="ResellerPro"
+                width={48}
+                height={48}
                 className="w-12 h-12"
               />
               <span className="text-2xl font-bold text-gray-900">ResellerPro</span>

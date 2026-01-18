@@ -1,7 +1,10 @@
 'use client'
 
-import { useState, useEffect, useTransition, useMemo } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { StatsCard } from '@/components/shared/StatsCard'
+  // ... (rest of code)
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -33,6 +36,9 @@ import { OrdersTable } from '@/components/orders/OrderTable'
 import { Pagination } from '@/components/shared/Pagination'
 import { useOrders } from '@/lib/react-query/hooks/useOrders'
 import { useOrdersStats } from '@/lib/react-query/hooks/stats-hooks'
+import { OrdersSkeleton } from '@/components/shared/skeletons/OrdersSkeleton'
+import { EmptyState, FilteredEmptyState } from '@/components/shared/EmptyState'
+import { ExportOrders } from '@/components/orders/ExportOrders'
 
 export function OrdersClient() {
   const router = useRouter()
@@ -102,12 +108,15 @@ export function OrdersClient() {
   return (
     <div className="space-y-6">
       {/* Header */}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
           <p className="text-muted-foreground text-nowrap">Manage and track your orders</p>
         </div>
-        <div className='w-full flex justify-end'>
+        <div className='w-full flex justify-end gap-2'>
+          <ExportOrders orders={orders} />
+          
           <Button asChild>
             <Link href="/orders/new">
               <Plus className="mr-2 h-4 w-4" /> New Order
@@ -122,25 +131,25 @@ export function OrdersClient() {
           title="Total Orders"
           icon={ShoppingCart}
           value={stats.totalOrders}
-          subtitle={`${stats.completedOrders} completed`}
+          description={`${stats.completedOrders} completed`}
         />
         <StatsCard
           title="Revenue"
           icon={IndianRupee}
           value={`₹${stats.totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-          subtitle="Total income"
+          description="Total income"
         />
         <StatsCard
           title="Profit"
           icon={TrendingUp}
           value={`₹${stats.totalProfit.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-          subtitle="Net profit"
+          description="Net profit"
         />
         <StatsCard
           title="Pending"
           icon={Package}
           value={stats.pendingOrders}
-          subtitle="Awaiting completion"
+          description="Awaiting completion"
         />
       </div>
 
@@ -226,10 +235,13 @@ export function OrdersClient() {
 
       {/* Orders Table */}
       <Card className='select-none'>
-        {orders.length > 0 ? (
+        {isLoading ? (
+          <div className="p-4">
+            <OrdersSkeleton />
+          </div>
+        ) : orders.length > 0 ? (
           <div
-            className={`transition-all duration-300 ${isLoading || isPending ? 'opacity-60 blur-[1px]' : 'opacity-100'
-              }`}
+            className={`transition-all duration-300 ${isPending ? 'opacity-60 blur-[1px]' : 'opacity-100'}`}
           >
             <OrdersTable orders={orders} />
             <div className="p-4 border-t">
@@ -238,24 +250,28 @@ export function OrdersClient() {
                 totalPages={totalPages}
                 onPageChange={(p) => {
                   setPage(p)
-                  // Scroll to top of table
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
+                  window.scrollTo({ top: 0, behavior: 'smooth' })}
+                }
               />
             </div>
           </div>
+        ) : searchParam || statusParam !== 'all' || paymentParam !== 'all' ? (
+          <FilteredEmptyState
+            onClearFilters={() => {
+              setSearch('')
+              updateURL({ search: '', status: 'all', payment: 'all' })
+            }}
+          />
         ) : (
-          isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <Package className="mx-auto h-12 w-12 opacity-50 mb-4" />
-              <p className="text-lg font-medium">No orders found</p>
-              <p className="text-sm">Try adjusting filters or search terms</p>
-            </div>
-          )
+          <EmptyState
+            icon={Package}
+            title="No orders yet"
+            description="Create your first order to start tracking sales and managing customer purchases."
+            action={{
+              label: "Create Order",
+              href: "/orders/new"
+            }}
+          />
         )}
       </Card>
     </div>
@@ -263,17 +279,4 @@ export function OrdersClient() {
 }
 
 // Stats Card Component
-function StatsCard({ title, icon: Icon, value, subtitle }: any) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-[20px] sm:text-[25px] font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
-      </CardContent>
-    </Card>
-  )
-}
+
