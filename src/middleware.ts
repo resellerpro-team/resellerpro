@@ -30,8 +30,14 @@ export async function middleware(request: NextRequest) {
       },
     }
   )
-  // Get user session
+
+  // Refresh session if needed
   const { data: { user } } = await supabase.auth.getUser()
+
+  // ✋ Allow auth callback to proceed without interference
+  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+    return response
+  }
 
   // 🔒 Redirect logged-out users away from dashboard
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
