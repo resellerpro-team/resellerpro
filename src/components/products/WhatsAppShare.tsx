@@ -17,7 +17,11 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect, SearchableSelectOption } from '@/components/ui/searchable-select'
+import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
+import { useEffect } from 'react'
 
 type Product = {
   id: string
@@ -41,12 +45,50 @@ interface WhatsAppShareProps {
 
 export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: WhatsAppShareProps) {
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [selectedCustomer, setSelectedCustomer] = useState('')
+  const [customers, setCustomers] = useState<Array<{ id: string; name: string; phone: string }>>([])
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const cardRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
+  const supabase = createClient()
+
+  // Fetch customers when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchCustomers()
+    }
+  }, [open])
+
+  const fetchCustomers = async () => {
+    setLoadingCustomers(true)
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, name, phone')
+        .not('phone', 'is', null)
+        .order('name')
+        .limit(100)
+
+      if (error) throw error
+      setCustomers(data || [])
+    } catch (error) {
+      console.error('Failed to fetch customers:', error)
+    } finally {
+      setLoadingCustomers(false)
+    }
+  }
+
+  const handleCustomerSelect = (customerId: string) => {
+    setSelectedCustomer(customerId)
+    const customer = customers.find(c => c.id === customerId)
+    if (customer) {
+      setPhoneNumber(customer.phone)
+    }
+  }
 
   // Get all available images
   const allImages = product.images && product.images.length > 0 
@@ -385,26 +427,63 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
 
           {/* Text Message Tab */}
           <TabsContent value="text" className="space-y-4">
-            {/* Phone Number Input */}
-            <div className="space-y-3">
-              <Label htmlFor="phone" className="text-base font-semibold">
-                Customer's Phone Number
-              </Label>
-              <Input
-                id="phone"
-                placeholder="e.g., +919876543210"
-                value={phoneNumber}
-                onChange={handlePhoneNumberChange}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    shareToWhatsApp()
-                  }
-                }}
-                className="text-base h-12"
-              />
-              <p className="text-xs text-muted-foreground">
-                💡 Include country code (e.g., +91 for India)
-              </p>
+            {/* Customer Selector + Phone Number Input */}
+            <div className="space-y-4">
+              {/* Customer Dropdown */}
+              <div className="space-y-3">
+                <Label htmlFor="customer" className="text-base font-semibold">
+                  Select Customer (Optional)
+                </Label>
+                {customers.length === 0 && !loadingCustomers ? (
+                  <p className="text-xs text-muted-foreground p-4 border rounded-md text-center">No customers found with phone numbers.</p>
+                ) : (
+                  <SearchableSelect
+                    options={customers.map((c): SearchableSelectOption => ({
+                      value: c.id,
+                      label: c.name,
+                      subtitle: c.phone,
+                    }))}
+                    value={selectedCustomer}
+                    onValueChange={handleCustomerSelect}
+                    placeholder={loadingCustomers ? "Loading customers..." : "Choose from your customers"}
+                    searchPlaceholder="Search customers..."
+                    emptyMessage="No customers found."
+                    disabled={loadingCustomers}
+                  />
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">or enter manually</span>
+                </div>
+              </div>
+
+              {/* Manual Phone Number Input */}
+              <div className="space-y-3">
+                <Label htmlFor="phone" className="text-base font-semibold">
+                  Phone Number
+                </Label>
+                <Input
+                  id="phone"
+                  placeholder="e.g., +919876543210"
+                  value={phoneNumber}
+                  onChange={handlePhoneNumberChange}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      shareToWhatsApp()
+                    }
+                  }}
+                  className="text-base h-12"
+                />
+                <p className="text-xs text-muted-foreground">
+                  💡 Include country code (e.g., +91 for India)
+                </p>
+              </div>
             </div>
 
             {/* Message Preview */}

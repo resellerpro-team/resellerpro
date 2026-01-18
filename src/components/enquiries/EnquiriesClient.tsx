@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEnquiries, Enquiry } from "@/lib/react-query/hooks/useEnquiries";
+import { useEnquiriesStats } from "@/lib/react-query/hooks/stats-hooks";
+import { Pagination } from "@/components/shared/Pagination";
 import { EnquiryRow } from "./EnquiryRow";
 import {
     Search,
@@ -26,21 +28,37 @@ export function EnquiriesClient() {
     // URL Params
     const search = searchParams.get("search") || "";
     const statusFilter = searchParams.get("status") || "all";
+    const [page, setPage] = useState(1);
 
     // Data Fetching
-    const qs = searchParams.toString();
-    const { data: enquiries = [], isLoading } = useEnquiries(qs);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', page.toString());
+    params.set('limit', '20');
+    const qs = params.toString();
+
+    const { data: enquiriesData, isLoading } = useEnquiries(qs);
+    // Explicitly cast to any if necessary, or assume hook handles generic
+    const enquiriesDataAny = enquiriesData as any; 
+    
+    // Handle both old array format (safety) and new object format
+    const enquiries = Array.isArray(enquiriesData) ? enquiriesData : (enquiriesDataAny?.data || []);
+    const totalCount = Array.isArray(enquiriesData) ? enquiriesData.length : (enquiriesDataAny?.total || 0);
+    const totalPages = Math.ceil(totalCount / 20);
 
     // Stats Calculation
+    // Global Stats (Server-side)
+    const { data: statsData } = useEnquiriesStats();
+
     const stats = {
-        total: enquiries.length,
-        new: enquiries.filter(e => e.status === "new").length,
-        followUp: enquiries.filter(e => e.status === "needs_follow_up").length,
-        converted: enquiries.filter(e => e.status === "converted").length,
+        total: totalCount,
+        new: statsData?.new || 0,
+        followUp: statsData?.followUp || 0,
+        converted: statsData?.converted || 0,
     };
 
     // Update URL helper
     const updateURL = (params: Record<string, string>) => {
+        setPage(1);
         const newParams = new URLSearchParams(searchParams.toString());
         Object.entries(params).forEach(([key, value]) => {
             if (!value || value === "all") newParams.delete(key);
@@ -128,9 +146,21 @@ export function EnquiriesClient() {
                 ) : enquiries.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground">No enquiries found.</div>
                 ) : (
-                    enquiries.map((enquiry) => (
-                        <EnquiryRow key={enquiry.id} enquiry={enquiry} />
-                    ))
+                    <>
+                        {enquiries.map((enquiry: Enquiry) => (
+                            <EnquiryRow key={enquiry.id} enquiry={enquiry} />
+                        ))}
+                         <div className="py-4 border-t">
+                            <Pagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                onPageChange={(p) => {
+                                    setPage(p);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                            />
+                        </div>
+                    </>
                 )}
             </div>
         </div>

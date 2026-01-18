@@ -1,8 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useProducts } from "@/lib/react-query/hooks/useProducts";
+import { useProductsStats } from "@/lib/react-query/hooks/stats-hooks";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +40,7 @@ import Link from "next/link";
 import { ProductCard } from "@/components/products/ProductCard";
 import { ProductRow } from "@/components/products/ProductRow";
 import { ExportProducts } from "@/components/products/ExportProducts";
+import { Pagination } from "@/components/shared/Pagination";
 import ProductsLoading from "./loading";
 
 // ---------------- TYPES ----------------
@@ -63,6 +65,7 @@ export function ProductsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [page, setPage] = useState(1);
 
   // Extract params
   const search = searchParams.get("search") || "";
@@ -71,52 +74,39 @@ export function ProductsClient() {
   const view = (searchParams.get("view") || "grid") as "grid" | "list";
 
   // Query string for react-query
-  const qs = searchParams.toString();
+  const params = new URLSearchParams(searchParams.toString());
+  params.set('page', page.toString());
+  params.set('limit', '20');
+  const qs = params.toString();
 
   // Fetch products from API route
-  const { data: products = [], isLoading } = useProducts(qs);
+  const { data: productsData, isLoading } = useProducts(qs);
+
+  const products = productsData?.data || [];
+  const totalCount = productsData?.total || 0;
+  const totalPages = Math.ceil(totalCount / 20);
 
   // 👇 Give products a strong type
   const typedProducts: Product[] = products;
 
   // -------------------- STATS --------------------
+  // -------------------- STATS --------------------
+  // Global Stats (Server-side)
+  const { data: statsData } = useProductsStats();
+
   const stats = {
-    total: typedProducts.length,
-
-    inStock: typedProducts.filter(
-      (p: Product) => p.stock_status === "in_stock"
-    ).length,
-
-    lowStock: typedProducts.filter(
-      (p: Product) => p.stock_status === "low_stock"
-    ).length,
-
-    outOfStock: typedProducts.filter(
-      (p: Product) => p.stock_status === "out_of_stock"
-    ).length,
-
-    totalValue: typedProducts.reduce((acc: number, p: Product) => {
-      return acc + p.selling_price * (p.stock_quantity || 0);
-    }, 0),
-
-    totalProfit: typedProducts.reduce((acc: number, p: Product) => {
-      return acc + (p.selling_price - p.cost_price) * (p.stock_quantity || 0);
-    }, 0),
-
-    avgMargin:
-      typedProducts.length === 0
-        ? 0
-        : (
-          typedProducts.reduce((acc: number, p: Product) => {
-            const margin =
-              ((p.selling_price - p.cost_price) / p.selling_price) * 100;
-            return acc + margin;
-          }, 0) / typedProducts.length
-        ).toFixed(1),
+    total: totalCount, // Filtered count
+    inStock: statsData?.inStock || 0,
+    lowStock: statsData?.lowStock || 0,
+    outOfStock: statsData?.outOfStock || 0,
+    totalValue: statsData?.totalValue || 0,
+    totalProfit: statsData?.totalProfit || 0,
+    avgMargin: statsData?.avgMargin || 0,
   };
 
   // -------------------- URL UPDATE --------------------
   const updateURL = (params: Record<string, string>) => {
+    setPage(1);
     const np = new URLSearchParams(searchParams.toString());
 
     Object.entries(params).forEach(([key, value]) => {
@@ -266,6 +256,19 @@ export function ProductsClient() {
             ))}
           </CardContent>
         </Card>
+      )}
+      {/* PAGINATION */}
+      {products.length > 0 && (
+         <div className="py-4 border-t">
+           <Pagination 
+             currentPage={page} 
+             totalPages={totalPages} 
+             onPageChange={(p) => {
+               setPage(p);
+               window.scrollTo({ top: 0, behavior: 'smooth' });
+             }} 
+           />
+         </div>
       )}
     </div>
   );

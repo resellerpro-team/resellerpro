@@ -17,7 +17,8 @@ import {
 
 export function DateRangePicker({
   className,
-}: React.HTMLAttributes<HTMLDivElement>) {
+  disabled = false,
+}: React.HTMLAttributes<HTMLDivElement> & { disabled?: boolean }) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -70,15 +71,18 @@ export function DateRangePicker({
 
   return (
     <div className={cn('grid gap-2', className)}>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover open={isOpen && !disabled} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
             id="date"
             variant={'outline'}
+            disabled={disabled}
             className={cn(
               'w-auto sm:w-[300px] justify-start text-left font-normal',
-              !date && 'text-muted-foreground'
+              !date && 'text-muted-foreground',
+              disabled && 'opacity-50 cursor-not-allowed'
             )}
+            title={disabled ? 'Upgrade to Premium to access custom date ranges' : undefined}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {date?.from ? (
@@ -93,7 +97,7 @@ export function DateRangePicker({
             ) : (
               <span>All Time</span>
             )}
-            {date && (
+            {date && !disabled && (
               <X
                 className="ml-auto h-4 w-4 hover:text-destructive"
                 onClick={(e) => {

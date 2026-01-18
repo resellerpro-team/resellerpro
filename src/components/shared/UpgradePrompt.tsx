@@ -32,8 +32,8 @@ export function UpgradePrompt({ open, onOpenChange, feature = 'this feature' }: 
         <DialogHeader>
           <div className="flex items-center justify-center mb-4">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full blur-xl opacity-50 animate-pulse" />
-              <div className="relative bg-gradient-to-r from-amber-500 to-orange-500 p-4 rounded-full">
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 rounded-full blur-xl opacity-50 animate-pulse" />
+              <div className="relative bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 p-4 rounded-full shadow-[0_4px_12px_rgba(245,158,11,0.4)]">
                 <Crown className="h-8 w-8 text-white" />
               </div>
             </div>
@@ -78,7 +78,7 @@ export function UpgradePrompt({ open, onOpenChange, feature = 'this feature' }: 
           </Button>
           <Button 
             onClick={handleUpgrade}
-            className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+            className="w-full sm:w-auto bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 hover:from-amber-500 hover:via-orange-600 hover:to-amber-700 text-white shadow-[0_4px_12px_rgba(245,158,11,0.25)] hover:shadow-[0_4px_16px_rgba(245,158,11,0.4)] transition-all border border-amber-200/20"
           >
             <Crown className="mr-2 h-4 w-4" />
             Upgrade Now
