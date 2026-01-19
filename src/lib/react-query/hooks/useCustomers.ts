@@ -18,5 +18,7 @@ export function useCustomers(queryString: string) {
   return useQuery({
     queryKey: ["customers", queryString],
     queryFn: () => fetchCustomers(queryString),
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }

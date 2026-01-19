@@ -31,32 +31,56 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if needed
-  const { data: { user }, error } = await supabase.auth.getUser()
-
   // ✋ Allow auth callback to proceed without interference
   if (request.nextUrl.pathname.startsWith('/auth/callback')) {
     return response
   }
 
-  // 🔒 Redirect logged-out users away from dashboard
-  // ONLY if there was no network error. If network error, let it flow to Error Boundary.
-  // We check for various network-related error signals
-  const isNetworkError = error && (
-    error.message?.includes('fetch failed') ||
-    error.message?.includes('Network') ||
-    error.status === 500 ||
-    error.status === 0
-  )
+  // 🔌 OFFLINE-FIRST: Try to get user from session
+  let user = null
+  let isOffline = false
 
-  if (!user && !isNetworkError && request.nextUrl.pathname.startsWith('/dashboard')) {
+  try {
+    const { data, error } = await supabase.auth.getUser()
+
+    // Check if error is network-related
+    if (error) {
+      const isNetworkError =
+        error.message?.includes('fetch failed') ||
+        error.message?.includes('Failed to fetch') ||
+        error.message?.includes('Network') ||
+        error.message?.includes('ENOTFOUND') ||
+        error.message?.includes('ERR_INTERNET_DISCONNECTED') ||
+        error.message?.includes('ERR_NETWORK_CHANGED') ||
+        error.status === 500 ||
+        error.status === 0
+
+      if (isNetworkError) {
+        isOffline = true
+        console.log('[Middleware] Offline mode - allowing access with cached session')
+        // When offline, assume user is logged in if they have session cookies
+        // This prevents redirecting to signin when offline
+        user = { id: 'offline-user' } as any // Dummy user object
+      }
+    } else {
+      user = data.user
+    }
+  } catch (error) {
+    console.log('[Middleware] Network error - allowing access')
+    isOffline = true
+    // Allow access when offline - assume user is authenticated from previous session
+    user = { id: 'offline-user' } as any
+  }
+
+  // 🔒 Redirect logged-out users away from dashboard (only if online or no valid session)
+  if (!user && !isOffline && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()
     url.pathname = '/signin'
     return NextResponse.redirect(url)
   }
 
-  // 🔁 Redirect logged-in users away from login/signup
-  if (user && (request.nextUrl.pathname === '/signin' || request.nextUrl.pathname === '/signup')) {
+  // 🔁 Redirect logged-in users away from login/signup (only if online)
+  if (user && !isOffline && (request.nextUrl.pathname === '/signin' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

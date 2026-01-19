@@ -1,6 +1,40 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export async function POST(req: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+
+    const { error } = await supabase.from('customers').insert({
+      user_id: user.id,
+      ...body,
+    });
+
+    if (error) {
+      console.error('Customer creation error:', error);
+      if (error.code === '23505') {
+        return NextResponse.json(
+          { error: 'A customer with this phone number already exists.' },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json({ error: 'Failed to create customer' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, message: 'Customer created successfully' });
+  } catch (error) {
+    console.error('POST /api/customers error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function GET(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
