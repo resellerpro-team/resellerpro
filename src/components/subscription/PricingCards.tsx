@@ -17,7 +17,9 @@ type Plan = {
   name: string
   display_name: string
   price: number
+  offer_price:number | null
   order_limit: number | null
+  tag_line: string |null
   features: any[]
 }
 
@@ -177,36 +179,35 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
               <CardHeader>
                 <CardTitle className="text-2xl">{plan.display_name}</CardTitle>
                 <CardDescription>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold">₹{plan.price}</span>
-                    {plan.price > 0 && <span className="text-muted-foreground">/month</span>}
+                  {isCurrentPlan ?(
+                    <div className="mt-4">
+                    <span className="text-3xl text-black font-bold  me-2">₹{plan.price}</span>
+                  </div>
+                  ) :(
+                    <div className="mt-4">
+                    <span className="text-2xl text-black font-bold line-through me-2">₹{plan.price}</span>
+                    <span className="text-3xl font-bold">₹{plan.offer_price}</span>
+                    {plan.price > 0 && <span className="text-xl text-muted-foreground">/month</span>}
+                  </div>
+                  )}
+                  <div className="mt-2 mb-1 h-6">
+                    <span className="text-black font-semibold">{plan.tag_line}</span>
                   </div>
                 </CardDescription>
               </CardHeader>
-
+                
               <CardContent>
-                <ul className="space-y-3">
-                  {(plan.features as string[]).map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-
-              <CardFooter>
                 {isCurrentPlan ? (
-                  <Button className="w-full" disabled>
+                  <Button className="w-full mb-4 " disabled>
                     Current Plan
                   </Button>
                 ) : plan.name === 'free' ? (
-                  <Button className="w-full" variant="outline" disabled>
+                  <Button className="w-full mb-4" variant="outline" disabled>
                     Downgrade at period end
                   </Button>
                 ) : (
                   <Button
-                    className="w-full"
+                    className="w-full mb-4 "
                     onClick={() => handleUpgradeClick(plan)}
                     disabled={isLoading}
                   >
@@ -220,7 +221,18 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                     )}
                   </Button>
                 )}
-              </CardFooter>
+             
+                <ul className="space-y-3">
+                  {(plan.features as string[]).map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+
+              
             </Card>
           )
         })}
