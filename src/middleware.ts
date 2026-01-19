@@ -30,11 +30,26 @@ export async function middleware(request: NextRequest) {
       },
     }
   )
-  // Get user session
-  const { data: { user } } = await supabase.auth.getUser()
+
+  // Refresh session if needed
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  // ✋ Allow auth callback to proceed without interference
+  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+    return response
+  }
 
   // 🔒 Redirect logged-out users away from dashboard
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+  // ONLY if there was no network error. If network error, let it flow to Error Boundary.
+  // We check for various network-related error signals
+  const isNetworkError = error && (
+    error.message?.includes('fetch failed') ||
+    error.message?.includes('Network') ||
+    error.status === 500 ||
+    error.status === 0
+  )
+
+  if (!user && !isNetworkError && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()
     url.pathname = '/signin'
     return NextResponse.redirect(url)

@@ -12,7 +12,14 @@ import { Plus, Search, Filter, Users, TrendingUp, IndianRupee } from "lucide-rea
 
 import Link from "next/link";
 import CustomerCard from "@/components/customers/CustomerCard";
+import { ExportCustomers } from "@/components/customers/ExportCustomers";
+import { Pagination } from "@/components/shared/Pagination";
 import { useCustomers } from "@/lib/react-query/hooks/useCustomers";
+import { useCustomersStats } from "@/lib/react-query/hooks/stats-hooks";
+import { useState } from "react";
+import { CustomersSkeleton } from "@/components/shared/skeletons/CustomersSkeleton";
+import { StatsCard } from "@/components/shared/StatsCard";
+import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
 
 // -----------------------------------------
 
@@ -20,53 +27,40 @@ export function CustomersClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [page, setPage] = useState(1);
 
   // Read URL params
   const search = searchParams.get("search") || "";
   const sort = searchParams.get("sort") || "-created_at";
 
   // Build querystring
-  const qs = searchParams.toString();
+  const params = new URLSearchParams(searchParams.toString());
+  params.set('page', page.toString());
+  params.set('limit', '20');
+  const qs = params.toString();
 
   // Fetch customers
-  const { data: customers = [], isLoading } = useCustomers(qs);
+  const { data: customersData, isLoading } = useCustomers(qs);
+  
+  const customers = customersData?.data || [];
+  const totalCount = customersData?.total || 0;
+  const totalPages = Math.ceil(totalCount / 20);
 
   // ---------- CLIENT-SIDE STATS ----------
+  // Global Stats (Server-side)
+  const { data: statsData } = useCustomersStats();
+
   const stats = {
-    total: customers.length,
-    newThisMonth: customers.filter((c: any) => {
-      const date = c.created_at ? new Date(c.created_at) : null;
-      if (!date) return false;
-
-      const now = new Date();
-      return (
-        date.getMonth() === now.getMonth() &&
-        date.getFullYear() === now.getFullYear()
-      );
-    }).length,
-
-    repeat: customers.filter((c: any) => (c.total_orders ?? 0) > 1).length,
-
-    retentionRate:
-      customers.length === 0
-        ? 0
-        : Math.round(
-          (customers.filter((c: any) => (c.total_orders ?? 0) > 1).length /
-            customers.length) *
-          100
-        ),
-
-    avgValue:
-      customers.length === 0
-        ? 0
-        : Math.round(
-          customers.reduce((s: number, c: any) => s + (c.total_spent ?? 0), 0) /
-          customers.length
-        ),
+    total: totalCount,
+    newThisMonth: statsData?.newThisMonth || 0,
+    repeat: statsData?.repeat || 0,
+    retentionRate: statsData?.retentionRate || 0,
+    avgValue: statsData?.avgValue || 0,
   };
 
   // ---------- Update URL ----------
   const updateURL = (updates: Record<string, string>) => {
+    setPage(1);
     const params = new URLSearchParams(searchParams.toString());
 
     Object.entries(updates).forEach(([k, v]) => {
@@ -82,6 +76,8 @@ export function CustomersClient() {
   // -----------------------------------------
 
   return (
+
+
     <div className="space-y-6">
       {/* HEADER */}
       <div className="flex items-center justify-between">
@@ -90,49 +86,40 @@ export function CustomersClient() {
           <p className="text-muted-foreground">Manage your customer relationships</p>
         </div>
 
-        <Button asChild>
-          <Link href="/customers/new">
-            <Plus className="mr-2 h-4 w-4" /> Add Customer
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <ExportCustomers customers={customers} />
+          
+          <Button asChild>
+            <Link href="/customers/new">
+              <Plus className="mr-2 h-4 w-4" /> Add Customer
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* STATS */}
+
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">
-              +{stats.newThisMonth} new this month
-            </p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Total Customers"
+          value={stats.total}
+          icon={Users}
+          description={`+${stats.newThisMonth} new this month`}
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Repeat Customers</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.repeat}</div>
-            <p className="text-xs text-muted-foreground">{stats.retentionRate}% retention rate</p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Repeat Customers"
+          value={stats.repeat}
+          icon={TrendingUp}
+          description={`${stats.retentionRate}% retention rate`}
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Customer Value</CardTitle>
-            <IndianRupee className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{stats.avgValue}</div>
-            <p className="text-xs text-muted-foreground">Lifetime value</p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Avg. Customer Value"
+          value={`₹${stats.avgValue}`}
+          icon={IndianRupee}
+          description="Lifetime value"
+        />
       </div>
 
       {/* SEARCH & FILTER */}
@@ -162,39 +149,51 @@ export function CustomersClient() {
 
       {/* CUSTOMER LIST */}
       {isLoading ? (
-        <p className="text-center py-20 text-muted-foreground">Loading customers...</p>
+        <CustomersSkeleton />
       ) : customers.length === 0 ? (
-        <Card className="p-12">
-          <div className="text-center space-y-3">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h3 className="text-lg font-semibold">No customers found</h3>
-            <p className="text-muted-foreground">
-              {search ? "Try adjusting your search" : "Start by adding your first customer"}
-            </p>
-            {!search && (
-              <Button asChild>
-                <Link href="/customers/new">
-                  <Plus className="mr-2 h-4 w-4" /> Add Customer
-                </Link>
-              </Button>
-            )}
-          </div>
-        </Card>
+        search ? (
+          <FilteredEmptyState
+            onClearFilters={() => updateURL({ search: "" })}
+          />
+        ) : (
+          <EmptyState
+            icon={Users}
+            title="No customers yet"
+            description="Add your first customer to start building relationships and tracking sales."
+            action={{
+              label: "Add Customer",
+              href: "/customers/new"
+            }}
+          />
+        )
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {customers.map((c: any) => (
-            <CustomerCard
-              key={c.id}
-              id={c.id}
-              name={c.name}
-              phone={c.phone}
-              email={c.email || "N/A"}
-              orders={c.total_orders ?? 0}
-              totalSpent={c.total_spent ?? 0}
-              lastOrder={c.last_order_date}
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {customers.map((c: any) => (
+              <CustomerCard
+                key={c.id}
+                id={c.id}
+                name={c.name}
+                phone={c.phone}
+                email={c.email || "N/A"}
+                orders={c.total_orders ?? 0}
+                totalSpent={c.total_spent ?? 0}
+                lastOrder={c.last_order_date}
+              />
+            ))}
+          </div>
+
+          <div className="py-4 border-t">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(p) => {
+                setPage(p);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
             />
-          ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

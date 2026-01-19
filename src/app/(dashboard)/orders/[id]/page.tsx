@@ -413,7 +413,7 @@ export default async function OrderDetailsPage({
             <CollapsibleSection
               title="Order Status"
               icon={<Package className="h-5 w-5" />}
-              defaultOpen={false}
+              defaultOpen={true}
             >
               <div className="space-y-4">
                 <div className="flex justify-between items-center gap-2">
@@ -469,6 +469,8 @@ export default async function OrderDetailsPage({
                   orderItems={order.order_items?.map((item: any) => item.product_name) || []}
                   totalAmount={parseFloat(order.total_amount)}
                   shopName={businessName}
+                  existingCourier={order.courier_service}
+                  existingTracking={order.tracking_number}
                 />
               </div>
             </CollapsibleSection>

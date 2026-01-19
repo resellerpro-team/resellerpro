@@ -272,6 +272,7 @@ export async function updateOrderStatus(formData: FormData) {
     const courierService = formData.get('courierService') as string
     const trackingNumber = formData.get('trackingNumber') as string
     const notes = formData.get('notes') as string
+    const isUndo = formData.get('isUndo') === 'true' // Check if this is an undo operation
 
     if (!orderId || !newStatus) {
       return { success: false, message: 'Invalid data.' }
@@ -291,20 +292,22 @@ export async function updateOrderStatus(formData: FormData) {
 
     const currentStatus = order.status
 
-    // Validate status transition
-    const allowedStatuses = STATUS_FLOW[currentStatus] || []
+    // Validate status transition ONLY if NOT an undo operation
+    if (!isUndo) {
+      const allowedStatuses = STATUS_FLOW[currentStatus] || []
 
-    if (!allowedStatuses.includes(newStatus)) {
-      const allowedLabels = allowedStatuses.map(s =>
-        s.charAt(0).toUpperCase() + s.slice(1)
-      ).join(', ')
+      if (!allowedStatuses.includes(newStatus)) {
+        const allowedLabels = allowedStatuses.map(s =>
+          s.charAt(0).toUpperCase() + s.slice(1)
+        ).join(', ')
 
-      return {
-        success: false,
-        message: `Cannot change status from "${currentStatus}" to "${newStatus}". ${allowedStatuses.length > 0
-          ? `Allowed transitions: ${allowedLabels}`
-          : 'This order is in a final state and cannot be changed.'
-          }`
+        return {
+          success: false,
+          message: `Cannot change status from "${currentStatus}" to "${newStatus}". ${allowedStatuses.length > 0
+            ? `Allowed transitions: ${allowedLabels}`
+            : 'This order is in a final state and cannot be changed.'
+            }`
+        }
       }
     }
 

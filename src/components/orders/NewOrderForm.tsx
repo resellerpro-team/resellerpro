@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect, SearchableSelectOption } from '@/components/ui/searchable-select'
 import { useToast } from '@/hooks/use-toast'
 import { Plus, Trash2, Save, Loader2, Package, AlertTriangle } from 'lucide-react'
 import { createOrder } from '@/app/(dashboard)/orders/actions'
@@ -295,18 +296,18 @@ const shippingValue = parseFloat(shippingCost) || 0;
           <CardContent>
             <div className="space-y-2">
               <Label>Select Customer *</Label>
-              <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a customer..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.name} - {customer.phone}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={customers.map((c): SearchableSelectOption => ({
+                  value: c.id,
+                  label: c.name,
+                  subtitle: c.phone,
+                }))}
+                value={selectedCustomerId}
+                onValueChange={setSelectedCustomerId}
+                placeholder="Choose a customer..."
+                searchPlaceholder="Search customers..."
+                emptyMessage="No customers found."
+              />
               {customers.length === 0 && (
                 <p className="text-sm text-muted-foreground">
                   No customers found.{' '}
@@ -339,54 +340,29 @@ const shippingValue = parseFloat(shippingCost) || 0;
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Select Product</Label>
-              <Select onValueChange={handleAddProduct} value="">
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a product to add..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {products.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                      No products available.{' '}
-                      <Link href="/products/new" className="text-primary underline">
-                        Add a product
-                      </Link>
-                    </div>
-                  ) : (
-                    products.map((product) => (
-                      <SelectItem
-                        key={product.id}
-                        value={product.id}
-                        disabled={product.stock_quantity === 0} // Disable out of stock
-                      >
-                        <div className="flex items-center justify-between w-full gap-3">
-                          <span className="flex-1">
-                            {product.name} - ₹{product.selling_price}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            {/* Show stock quantity */}
-                            <span
-                              className={`text-xs ${
-                                product.stock_quantity < 5
-                                  ? 'text-yellow-600 font-medium'
-                                  : 'text-muted-foreground'
-                              }`}
-                            >
-                              Stock: {product.stock_quantity}
-                            </span>
-                            {/* Show stock status indicator */}
-                            {product.stock_status === 'low_stock' && (
-                              <AlertTriangle className="h-3 w-3 text-yellow-600" />
-                            )}
-                            {product.stock_quantity === 0 && (
-                              <span className="text-xs text-red-600 font-medium">Out</span>
-                            )}
-                          </div>
-                        </div>
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              {products.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground border rounded-md">
+                  No products available.{' '}
+                  <Link href="/products/new" className="text-primary underline">
+                    Add a product
+                  </Link>
+                </div>
+              ) : (
+                <SearchableSelect
+                  options={products.map((p): SearchableSelectOption => ({
+                    value: p.id,
+                    label: `${p.name} - ₹${p.selling_price}`,
+                    subtitle: p.stock_quantity <= 10 
+                      ? `⚠️ Low Stock: ${p.stock_quantity} units` 
+                      : `Stock: ${p.stock_quantity} units`,
+                  }))}
+                  value=""
+                  onValueChange={handleAddProduct}
+                  placeholder="Choose a product to add..."
+                  searchPlaceholder="Search products..."
+                  emptyMessage="No products found."
+                />
+              )}
             </div>
 
             {/* Order Items List */}

@@ -19,6 +19,11 @@ export async function GET(req: NextRequest) {
     const payment = searchParams.get('payment')
     const sort = searchParams.get('sort')
 
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const offset = (page - 1) * limit
+
     // Start base query
     let query = supabase
         .from('orders')
@@ -30,7 +35,8 @@ export async function GET(req: NextRequest) {
         name,
         phone
       )
-    `
+    `,
+            { count: 'exact' }
         )
         .eq('user_id', user.id)
 
@@ -125,11 +131,19 @@ export async function GET(req: NextRequest) {
     const sortField = sortBy.replace('-', '')
     query = query.order(sortField, { ascending: !sortOrder })
 
-    const { data, error } = await query
+    // Pagination Range
+    query = query.range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json({
+        data,
+        total: count,
+        page,
+        limit
+    })
 }
