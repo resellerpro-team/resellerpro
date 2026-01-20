@@ -3,6 +3,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { createNotification } from '@/lib/services/notificationService'
+import { MailService } from '@/lib/mail'
+import { generateContractPdf } from '@/lib/pdf/contract'
+import { format } from 'date-fns'
 
 /**
  * Activate subscription using ONLY wallet balance (no Razorpay)
@@ -29,7 +32,7 @@ export async function activateWithWallet(planId: string) {
         // Get wallet balance
         const { data: profile } = await supabase
             .from('profiles')
-            .select('wallet_balance, is_referral_rewarded')
+            .select('wallet_balance, is_referral_rewarded, full_name')
             .eq('id', user.id)
             .single()
 
@@ -104,6 +107,58 @@ export async function activateWithWallet(planId: string) {
         } catch (rewardError: any) {
             console.error('❌ Referral reward exception:', rewardError.message)
             // Don't fail subscription if referral reward fails
+        }
+
+        // --------------------
+        // Send Confirmation Email
+        // --------------------
+        console.log('📧 Starting wallet subscription email flow...')
+        try {
+            console.log('📄 Generating contract PDF...')
+            const pdfBuffer = await generateContractPdf({
+                userName: profile?.full_name || 'Valued User',
+                planName: plan.display_name,
+                amount: plan.price,
+                startDate: format(now, 'dd MMM yyyy'),
+                endDate: format(periodEnd, 'dd MMM yyyy'),
+            })
+
+
+            console.log('📨 Sending email to:', user.email)
+            const result = await MailService.sendSubscriptionConfirmation(
+                user.email!,
+                profile?.full_name || 'User',
+                plan.display_name,
+                format(periodEnd, 'dd MMM yyyy'),
+                pdfBuffer
+            )
+
+            if (result.success) {
+                console.log('✅ Wallet subscription email sent successfully')
+            } else {
+                console.error('❌ Wallet email failed:', result.error)
+                // Notify user in-app
+                await createNotification({
+                    userId: user.id,
+                    type: 'system_alert',
+                    title: 'Email Delivery Failed',
+                    message: `Subscription active, but failed to send contract email: ${result.error?.substring(0, 50)}...`,
+                    entityType: 'subscription',
+                    priority: 'normal'
+                })
+            }
+        } catch (emailError: any) {
+            console.error('❌ Wallet email sending threw exception:', emailError)
+            console.error('Stack:', emailError.stack)
+
+            await createNotification({
+                userId: user.id,
+                type: 'system_alert',
+                title: 'System Error',
+                message: 'Failed to generate contract or send email. Please contact support.',
+                entityType: 'subscription',
+                priority: 'high'
+            })
         }
 
         revalidatePath('/settings/subscription')
