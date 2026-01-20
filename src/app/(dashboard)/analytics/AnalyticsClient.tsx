@@ -245,20 +245,29 @@ export function AnalyticsClient() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Revenue by Category</CardTitle>
-                        <CardDescription>
-                            {dateRanges?.hasFilter
-                                ? 'Top 10 categories in selected period'
-                                : 'All time top 10 categories'
-                            }
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="h-[350px]">
-                        <RevenueByCategoryChart orders={orders} />
-                    </CardContent>
-                </Card>
+
+                {isPremium ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Revenue by Category</CardTitle>
+                            <CardDescription>
+                                {dateRanges?.hasFilter
+                                    ? 'Top 10 categories in selected period'
+                                    : 'All time top 10 categories'
+                                }
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="h-[350px]">
+                            <RevenueByCategoryChart orders={orders} />
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <LockedChart
+                        title="Revenue by Category"
+                        description="See category performance breakdown"
+                        chartType="bar"
+                    />
+                )}
 
                 {isPremium ? (
                     <Card>
@@ -415,7 +424,7 @@ function TopPerformersCard({
                         variant="outline" 
                         size="sm" 
                         className="w-full border-amber-200 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:border-amber-800"
-                        onClick={() => router.push('/settings/subscription')}
+                        onClick={() => router.push('/settings/subscription#pricing')}
                     >
                         <Crown className="mr-2 h-4 w-4 text-amber-600" />
                         Unlock {totalCount - 5} More

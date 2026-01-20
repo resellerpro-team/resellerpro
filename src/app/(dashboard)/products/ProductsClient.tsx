@@ -1,9 +1,10 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useProducts } from "@/lib/react-query/hooks/useProducts";
 import { useProductsStats } from "@/lib/react-query/hooks/stats-hooks";
+import { createClient } from "@/lib/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -68,6 +69,29 @@ export function ProductsClient() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [page, setPage] = useState(1);
+  const [businessName, setBusinessName] = useState<string>('ResellerPro');
+
+  // Fetch business name from user profile
+  useEffect(() => {
+    async function fetchBusinessName() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('business_name')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.business_name) {
+          setBusinessName(profile.business_name)
+        }
+      }
+    }
+
+    fetchBusinessName()
+  }, []);
 
   // Extract params
   const search = searchParams.get("search") || "";
@@ -131,7 +155,7 @@ export function ProductsClient() {
         <h1 className="text-3xl font-bold">Products</h1>
 
         <div className="flex gap-2">
-          <ExportProducts products={typedProducts} />
+          <ExportProducts products={typedProducts} businessName={businessName} />
 
           <Button asChild>
             <Link href="/products/new">+ Add Product</Link>

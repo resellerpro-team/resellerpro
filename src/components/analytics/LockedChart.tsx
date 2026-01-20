@@ -4,8 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Lock, Crown, Sparkles } from 'lucide-react'
 import { ProBadge } from '@/components/shared/ProBadge'
-import { useState } from 'react'
-import { UpgradePrompt } from '@/components/shared/UpgradePrompt'
+import { useRouter } from 'next/navigation'
 
 interface LockedChartProps {
   title: string
@@ -16,7 +15,13 @@ interface LockedChartProps {
 }
 
 export function LockedChart({ title, description, icon: Icon, previewContent, chartType = 'pie' }: LockedChartProps) {
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+  const router = useRouter()
+  
+  // Direct redirect - no modal, higher conversion
+  const handleUpgrade = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    router.push('/settings/subscription#pricing')
+  }
 
   // Fake realistic pie/donut chart preview
   const FakePieChart = () => (
@@ -81,67 +86,56 @@ export function LockedChart({ title, description, icon: Icon, previewContent, ch
   )
 
   return (
-    <>
-      <Card className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group" onClick={() => setShowUpgradePrompt(true)}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                {Icon && <Icon className="h-5 w-5" />}
-                {title}
-                <ProBadge />
-              </CardTitle>
-              <CardDescription>{description}</CardDescription>
-            </div>
-            <div className="bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 p-2 rounded-full shadow-[0_2px_8px_rgba(245,158,11,0.25)]">
-              <Lock className="h-4 w-4 text-white" />
-            </div>
+    <Card className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group" onClick={handleUpgrade}>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              {Icon && <Icon className="h-5 w-5" />}
+              {title}
+              <ProBadge />
+            </CardTitle>
+            <CardDescription>{description}</CardDescription>
           </div>
-        </CardHeader>
-        
-        {/* Chart Layer - Fake chart with blur */}
-        <CardContent className="h-[350px] relative">
-          <div className="absolute inset-0" style={{ filter: 'blur(6px)' }}>
-            {chartType === 'pie' || chartType === 'donut' ? <FakePieChart /> : <FakeBarChart />}
+          <div className="bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 p-2 rounded-full shadow-[0_2px_8px_rgba(245,158,11,0.25)]">
+            <Lock className="h-4 w-4 text-white" />
           </div>
-        </CardContent>
-
-        {/* Overlay Layer */}
-        <div className="absolute inset-0 top-[72px] bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center text-center p-6 pointer-events-auto">
-          <div className="relative mb-4">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 rounded-full blur-lg opacity-40 animate-pulse" />
-            <div className="relative bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 p-3 rounded-full shadow-[0_4px_12px_rgba(245,158,11,0.4)]">
-              <Crown className="h-6 w-6 text-white" />
-            </div>
-          </div>
-          
-          <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
-          <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-            Unlock advanced analytics to track {title.toLowerCase()} and make data-driven decisions
-          </p>
-          
-          <Button 
-            className="bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 hover:from-amber-500 hover:via-orange-600 hover:to-amber-700 text-white shadow-[0_4px_12px_rgba(245,158,11,0.25)] hover:shadow-[0_4px_16px_rgba(245,158,11,0.4)] transition-all border border-amber-200/20"
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowUpgradePrompt(true)
-            }}
-          >
-            <Sparkles className="mr-2 h-4 w-4" />
-            Unlock Now
-          </Button>
-          
-          <p className="text-xs text-muted-foreground mt-3">
-            Click anywhere to learn more
-          </p>
         </div>
-      </Card>
+      </CardHeader>
+      
+      {/* Chart Layer - Fake chart with blur */}
+      <CardContent className="h-[350px] relative">
+        <div className="absolute inset-0" style={{ filter: 'blur(6px)' }}>
+          {chartType === 'pie' || chartType === 'donut' ? <FakePieChart /> : <FakeBarChart />}
+        </div>
+      </CardContent>
 
-      <UpgradePrompt 
-        open={showUpgradePrompt} 
-        onOpenChange={setShowUpgradePrompt}
-        feature={`${title.toLowerCase()} analytics`}
-      />
-    </>
+      {/* Overlay Layer */}
+      <div className="absolute inset-0 top-[72px] bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center text-center p-6 pointer-events-auto">
+        <div className="relative mb-4">
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 rounded-full blur-lg opacity-40 animate-pulse" />
+          <div className="relative bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 p-3 rounded-full shadow-[0_4px_12px_rgba(245,158,11,0.4)]">
+            <Crown className="h-6 w-6 text-white" />
+          </div>
+        </div>
+        
+        <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
+        <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+          Unlock advanced analytics to track {title.toLowerCase()} and make data-driven decisions
+        </p>
+        
+        <Button 
+          className="bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 hover:from-amber-500 hover:via-orange-600 hover:to-amber-700 text-white shadow-[0_4px_12px_rgba(245,158,11,0.25)] hover:shadow-[0_4px_16px_rgba(245,158,11,0.4)] transition-all border border-amber-200/20"
+          onClick={handleUpgrade}
+        >
+          <Sparkles className="mr-2 h-4 w-4" />
+          Upgrade to Premium
+        </Button>
+        
+        <p className="text-xs text-muted-foreground mt-3">
+          Click anywhere to see pricing
+        </p>
+      </div>
+    </Card>
   )
 }

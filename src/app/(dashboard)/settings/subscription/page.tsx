@@ -8,6 +8,7 @@ import { AlertCircle, Check, TrendingUp, Zap, Package } from 'lucide-react'
 import { getSubscriptionData, getAvailablePlans, cancelSubscription } from './actions'
 import { PricingCards } from '@/components/subscription/PricingCards'
 import { ActivePlanCard } from '@/components/subscription/ActivePlanCard'
+import { ClientScrollHandler } from './ClientScrollHandler'
 import Script from 'next/script'
 
 export const metadata = {
@@ -58,6 +59,9 @@ export default async function SubscriptionPage() {
 
   return (
     <>
+      {/* Client-side scroll handler for hash anchors */}
+      <ClientScrollHandler />
+      
       {/* Razorpay Checkout Script */}
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
@@ -164,7 +168,7 @@ export default async function SubscriptionPage() {
         )}
 
         {/* Pricing Plans */}
-        <div>
+        <div id="pricing">
           <div className="mb-6">
             <h2 className="text-2xl font-bold mb-2">
               {isPro ? 'Available Plans' : 'Upgrade Your Plan'}
@@ -219,6 +223,7 @@ export default async function SubscriptionPage() {
               </h4>
               <p className="text-sm text-muted-foreground">
                 Yes, you can cancel anytime. You'll continue to have access until the end of your billing period, then you'll be moved to the Free plan.
+                Amount won't be refunded
               </p>
             </div>
             <div>
