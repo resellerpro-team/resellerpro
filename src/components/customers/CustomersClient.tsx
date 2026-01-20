@@ -16,10 +16,11 @@ import { ExportCustomers } from "@/components/customers/ExportCustomers";
 import { Pagination } from "@/components/shared/Pagination";
 import { useCustomers } from "@/lib/react-query/hooks/useCustomers";
 import { useCustomersStats } from "@/lib/react-query/hooks/stats-hooks";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CustomersSkeleton } from "@/components/shared/skeletons/CustomersSkeleton";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
+import { createClient } from "@/lib/supabase/client";
 
 // -----------------------------------------
 
@@ -28,6 +29,29 @@ export function CustomersClient() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [page, setPage] = useState(1);
+  const [businessName, setBusinessName] = useState<string>('ResellerPro');
+
+  // Fetch business name from user profile
+  useEffect(() => {
+    async function fetchBusinessName() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('business_name')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.business_name) {
+          setBusinessName(profile.business_name)
+        }
+      }
+    }
+
+    fetchBusinessName()
+  }, []);
 
   // Read URL params
   const search = searchParams.get("search") || "";
@@ -87,7 +111,7 @@ export function CustomersClient() {
         </div>
 
         <div className="flex gap-2">
-          <ExportCustomers customers={customers} />
+          <ExportCustomers customers={customers} businessName={businessName} />
           
           <Button asChild>
             <Link href="/customers/new">
