@@ -16,7 +16,7 @@ import { formatCurrency, formatNumber, getReadableDate, getReadableMonth } from 
 import { toast } from 'sonner'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { ProBadge } from '@/components/shared/ProBadge'
-import { UpgradePrompt } from '@/components/shared/UpgradePrompt'
+import { useRouter } from 'next/navigation'
 
 interface ExportButtonProps {
   orders: any[]
@@ -26,7 +26,7 @@ interface ExportButtonProps {
 
 export function ExportButton({ orders, dateRange, businessName = 'ResellerPro' }: ExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false)
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+  const router = useRouter()
   const { isPremium, isLoading: isCheckingSubscription } = useSubscription()
 
   // Helper function to get product summary from order items
@@ -64,9 +64,9 @@ export function ExportButton({ orders, dateRange, businessName = 'ResellerPro' }
   }
 
   const handleExportOrders = () => {
-    // Check subscription before export
+    // Check subscription before export - direct redirect
     if (!isPremium) {
-      setShowUpgradePrompt(true)
+      router.push('/settings/subscription#pricing')
       return
     }
 
@@ -120,9 +120,9 @@ export function ExportButton({ orders, dateRange, businessName = 'ResellerPro' }
   }
 
   const handleExportSummary = () => {
-    // Check subscription before export
+    // Check subscription before export - direct redirect
     if (!isPremium) {
-      setShowUpgradePrompt(true)
+      router.push('/settings/subscription#pricing')
       return
     }
 
@@ -202,12 +202,6 @@ export function ExportButton({ orders, dateRange, businessName = 'ResellerPro' }
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Upgrade Prompt Modal */}
-      <UpgradePrompt 
-        open={showUpgradePrompt} 
-        onOpenChange={setShowUpgradePrompt}
-        feature="export reports"
-      />
     </>
   )
 }
