@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import {
 import { ExportEnquiries } from '@/components/enquiries/ExportEnquiries';
 import { StatsCard } from "@/components/shared/StatsCard"
 import { Enquiry } from "@/types"
+import { createClient } from '@/lib/supabase/client';
 
 export function EnquiriesClient() {
     const router = useRouter();
@@ -34,6 +35,29 @@ export function EnquiriesClient() {
     const search = searchParams.get("search") || "";
     const statusFilter = searchParams.get("status") || "all";
     const [page, setPage] = useState(1);
+    const [businessName, setBusinessName] = useState<string>('ResellerPro');
+
+    // Fetch business name from user profile
+    useEffect(() => {
+        async function fetchBusinessName() {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('business_name')
+                    .eq('id', user.id)
+                    .single()
+
+                if (profile?.business_name) {
+                    setBusinessName(profile.business_name)
+                }
+            }
+        }
+
+        fetchBusinessName()
+    }, []);
 
     // Data Fetching
     const params = new URLSearchParams(searchParams.toString());
@@ -81,7 +105,7 @@ export function EnquiriesClient() {
           <p className="text-muted-foreground">Manage ongoing customer conversations and leads</p>
         </div>
         <div className="flex items-center gap-2">
-            <ExportEnquiries enquiries={enquiries} />
+            <ExportEnquiries enquiries={enquiries} businessName={businessName} />
             <Button onClick={() => router.push('/enquiries/new')}>
                 <MessageSquare className="mr-2 h-4 w-4" /> Add Enquiry
             </Button>

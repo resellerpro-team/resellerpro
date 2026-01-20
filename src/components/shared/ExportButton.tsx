@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Download, Loader2, LucideIcon } from 'lucide-react'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { ProBadge } from '@/components/shared/ProBadge'
-import { UpgradePrompt } from '@/components/shared/UpgradePrompt'
+import { useRouter } from 'next/navigation'
 
 interface ExportButtonProps {
   onExport: () => Promise<void> | void;
@@ -30,15 +30,15 @@ export function ExportButton({
   className,
   showProBadge = true,
 }: ExportButtonProps) {
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+  const router = useRouter()
   const [internalExporting, setInternalExporting] = useState(false)
   const { isPremium, isLoading: isCheckingSubscription } = useSubscription()
-
   const isExporting = loading || internalExporting;
 
   const handleClick = async () => {
+    // Direct redirect for non-premium users
     if (!isPremium) {
-      setShowUpgradePrompt(true)
+      router.push('/settings/subscription#pricing')
       return
     }
 
@@ -69,12 +69,6 @@ export function ExportButton({
         {label}
         {showProBadge && !isCheckingSubscription && !isPremium && <ProBadge />}
       </Button>
-
-      <UpgradePrompt
-        open={showUpgradePrompt}
-        onOpenChange={setShowUpgradePrompt}
-        feature={featureName}
-      />
     </>
   )
 }

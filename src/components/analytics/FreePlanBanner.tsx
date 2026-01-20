@@ -27,7 +27,7 @@ export function FreePlanBanner({ daysLimit, showingDays }: FreePlanBannerProps) 
         <Button 
           size="sm"
           className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shrink-0 w-full sm:w-auto mt-2 sm:mt-0"
-          onClick={() => router.push('/settings/subscription')}
+          onClick={() => router.push('/settings/subscription#pricing')}
         >
           <Crown className="mr-2 h-4 w-4" />
           Upgrade
