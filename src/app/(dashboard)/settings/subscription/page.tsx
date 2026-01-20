@@ -223,6 +223,7 @@ export default async function SubscriptionPage() {
               </h4>
               <p className="text-sm text-muted-foreground">
                 Yes, you can cancel anytime. You'll continue to have access until the end of your billing period, then you'll be moved to the Free plan.
+                Amount won't be refunded
               </p>
             </div>
             <div>

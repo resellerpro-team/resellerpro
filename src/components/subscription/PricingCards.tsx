@@ -181,14 +181,25 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                 <CardDescription>
                   {isCurrentPlan ?(
                     <div className="mt-4">
-                    <span className="text-3xl text-black font-bold  me-2">₹{plan.price}</span>
-                  </div>
-                  ) :(
+                      <span className="text-3xl text-black  me-2">₹{plan.price}</span>
+                      <span className="text-xl text-black">/month</span>
+                    </div>
+                  ) :plan.name === 'free' ? (
                     <div className="mt-4">
-                    <span className="text-2xl text-black font-bold line-through me-2">₹{plan.price}</span>
-                    <span className="text-3xl font-bold">₹{plan.offer_price}</span>
-                    {plan.price > 0 && <span className="text-xl text-muted-foreground">/month</span>}
-                  </div>
+                      <span className="text-3xl text-black   me-2">₹{plan.price}</span>
+                      <span className="text-xl text-black">/month</span>
+                    </div>
+                  ):(plan.offer_price != null ?(
+                    <div className="mt-4">
+                      <span className="text-3xl text-muted-foreground  line-through me-2">₹{plan.price}</span>
+                      <span className="text-3xl text-black ">₹{plan.offer_price}</span>
+                      <span className="text-xl text-black">/month</span>
+                    </div>
+                  ):(<div className="mt-4">
+                      <span className="text-2xl text-black  me-2">₹{plan.price}</span>
+                      <span className="text-xl text-black">/month</span>
+                    </div> )
+                    
                   )}
                   <div className="mt-2 mb-1 h-6">
                     <span className="text-black font-semibold">{plan.tag_line}</span>
@@ -202,8 +213,8 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                     Current Plan
                   </Button>
                 ) : plan.name === 'free' ? (
-                  <Button className="w-full mb-4" variant="outline" disabled>
-                    Downgrade at period end
+                  <Button className="w-full mb-4 text-primary " variant="secondary" disabled>
+                    Starts at end of current plan
                   </Button>
                 ) : (
                   <Button
@@ -244,7 +255,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
           open={showPaymentDialog}
           onOpenChange={setShowPaymentDialog}
           planName={selectedPlan.display_name}
-          planPrice={selectedPlan.price}
+          planPrice={selectedPlan.offer_price == null ? selectedPlan.price : selectedPlan.offer_price}
           walletBalance={walletBalance}
           onConfirm={handlePaymentMethodSelected}
           isLoading={isLoading}
