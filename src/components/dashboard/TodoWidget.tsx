@@ -47,6 +47,7 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
   const [isPending, startTransition] = useTransition()
   const [newTodoText, setNewTodoText] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [showCompleted, setShowCompleted] = useState(false) // Collapsed by default
   const [isAdding, setIsAdding] = useState(false)
 
   // ⚡ OPTIMISTIC UI STATE
@@ -212,7 +213,7 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
   }
 
   return (
-    <Card className="h-full flex flex-col shadow-lg border-2">
+    <Card className="h-full flex flex-col shadow-lg border-2 max-h-[600px]">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -281,19 +282,33 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
                 {/* Completed Todos */}
                 {completedTodos.length > 0 && (
                   <div className="pt-3 mt-3 border-t">
-                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Completed ({completedTodos.length})
-                    </p>
-                    {completedTodos.map((todo) => (
-                      <TodoItem
-                        key={todo.id}
-                        todo={todo}
-                        onToggle={handleToggleTodo}
-                        onDelete={handleDeleteTodo}
-                        getPriorityColor={getPriorityColor}
-                      />
-                    ))}
+                    <button
+                      onClick={() => setShowCompleted(!showCompleted)}
+                      className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors mb-2 group"
+                    >
+                      <span className="flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Completed ({completedTodos.length})
+                      </span>
+                      {showCompleted ? (
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                    {showCompleted && (
+                      <div className="space-y-2 animate-fade-in">
+                        {completedTodos.map((todo) => (
+                          <TodoItem
+                            key={todo.id}
+                            todo={todo}
+                            onToggle={handleToggleTodo}
+                            onDelete={handleDeleteTodo}
+                            getPriorityColor={getPriorityColor}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </>
