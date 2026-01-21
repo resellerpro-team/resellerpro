@@ -95,7 +95,7 @@ export class MailService {
         return this.send({
             to: email,
             ...template
-        }, { type: 'subscription_reminder', daysLeft })
+        }, { type: 'subscription_reminder', daysLeft, expiryDate: endDate })
     }
 
     static async sendOtp(email: string, otp: string) {
@@ -126,5 +126,13 @@ export class MailService {
             to: email,
             ...template
         }, { type: 'order_status', orderId, status })
+    }
+
+    static async sendOrderAlert(email: string, userName: string, count: number) {
+        const template = templates.orderAlert(userName, count)
+        return this.send({
+            to: email,
+            ...template
+        }, { type: 'order_alert', count })
     }
 }

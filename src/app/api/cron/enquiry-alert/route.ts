@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { MailService } from '@/lib/mail'
 import { subHours } from 'date-fns'
 
+
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
@@ -13,33 +14,42 @@ export async function GET(req: NextRequest) {
     }
 
     const supabase = await createAdminClient()
-    const now = new Date()
-    const twelveHoursAgo = subHours(now, 12).toISOString()
+    const twelveHoursAgo = subHours(new Date(), 12).toISOString()
 
-    // Find enquiries that are pending and haven't been reminded in the last 12 hours
-    // We assume there is a 'status' column and 'user_id' column.
-    // We first fetch pending enquiries.
+    // 1. Fetch pending enquiries (new or needs_follow_up)
     const { data: enquiries, error } = await supabase
         .from('enquiries')
-        .select('*, profiles:user_id(email, full_name)')
-        .eq('status', 'pending') // Adjust status based on actual schema ('new', 'unread', etc.)
-        .or(`last_reminder_sent_at.is.null,last_reminder_sent_at.lt.${twelveHoursAgo}`)
+        .select('*')
+        .in('status', ['new', 'needs_follow_up'])
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     if (!enquiries || enquiries.length === 0) {
-        return NextResponse.json({ success: true, sent: 0 })
+        return NextResponse.json({ success: true, sent: 0, message: 'No pending enquiries' })
     }
 
-    // Group by user
-    const userEnquiries: Record<string, { email: string, name: string, count: number, ids: string[] }> = {}
+    // 2. Fetch User Profiles manually to avoid relationship issues
+    const userIds = Array.from(new Set(enquiries.map(e => e.user_id).filter(Boolean)))
+
+    const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .in('id', userIds)
+
+    if (profileError) {
+        return NextResponse.json({ error: 'Failed to fetch profiles: ' + profileError.message }, { status: 500 })
+    }
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+
+    // 3. Group by user
+    const userEnquiries: Record<string, { email: string, name: string, count: number }> = {}
 
     for (const enquiry of enquiries) {
         const userId = enquiry.user_id
-        // Profile might be joined as an array or single object depending on relation type, usually object for belongs_to
-        const profile = Array.isArray(enquiry.profiles) ? enquiry.profiles[0] : enquiry.profiles
+        const profile = profileMap.get(userId)
 
         if (!profile || !profile.email) continue
 
@@ -47,30 +57,46 @@ export async function GET(req: NextRequest) {
             userEnquiries[userId] = {
                 email: profile.email,
                 name: profile.full_name || 'User',
-                count: 0,
-                ids: []
+                count: 0
             }
         }
         userEnquiries[userId].count++
-        userEnquiries[userId].ids.push(enquiry.id)
     }
 
     let sentCount = 0
+    const results = []
 
+    // 3. Check specific user throttling via email_logs
     for (const userId in userEnquiries) {
-        const { email, name, count, ids } = userEnquiries[userId]
+        const { email, name, count } = userEnquiries[userId]
+
+        // Check if we sent an enquiry alert to this email in the last 12 hours
+        // We look for metadata->type = 'enquiry_alert'
+        const { data: recentLogs } = await supabase
+            .from('email_logs')
+            .select('id, created_at')
+            .eq('recipient', email)
+            .contains('metadata', { type: 'enquiry_alert' })
+            .gt('created_at', twelveHoursAgo) // Created AFTER 12 hours ago
+            .limit(1)
+
+        // If a log exists, it means we sent one recently -> THROTTLE
+        if (recentLogs && recentLogs.length > 0) {
+            results.push({ email, status: 'throttled', lastSent: recentLogs[0].created_at })
+            continue
+        }
 
         // Send Email
-        await MailService.sendEnquiryAlert(email, name, count)
+        console.log(`Sending enquiry alert to ${email} (Count: ${count})`)
+        const sendResult = await MailService.sendEnquiryAlert(email, name, count)
 
-        // Update last_reminder_sent_at for these enquiries
-        await supabase
-            .from('enquiries')
-            .update({ last_reminder_sent_at: now.toISOString() })
-            .in('id', ids)
-
-        sentCount++
+        if (sendResult.success) {
+            sentCount++
+            results.push({ email, status: 'sent', count })
+        } else {
+            results.push({ email, status: 'failed', error: sendResult.error })
+        }
     }
 
-    return NextResponse.json({ success: true, sent: sentCount })
+    return NextResponse.json({ success: true, sent: sentCount, details: results })
 }

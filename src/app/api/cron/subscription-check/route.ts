@@ -2,10 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { MailService } from '@/lib/mail'
-import { addDays, differenceInDays, format, parseISO } from 'date-fns'
+import { differenceInDays, format } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
-// Increase max duration if possible (Vercel specific, but good to have)
 export const maxDuration = 60
 
 export async function GET(req: NextRequest) {
@@ -18,12 +17,7 @@ export async function GET(req: NextRequest) {
     const supabase = await createAdminClient()
     const today = new Date()
 
-    // 2. Fetch expiring subscriptions
-    // We look for profiles where subscription_ends_at is within 7 days
-    // And reminders haven't been sent.
-    // Note: This logic assumes 'subscription_ends_at' is a timestamptz string.
-
-    // We'll fetch active subscribers.
+    // 2. Fetch active subscriptions
     const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
@@ -44,43 +38,44 @@ export async function GET(req: NextRequest) {
     for (const profile of profiles) {
         if (!profile.subscription_ends_at || !profile.email) continue
 
-        // Check if subscription_ends_at is valid date
         const expiryDate = new Date(profile.subscription_ends_at)
         const daysUntilExpiry = differenceInDays(expiryDate, today)
         const expiryString = format(expiryDate, 'dd MMM yyyy')
 
-        // 7 Days Reminder
-        if (daysUntilExpiry === 7 && !profile.subscription_reminder_7d_sent_at) {
-            await MailService.sendSubscriptionReminder(
+        // We only care about 7, 3, and 1 days before expiry
+        if (![7, 3, 1].includes(daysUntilExpiry)) continue
+
+        // Check if we already sent this specific reminder
+        // We use metadata to track: type, specific daysLeft, and for which expiry date
+        const { data: existingLogs } = await supabase
+            .from('email_logs')
+            .select('id')
+            .eq('recipient', profile.email)
+            .contains('metadata', {
+                type: 'subscription_reminder',
+                daysLeft: daysUntilExpiry,
+                expiryDate: expiryString
+            })
+            .limit(1)
+
+        const alreadySent = existingLogs && existingLogs.length > 0
+
+        if (!alreadySent) {
+            console.log(`Sending ${daysUntilExpiry}-day reminder to ${profile.email}`)
+            const { success, error: sendError } = await MailService.sendSubscriptionReminder(
                 profile.email,
                 profile.full_name || 'User',
-                7,
+                daysUntilExpiry,
                 expiryString
             )
-            await supabase.from('profiles').update({ subscription_reminder_7d_sent_at: new Date().toISOString() }).eq('id', profile.id)
-            results.sent7d++
-        }
-        // 3 Days Reminder
-        else if (daysUntilExpiry === 3 && !profile.subscription_reminder_3d_sent_at) {
-            await MailService.sendSubscriptionReminder(
-                profile.email,
-                profile.full_name || 'User',
-                3,
-                expiryString
-            )
-            await supabase.from('profiles').update({ subscription_reminder_3d_sent_at: new Date().toISOString() }).eq('id', profile.id)
-            results.sent3d++
-        }
-        // 1 Day Reminder
-        else if (daysUntilExpiry === 1 && !profile.subscription_reminder_1d_sent_at) {
-            await MailService.sendSubscriptionReminder(
-                profile.email,
-                profile.full_name || 'User',
-                1,
-                expiryString
-            )
-            await supabase.from('profiles').update({ subscription_reminder_1d_sent_at: new Date().toISOString() }).eq('id', profile.id)
-            results.sent1d++
+
+            if (success) {
+                if (daysUntilExpiry === 7) results.sent7d++
+                if (daysUntilExpiry === 3) results.sent3d++
+                if (daysUntilExpiry === 1) results.sent1d++
+            } else {
+                console.error(`Failed to send reminder to ${profile.email}:`, sendError)
+            }
         }
     }
 
