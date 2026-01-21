@@ -13,30 +13,42 @@ export async function GET(req: NextRequest) {
     }
 
     const supabase = await createAdminClient()
-    const now = new Date()
-    const twelveHoursAgo = subHours(now, 12).toISOString()
+    const twelveHoursAgo = subHours(new Date(), 12).toISOString()
 
-    // Fetch pending orders that haven't been reminded recently
+    // 1. Fetch pending orders
     const { data: orders, error } = await supabase
         .from('orders')
-        .select('*, profiles:user_id(email, full_name)')
+        .select('*')
         .eq('status', 'pending')
-        .or(`last_update_email_sent_at.is.null,last_update_email_sent_at.lt.${twelveHoursAgo}`)
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     if (!orders || orders.length === 0) {
-        return NextResponse.json({ success: true, sent: 0 })
+        return NextResponse.json({ success: true, sent: 0, message: 'No pending orders' })
     }
 
-    // Group by user (Reseller)
-    const userOrders: Record<string, { email: string, name: string, orderIds: string[] }> = {}
+    // 2. Fetch User Profiles manually
+    const userIds = Array.from(new Set(orders.map(o => o.user_id).filter(Boolean)))
+
+    const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .in('id', userIds)
+
+    if (profileError) {
+        return NextResponse.json({ error: 'Failed to fetch profiles: ' + profileError.message }, { status: 500 })
+    }
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+
+    // 3. Group by user
+    const userOrders: Record<string, { email: string, name: string, count: number }> = {}
 
     for (const order of orders) {
         const userId = order.user_id
-        const profile = Array.isArray(order.profiles) ? order.profiles[0] : order.profiles
+        const profile = profileMap.get(userId)
 
         if (!profile || !profile.email) continue
 
@@ -44,50 +56,44 @@ export async function GET(req: NextRequest) {
             userOrders[userId] = {
                 email: profile.email,
                 name: profile.full_name || 'User',
-                orderIds: []
+                count: 0
             }
         }
-        userOrders[userId].orderIds.push(order.id)
+        userOrders[userId].count++
     }
 
     let sentCount = 0
+    const results = []
 
+    // 4. Check throttling and send digest
     for (const userId in userOrders) {
-        const { email, name, orderIds } = userOrders[userId]
+        const { email, name, count } = userOrders[userId]
 
-        // We send a generic "You have pending orders" or one-by-one.
-        // The requirement says "order status... update also 12 hour gap".
-        // I will send one summary email per user to avoid spamming.
-        // However, the template `orderStatus` is singular.
-        // I'll send one email per order to be explicit as per "Order Status" usually being transactional.
-        // BUT, 12 hour gap implies a reminder loop. A summary is better.
-        // I will reuse `sendOrderStatus` but maybe I need a `sendOrderReminder`?
-        // I'll stick to `sendOrderStatus` for now, looping through them, but this might be spammy if they have 50 pending orders.
-        // Better: Send a summary "You have X pending orders".
-        // The prompt says "order status(orders pending or delivered like that, this update also 12 hour gap)".
-        // It's vague. I will assume it means "Notify the user about the status of orders".
-        // If sticking to "pending", I will send a summary.
+        // Check 12-hour throttle
+        const { data: recentLogs } = await supabase
+            .from('email_logs')
+            .select('id, created_at')
+            .eq('recipient', email)
+            .contains('metadata', { type: 'order_alert' })
+            .gt('created_at', twelveHoursAgo)
+            .limit(1)
 
-        // Let's create a new temporary template inline or just use text for now to keep it safe.
-        // Actually, I'll use `sendOrderStatus` for the *first* one and mention "and X others" if needed, 
-        // OR just loop. Let's loop for now (assuming low volume) but use the 12h check to prevent spam.
-
-        for (const orderId of orderIds) {
-            // Technically I should map back to specific order details, but I have `orders` array.
-            const order = orders.find(o => o.id === orderId)
-            if (order) {
-                await MailService.sendOrderStatus(email, name, order.order_number || order.id, 'pending', true)
-            }
+        if (recentLogs && recentLogs.length > 0) {
+            results.push({ email, status: 'throttled', lastSent: recentLogs[0].created_at })
+            continue
         }
 
-        // Update DB
-        await supabase
-            .from('orders')
-            .update({ last_update_email_sent_at: now.toISOString() })
-            .in('id', orderIds)
+        // Send Digest Email
+        console.log(`Sending order alert to ${email} (Count: ${count})`)
+        const sendResult = await MailService.sendOrderAlert(email, name, count)
 
-        sentCount += orderIds.length
+        if (sendResult.success) {
+            sentCount++
+            results.push({ email, status: 'sent', count })
+        } else {
+            results.push({ email, status: 'failed', error: sendResult.error })
+        }
     }
 
-    return NextResponse.json({ success: true, sent: sentCount })
+    return NextResponse.json({ success: true, sent: sentCount, details: results })
 }
