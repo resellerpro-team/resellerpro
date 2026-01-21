@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTheme } from 'next-themes'
 
 export default function PreferencesPage() {
@@ -36,12 +38,40 @@ export default function PreferencesPage() {
         <div className="space-y-2">
           <Label>Email Notifications</Label>
           <div className="flex items-center space-x-2">
-            <Switch id="email-new-order" defaultChecked />
-            <Label htmlFor="email-new-order">New order notifications</Label>
+            <Switch id="email-new-order" disabled />
+            <Label htmlFor="email-new-order" className="text-muted-foreground">New order notifications</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0} className="cursor-help inline-flex">
+                    <Badge variant="outline" className="text-xs font-normal bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900 dark:text-yellow-500">
+                      Coming Soon
+                    </Badge>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>We're working on this feature! You'll be notified when it's ready.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <div className="flex items-center space-x-2">
-            <Switch id="email-summary" />
-            <Label htmlFor="email-summary">Weekly summary reports</Label>
+            <Switch id="email-summary" disabled />
+            <Label htmlFor="email-summary" className="text-muted-foreground">Weekly summary reports</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0} className="cursor-help inline-flex">
+                    <Badge variant="outline" className="text-xs font-normal bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900 dark:text-yellow-500">
+                      Coming Soon
+                    </Badge>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>We're working on this feature! You'll be notified when it's ready.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 

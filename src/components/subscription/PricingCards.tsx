@@ -9,6 +9,7 @@ import { Check, Loader2 } from 'lucide-react'
 import { createCheckoutSession } from '@/app/(dashboard)/settings/subscription/actions'
 import { activateWithWallet } from '@/app/(dashboard)/settings/subscription/walletActions'
 import { PaymentMethodDialog } from './PaymentMethodDialog'
+import { ComingSoonDialog } from './ComingSoonDialog'
 import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
 
@@ -35,10 +36,15 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+  const [showComingSoonDialog, setShowComingSoonDialog] = useState(false)
 
   const handleUpgradeClick = (plan: Plan) => {
     setSelectedPlan(plan)
-    setShowPaymentDialog(true)
+    if (plan.name === 'business') {
+      setShowComingSoonDialog(true)
+    } else {
+      setShowPaymentDialog(true)
+    }
   }
 
   const handlePaymentMethodSelected = async (method: 'wallet' | 'razorpay' | 'wallet+razorpay') => {
@@ -175,6 +181,11 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                   <Badge className="px-3 py-1">Most Popular</Badge>
                 </div>
               )}
+              {plan.name === 'business' && (
+                <div className="absolute -top-3 left-0 right-0 flex justify-center">
+                  <Badge className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white border-none">Coming Soon</Badge>
+                </div>
+              )}
 
               <CardHeader>
                 <CardTitle className="text-2xl">{plan.display_name}</CardTitle>
@@ -228,7 +239,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                         Processing...
                       </>
                     ) : (
-                      'Upgrade Now'
+                      plan.name === 'business' ? 'Notify Me' : 'Upgrade Now'
                     )}
                   </Button>
                 )}
@@ -248,6 +259,15 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
           )
         })}
       </div>
+
+      {/* Coming Soon Dialog */}
+      {selectedPlan && (
+        <ComingSoonDialog
+          open={showComingSoonDialog}
+          onOpenChange={setShowComingSoonDialog}
+          planName={selectedPlan.display_name}
+        />
+      )}
 
       {/* Payment Method Selection Dialog */}
       {selectedPlan && (
