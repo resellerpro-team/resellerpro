@@ -17,9 +17,9 @@ type Plan = {
   name: string
   display_name: string
   price: number
-  offer_price:number | null
+  offer_price: number | null
   order_limit: number | null
-  tag_line: string |null
+  tag_line: string | null
   features: any[]
 }
 
@@ -179,34 +179,34 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
               <CardHeader>
                 <CardTitle className="text-2xl">{plan.display_name}</CardTitle>
                 <CardDescription>
-                  {isCurrentPlan ?(
+                  {isCurrentPlan ? (
                     <div className="mt-4">
-                      <span className="text-3xl text-black  me-2">₹{plan.price}</span>
-                      <span className="text-xl text-black">/month</span>
+                      <span className="text-3xl text-foreground me-2">₹{plan.price}</span>
+                      <span className="text-xl text-foreground">/month</span>
                     </div>
-                  ) :plan.name === 'free' ? (
+                  ) : plan.name === 'free' ? (
                     <div className="mt-4">
-                      <span className="text-3xl text-black   me-2">₹{plan.price}</span>
-                      <span className="text-xl text-black">/month</span>
+                      <span className="text-3xl text-foreground me-2">₹{plan.price}</span>
+                      <span className="text-xl text-foreground">/month</span>
                     </div>
-                  ):(plan.offer_price != null ?(
+                  ) : (plan.offer_price != null ? (
                     <div className="mt-4">
                       <span className="text-3xl text-muted-foreground  line-through me-2">₹{plan.price}</span>
-                      <span className="text-3xl text-black ">₹{plan.offer_price}</span>
-                      <span className="text-xl text-black">/month</span>
+                      <span className="text-3xl text-foreground ">₹{plan.offer_price}</span>
+                      <span className="text-xl text-foreground">/month</span>
                     </div>
-                  ):(<div className="mt-4">
-                      <span className="text-2xl text-black  me-2">₹{plan.price}</span>
-                      <span className="text-xl text-black">/month</span>
-                    </div> )
-                    
+                  ) : (<div className="mt-4">
+                    <span className="text-2xl text-foreground me-2">₹{plan.price}</span>
+                    <span className="text-xl text-foreground">/month</span>
+                  </div>)
+
                   )}
                   <div className="mt-2 mb-1 h-6">
-                    <span className="text-black font-semibold">{plan.tag_line}</span>
+                    <span className="text-foreground font-semibold">{plan.tag_line}</span>
                   </div>
                 </CardDescription>
               </CardHeader>
-                
+
               <CardContent>
                 {isCurrentPlan ? (
                   <Button className="w-full mb-4 " disabled>
@@ -232,7 +232,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                     )}
                   </Button>
                 )}
-             
+
                 <ul className="space-y-3">
                   {(plan.features as string[]).map((feature, index) => (
                     <li key={index} className="flex items-start gap-2">
@@ -243,7 +243,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                 </ul>
               </CardContent>
 
-              
+
             </Card>
           )
         })}
