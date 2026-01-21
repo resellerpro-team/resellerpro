@@ -99,37 +99,37 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
 
   const formatProductMessage = () => {
     const stockStatus = product.stock_status === 'in_stock'
-      ? '✅ In Stock'
+      ? 'In Stock'
       : product.stock_status === 'low_stock'
-        ? '⚠️ Low Stock'
-        : '❌ Out of Stock'
+        ? 'Low Stock'
+        : 'Out of Stock'
 
-    let message = `🛍️ *${product.name}*\n`
+    let message = `*${product.name}*\n`
     message += `━━━━━━━━━━━━━━━━━━━\n\n`
 
     if (product.description) {
-      message += `📝 ${product.description}\n\n`
+      message += `${product.description}\n\n`
     }
 
-    message += `💰 *Price:* ₹${product.selling_price.toLocaleString()}\n`
-    message += `📦 *Availability:* ${stockStatus}\n`
+    message += `*Price:* ₹${product.selling_price.toLocaleString()}\n`
+    message += `*Availability:* ${stockStatus}\n`
 
     if (product.category) {
-      message += `🏷️ *Category:* ${product.category}\n`
+      message += `*Category:* ${product.category}\n`
     }
 
     // Add images
     if (product.images && product.images.length > 0) {
-      message += `\n📸 *Product Images:*\n`
+      message += `\n *Product Images:*\n`
       product.images.forEach((img, idx) => {
         message += `${idx + 1}. ${img}\n`
       })
     } else if (product.image_url) {
-      message += `\n📸 *Product Image:*\n${product.image_url}\n`
+      message += `\n *Product Image:*\n${product.image_url}\n`
     }
 
     message += `\n━━━━━━━━━━━━━━━━━━━\n`
-    message += `📱 *Interested? Contact us to order!*`
+    message += ` *Interested? Contact us to order!*`
 
     return message
   }
