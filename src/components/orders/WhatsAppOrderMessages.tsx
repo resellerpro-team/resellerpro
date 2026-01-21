@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -10,8 +11,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MessageCircle, CheckCircle2, CreditCard, Truck, Star, RefreshCw } from 'lucide-react'
+import { MessageCircle, CheckCircle2, CreditCard, Truck, RefreshCw, Pencil, Crown } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useSubscription } from '@/lib/hooks/useSubscription'
+import { ProBadge } from '@/components/shared/ProBadge'
+import { WhatsAppTemplateEditor } from './WhatsAppTemplateEditor'
 
 type MessageTemplate = 'order_confirmation' | 'payment_reminder' | 'shipped_update' | 'delivered_confirmation' | 'follow_up'
 
@@ -29,6 +33,12 @@ interface WhatsAppOrderMessagesProps {
   expectedDeliveryDate?: string
 }
 
+interface TemplateCustomization {
+  id: string
+  template_type: MessageTemplate
+  custom_message: string
+}
+
 export function WhatsAppOrderMessages({
   orderNumber,
   customerName,
@@ -43,52 +53,63 @@ export function WhatsAppOrderMessages({
   expectedDeliveryDate,
 }: WhatsAppOrderMessagesProps) {
   const { toast } = useToast()
+  const router = useRouter()
+  const { isPremium, isLoading: isCheckingSubscription } = useSubscription()
+  
   const [sending, setSending] = useState(false)
+  const [customTemplates, setCustomTemplates] = useState<Record<string, string>>({})
+  const [loadingTemplates, setLoadingTemplates] = useState(true)
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null)
 
-  /**
-   * Validates and formats phone number for WhatsApp
-   * Accepts formats: 9876543210, +919876543210, +91 98765 43210
-   * Returns: Valid international format or null
-   */
-  const formatWhatsAppNumber = (phone: string): string | null => {
-    if (!phone) return null
-
-    // Remove all non-digit characters except +
-    let cleaned = phone.replace(/[^\d+]/g, '')
-
-    // Remove leading zeros
-    cleaned = cleaned.replace(/^0+/, '')
-
-    // If starts with +, keep it
-    if (cleaned.startsWith('+')) {
-      // Must be at least 11 digits (+XX XXXXXXXXXX)
-      if (cleaned.length >= 11) {
-        return cleaned
+  // Load custom templates on mount
+  useEffect(() => {
+    async function loadCustomTemplates() {
+      try {
+        const response = await fetch('/api/templates/customize')
+        if (response.ok) {
+          const data = await response.json()
+          const templatesMap: Record<string, string> = {}
+          data.templates?.forEach((t: TemplateCustomization) => {
+            templatesMap[t.template_type] = t.custom_message
+          })
+          setCustomTemplates(templatesMap)
+        }
+      } catch (error) {
+        console.error('Error loading custom templates:', error)
+      } finally {
+        setLoadingTemplates(false)
       }
-      return null
     }
 
-    // If starts with 91 (India code), add +
+    loadCustomTemplates()
+  }, [])
+
+  const formatWhatsAppNumber = (phone: string): string | null => {
+    if (!phone) return null
+    let cleaned = phone.replace(/[^\d+]/g, '')
+    cleaned = cleaned.replace(/^0+/, '')
+    
+    if (cleaned.startsWith('+')) {
+      if (cleaned.length >= 11) return cleaned
+      return null
+    }
+    
     if (cleaned.startsWith('91') && cleaned.length === 12) {
       return `+${cleaned}`
     }
-
-    // If 10 digits (Indian number without code), add +91
+    
     if (cleaned.length === 10) {
       return `+91${cleaned}`
     }
-
-    // If 11-15 digits, assume international with missing +
+    
     if (cleaned.length >= 11 && cleaned.length <= 15) {
       return `+${cleaned}`
     }
-
+    
     return null
   }
 
-  /**
-   * Get delivery date or estimate
-   */
   const getDeliveryDate = (): string => {
     if (expectedDeliveryDate) {
       return new Date(expectedDeliveryDate).toLocaleDateString('en-IN', {
@@ -97,8 +118,7 @@ export function WhatsAppOrderMessages({
         year: 'numeric',
       })
     }
-
-    // Default: 5-7 days from now
+    
     const estimatedDate = new Date()
     estimatedDate.setDate(estimatedDate.getDate() + 6)
     return estimatedDate.toLocaleDateString('en-IN', {
@@ -108,115 +128,110 @@ export function WhatsAppOrderMessages({
     })
   }
 
-  /**
-   * Generate message based on template type with proper product details
-   */
-  const generateMessage = (template: MessageTemplate): string => {
+  const getDefaultMessage = (template: MessageTemplate): string => {
     const firstName = customerName.split(' ')[0]
-    
-    // Format product list nicely
     const productsFormatted = itemsText || 'Your order items'
 
     switch (template) {
       case 'order_confirmation':
-        return `Hi ${firstName}! 👋
+        return `Hi ${firstName}!
 
-Your order #${orderNumber} has been *CONFIRMED!* ✅
+Your order #${orderNumber} has been *CONFIRMED!*
 
-📦 *Order Summary:*
+*Order Summary:*
 ━━━━━━━━━━━━━━━━━
 ${productsFormatted}
 ━━━━━━━━━━━━━━━━━
 
-💰 *Total Amount:* ₹${totalAmount}
-🚚 *Expected Delivery:* ${getDeliveryDate()}
+*Total Amount:* Rs.${totalAmount}
+*Expected Delivery:* ${getDeliveryDate()}
 
 We'll keep you updated at every step!
 
-Thank you for choosing *${shopName}*! 🙏`
+Thank you for choosing *${shopName}*!`
 
       case 'payment_reminder':
-        return `Hi ${firstName}! 
+        return `Hi ${firstName}!
 
-Your order #${orderNumber} is ready! 📦
+Your order #${orderNumber} is ready!
 
-📋 *Items:*
+*Items:*
 ${productsFormatted}
 
-⚠️ *Pending Payment:* ₹${totalAmount}
+*PENDING PAYMENT:* Rs.${totalAmount}
 
 Please complete the payment so we can ship your order.
 
-💬 Need help? Just reply to this message!
+Need help? Just reply to this message!
 
 Thank you,
 *${shopName}*`
 
       case 'shipped_update':
-        return `Great news, ${firstName}! 📦✈️
+        return `Great news, ${firstName}!
 
 Your order #${orderNumber} has been *SHIPPED!*
 
-📋 *Items on the way:*
+*Items on the way:*
 ${productsFormatted}
 
-${trackingNumber ? `🔍 *Tracking Details:*
+${trackingNumber ? `*Tracking Details:*
 Tracking Number: ${trackingNumber}${courierService ? `
 Courier: ${courierService}` : ''}
 
-Track your order in real-time!` : `🚚 Tracking details will be shared soon.`}
+Track your order in real-time!` : `Tracking details will be shared soon.`}
 
-🎯 *Expected Delivery:* ${getDeliveryDate()}
-💰 *Order Value:* ₹${totalAmount}
+*Expected Delivery:* ${getDeliveryDate()}
+*Order Value:* Rs.${totalAmount}
 
-Your order is on its way! 🚀
+Your order is on its way!
 
 *${shopName}*`
 
       case 'delivered_confirmation':
-        return `Hi ${firstName}! 🎉
+        return `Hi ${firstName}!
 
 Fantastic news! Your order #${orderNumber} has been *DELIVERED SUCCESSFULLY!*
 
-📦 *Delivered Items:*
+*Delivered Items:*
 ${productsFormatted}
 
-💰 *Order Value:* ₹${totalAmount}
+*Order Value:* Rs.${totalAmount}
 
-We hope you absolutely love your purchase! ✨
+We hope you absolutely love your purchase!
 
-⭐ *Quick Feedback Request:*
+*Quick Feedback Request:*
 How was your experience with us?
 
-Please rate: ⭐⭐⭐⭐⭐ (1-5 stars)
-Your feedback means a lot! 💙
+Please rate us (1-5 stars)
+Your feedback means a lot!
 
-Thank you for choosing *${shopName}*! 
-We look forward to serving you again! 🙏`
+Thank you for choosing *${shopName}*!
+We look forward to serving you again!`
 
       case 'follow_up':
-        return `Hi ${firstName}! 👋
+        return `Hi ${firstName}!
 
 Thank you for your recent order #${orderNumber} with *${shopName}*!
 
-📦 *Your Recent Purchase:*
+*Your Recent Purchase:*
 ${productsFormatted}
 
-We hope you're loving it! 😊
+We hope you're loving it!
 
-🆕 *What's New:*
-✨ Fresh stock just arrived
-🎁 Exclusive deals for our valued customers
-📦 New product categories
+*What's New:*
+- Fresh stock just arrived
+- Exclusive deals for our valued customers
+- New product categories
 
-💬 *Need Support?*
-• Questions about your order?
-• Looking for something specific?
-• Want product recommendations?
+*Need Support?*
+- Questions about your order?
+- Looking for something specific?
+- Want product recommendations?
 
-Just reply - we're here to help! 🤝
+Just reply - we're here to help!
 
-Stay connected for special offers! 🎁
+Stay connected for special offers!
 
 Best regards,
 *${shopName}* Team`
@@ -226,14 +241,31 @@ Best regards,
     }
   }
 
-  /**
-   * Send message via WhatsApp
-   */
+  const replacementVariables = (message: string): string => {
+    const firstName = customerName.split(' ')[0]
+    const productsFormatted = itemsText || 'Your order items'
+
+    return message
+      .replace(/{customerName}/g, customerName)
+      .replace(/{firstName}/g, firstName)
+      .replace(/{orderNumber}/g, orderNumber)
+      .replace(/{totalAmount}/g, String(totalAmount))
+      .replace(/{items}/g, productsFormatted)
+      .replace(/{deliveryDate}/g, getDeliveryDate())
+      .replace(/{trackingNumber}/g, trackingNumber || 'Not available yet')
+      .replace(/{shopName}/g, shopName)
+  }
+
+  const generateMessage = (template: MessageTemplate): string => {
+    // Use custom template if available, otherwise default
+    const baseMessage = customTemplates[template] || getDefaultMessage(template)
+    return replacementVariables(baseMessage)
+  }
+
   const sendWhatsAppMessage = (template: MessageTemplate) => {
     setSending(true)
 
     try {
-      // Validate phone number
       const formattedPhone = formatWhatsAppNumber(customerPhone)
 
       if (!formattedPhone) {
@@ -246,7 +278,6 @@ Best regards,
         return
       }
 
-      // Generate message
       const message = generateMessage(template)
 
       if (!message) {
@@ -259,19 +290,12 @@ Best regards,
         return
       }
 
-      // Encode message for URL
       const encodedMessage = encodeURIComponent(message)
-
-      // Clean phone for WhatsApp (remove +)
       const whatsappPhone = formattedPhone.replace('+', '')
-
-      // Construct WhatsApp URL
       const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodedMessage}`
 
-      // Open in new window
       window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
 
-      // Show success toast
       const templateNames = {
         order_confirmation: 'Order Confirmation',
         payment_reminder: 'Payment Reminder',
@@ -296,76 +320,198 @@ Best regards,
     }
   }
 
-  // Check if phone number is valid
+  const handleTemplateClick = (template: MessageTemplate, isPremiumTemplate: boolean) => {
+    // Free users can only use order_confirmation
+    if (!isPremium && isPremiumTemplate) {
+      router.push('/settings/subscription#pricing')
+      return
+    }
+
+    sendWhatsAppMessage(template)
+  }
+
+  const handleEditClick = (template: MessageTemplate, e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    // Customization is a premium feature
+    if (!isPremium) {
+      router.push('/settings/subscription#pricing')
+      return
+    }
+
+    setEditingTemplate(template)
+    setIsEditorOpen(true)
+  }
+
+  const handleSaveTemplate = async (customMessage: string) => {
+    if (!editingTemplate) return
+
+    try {
+      const response = await fetch('/api/templates/customize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          template_type: editingTemplate,
+          custom_message: customMessage,
+        }),
+      })
+
+      if (!response.ok) throw new Error('Failed to save')
+
+      setCustomTemplates((prev) => ({
+        ...prev,
+        [editingTemplate]: customMessage,
+      }))
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const handleResetTemplate = async () => {
+    if (!editingTemplate) return
+
+    try {
+      const response = await fetch('/api/templates/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template_type: editingTemplate }),
+      })
+
+      if (!response.ok) throw new Error('Failed to reset')
+
+      setCustomTemplates((prev) => {
+        const newTemplates = { ...prev }
+        delete newTemplates[editingTemplate]
+        return newTemplates
+      })
+    } catch (error) {
+      throw error
+    }
+  }
+
   const hasValidPhone = !!formatWhatsAppNumber(customerPhone)
 
+  const templates: Array<{
+    type: MessageTemplate
+    label: string
+    icon: any
+    iconColor: string
+    isPremium: boolean
+  }> = [
+    { type: 'order_confirmation', label: 'Order Confirmation', icon: CheckCircle2, iconColor: 'text-green-600', isPremium: false },
+    { type: 'payment_reminder', label: 'Payment Reminder', icon: CreditCard, iconColor: 'text-yellow-600', isPremium: true },
+    { type: 'shipped_update', label: 'Shipped Update', icon: Truck, iconColor: 'text-blue-600', isPremium: true },
+    { type: 'delivered_confirmation', label: 'Delivered Confirmation', icon: CheckCircle2, iconColor: 'text-purple-600', isPremium: true },
+    { type: 'follow_up', label: 'Follow-up Message', icon: RefreshCw, iconColor: 'text-orange-600', isPremium: true },
+  ]
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          className="w-full"
-          disabled={sending || !hasValidPhone}
-        >
-          <MessageCircle className="h-4 w-4 mr-2" />
-          {sending ? 'Opening...' : 'Send WhatsApp Update'}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Choose Message Template</DropdownMenuLabel>
-        <DropdownMenuSeparator />
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className="w-full"
+            disabled={sending || !hasValidPhone || isCheckingSubscription || loadingTemplates}
+          >
+            <MessageCircle className="h-4 w-4 mr-2" />
+            {sending ? 'Opening...' : loadingTemplates ? 'Loading...' : 'Send WhatsApp Update'}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuLabel>Choose Message Template</DropdownMenuLabel>
+          <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          onClick={() => sendWhatsAppMessage('order_confirmation')}
-          className="cursor-pointer"
-        >
-          <CheckCircle2 className="h-4 w-4 mr-2 text-green-600" />
-          <span>Order Confirmation</span>
-        </DropdownMenuItem>
+          {templates.map((template, index) => {
+            const Icon = template.icon
+            const isLocked = !isPremium && template.isPremium
 
-        <DropdownMenuItem
-          onClick={() => sendWhatsAppMessage('payment_reminder')}
-          className="cursor-pointer"
-        >
-          <CreditCard className="h-4 w-4 mr-2 text-yellow-600" />
-          <span>Payment Reminder</span>
-        </DropdownMenuItem>
+            return (
+              <div key={template.type}>
+                <DropdownMenuItem
+                  onClick={() => handleTemplateClick(template.type, template.isPremium)}
+                  className={`cursor-pointer ${isLocked ? 'opacity-60' : ''}`}
+                  disabled={isLocked}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-4 w-4 ${template.iconColor}`} />
+                      <span>{template.label}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {isLocked && <ProBadge />}
+                      
+                      {!loadingTemplates && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className={`h-6 w-6 ${!isPremium ? 'opacity-50 hover:opacity-100 hover:bg-amber-100 dark:hover:bg-amber-900/20 text-muted-foreground hover:text-amber-600' : ''}`}
+                          onClick={(e) => handleEditClick(template.type, e)}
+                          title={!isPremium ? "Customize with Premium" : "Edit Template"}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                {index === 0 && <DropdownMenuSeparator />}
+              </div>
+            )
+          })}
 
-        <DropdownMenuItem
-          onClick={() => sendWhatsAppMessage('shipped_update')}
-          className="cursor-pointer"
-        >
-          <Truck className="h-4 w-4 mr-2 text-blue-600" />
-          <span>Shipped Update</span>
-        </DropdownMenuItem>
+          {!hasValidPhone && (
+            <>
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                ⚠️ Invalid phone number
+              </div>
+            </>
+          )}
 
-        <DropdownMenuItem
-          onClick={() => sendWhatsAppMessage('delivered_confirmation')}
-          className="cursor-pointer"
-        >
-          <CheckCircle2 className="h-4 w-4 mr-2 text-purple-600" />
-          <span>Delivered Confirmation</span>
-        </DropdownMenuItem>
+          {!isPremium && (
+            <>
+              <DropdownMenuSeparator />
+              <div className="px-2 py-2">
+                <Button
+                  size="sm"
+                  className="w-full gap-2"
+                  variant="outline"
+                  onClick={() => router.push('/settings/subscription#pricing')}
+                >
+                  <Crown className="h-4 w-4 text-amber-600" />
+                  Unlock All Templates
+                </Button>
+              </div>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          onClick={() => sendWhatsAppMessage('follow_up')}
-          className="cursor-pointer"
-        >
-          <RefreshCw className="h-4 w-4 mr-2 text-orange-600" />
-          <span>Follow-up Message</span>
-        </DropdownMenuItem>
-
-        {!hasValidPhone && (
-          <>
-            <DropdownMenuSeparator />
-            <div className="px-2 py-1.5 text-xs text-muted-foreground">
-              ⚠️ Invalid phone number
-            </div>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      {isPremium && editingTemplate && (
+        <WhatsAppTemplateEditor
+          isOpen={isEditorOpen}
+          onClose={() => {
+            setIsEditorOpen(false)
+            setEditingTemplate(null)
+          }}
+          templateType={editingTemplate}
+          defaultMessage={getDefaultMessage(editingTemplate)}
+          currentMessage={customTemplates[editingTemplate]}
+          onSave={handleSaveTemplate}
+          onReset={handleResetTemplate}
+          previewData={{
+            customerName,
+            firstName: customerName.split(' ')[0],
+            orderNumber,
+            totalAmount: String(totalAmount),
+            items: itemsText || 'Your order items',
+            deliveryDate: getDeliveryDate(),
+            trackingNumber: trackingNumber || 'Not available yet',
+            shopName,
+          }}
+        />
+      )}
+    </>
   )
 }
