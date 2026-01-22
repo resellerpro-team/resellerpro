@@ -163,9 +163,12 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
     }
   }
 
+  // Dynamic grid columns based on number of plans
+  const gridColsClass = plans.length === 4 ? 'xl:grid-cols-4' : 'xl:grid-cols-3'
+
   return (
     <>
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsClass} gap-6 items-stretch`}>
         {plans.map((plan) => {
           const isCurrentPlan = plan.name === currentPlanName
           const isPopular = plan.name === 'professional'
@@ -173,7 +176,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
           return (
             <Card
               key={plan.id}
-              className={`relative ${isPopular ? 'border-primary shadow-lg' : ''
+              className={`relative flex flex-col h-full ${isPopular ? 'border-primary shadow-lg' : ''
                 }`}
             >
               {isPopular && (
@@ -218,7 +221,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                 </CardDescription>
               </CardHeader>
 
-              <CardContent>
+              <CardContent className="flex-1 flex flex-col">
                 {isCurrentPlan ? (
                   <Button className="w-full mb-4 " disabled>
                     Current Plan
