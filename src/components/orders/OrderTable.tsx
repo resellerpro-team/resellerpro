@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Eye } from 'lucide-react'
@@ -63,74 +64,135 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Order #</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Payment</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead className="text-right">Profit</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell className="font-medium">#{order.order_number}</TableCell>
-              <TableCell>
-                {order.customers ? (
-                  <div>
-                    <p className="font-medium">{order.customers.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {order.customers.phone}
-                    </p>
+    <div className='space-y-4'>
+      {/* Desktop Table */}
+      <div className="hidden md:block rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Order #</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Payment</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="text-right">Profit</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {orders.map((order) => (
+              <TableRow key={order.id}>
+                <TableCell className="font-medium">#{order.order_number}</TableCell>
+                <TableCell>
+                  {order.customers ? (
+                    <div>
+                      <p className="font-medium">{order.customers.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {order.customers.phone}
+                      </p>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">No customer</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {formatDistanceToNow(new Date(order.created_at), {
+                    addSuffix: true,
+                  })}
+                </TableCell>
+                <TableCell>
+                  <Badge className={`${getStatusColor(order.status)} text-white border-0`}>
+                    {order.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant="outline"
+                    className={`${getPaymentColor(order.payment_status)} text-white border-0`}
+                  >
+                    {order.payment_status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  ₹{Number(order.total_amount || 0).toFixed(2)}
+                </TableCell>
+                <TableCell className="text-right font-semibold text-green-600">
+                  {/* ✅ Changed from order.profit to order.total_profit */}
+                  ₹{Number(order.total_profit || 0).toFixed(2)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="icon" asChild>
+                      <Link href={`/orders/${order.id}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
-                ) : (
-                  <span className="text-muted-foreground">No customer</span>
-                )}
-              </TableCell>
-              <TableCell>
-                {formatDistanceToNow(new Date(order.created_at), {
-                  addSuffix: true,
-                })}
-              </TableCell>
-              <TableCell>
-                <Badge className={`${getStatusColor(order.status)} text-white border-0`}>
-                  {order.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden grid gap-4">
+        {orders.map((order) => (
+          <Card key={order.id} className="overflow-hidden">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0 bg-muted/20">
+              <div className="flex items-center gap-2">
+                <span className="font-bold">#{order.order_number}</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}
+                </span>
+              </div>
+              <Badge className={`${getStatusColor(order.status)} text-white border-0`}>
+                {order.status}
+              </Badge>
+            </CardHeader>
+            <CardContent className="p-4 pt-3 space-y-3">
+              {/* Customer */}
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Customer</p>
+                  {order.customers ? (
+                    <div>
+                      <p className="font-medium">{order.customers.name}</p>
+                      <p className="text-sm text-muted-foreground">{order.customers.phone}</p>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">No customer</span>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Amount</p>
+                  <p className="text-lg font-bold">₹{Number(order.total_amount || 0).toFixed(2)}</p>
+                  <p className="text-xs text-green-600 font-medium">
+                    +₹{Number(order.total_profit || 0).toFixed(2)} profit
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex items-center justify-between pt-2 border-t">
                 <Badge
                   variant="outline"
                   className={`${getPaymentColor(order.payment_status)} text-white border-0`}
                 >
                   {order.payment_status}
                 </Badge>
-              </TableCell>
-              <TableCell className="text-right font-semibold">
-                ₹{Number(order.total_amount || 0).toFixed(2)}
-              </TableCell>
-              <TableCell className="text-right font-semibold text-green-600">
-                {/* ✅ Changed from order.profit to order.total_profit */}
-                ₹{Number(order.total_profit || 0).toFixed(2)}
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="icon" asChild>
-                    <Link href={`/orders/${order.id}`}>
-                      <Eye className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                <Button variant="ghost" size="sm" asChild className="h-8">
+                  <Link href={`/orders/${order.id}`}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Details
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }

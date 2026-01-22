@@ -17,7 +17,11 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect, SearchableSelectOption } from '@/components/ui/searchable-select'
+import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
+import { useEffect } from 'react'
 
 type Product = {
   id: string
@@ -41,53 +45,91 @@ interface WhatsAppShareProps {
 
 export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: WhatsAppShareProps) {
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [selectedCustomer, setSelectedCustomer] = useState('')
+  const [customers, setCustomers] = useState<Array<{ id: string; name: string; phone: string }>>([])
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const cardRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
+  const supabase = createClient()
+
+  // Fetch customers when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchCustomers()
+    }
+  }, [open])
+
+  const fetchCustomers = async () => {
+    setLoadingCustomers(true)
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, name, phone')
+        .not('phone', 'is', null)
+        .order('name')
+        .limit(100)
+
+      if (error) throw error
+      setCustomers(data || [])
+    } catch (error) {
+      console.error('Failed to fetch customers:', error)
+    } finally {
+      setLoadingCustomers(false)
+    }
+  }
+
+  const handleCustomerSelect = (customerId: string) => {
+    setSelectedCustomer(customerId)
+    const customer = customers.find(c => c.id === customerId)
+    if (customer) {
+      setPhoneNumber(customer.phone)
+    }
+  }
 
   // Get all available images
-  const allImages = product.images && product.images.length > 0 
-    ? product.images 
-    : product.image_url 
-    ? [product.image_url] 
-    : []
+  const allImages = product.images && product.images.length > 0
+    ? product.images
+    : product.image_url
+      ? [product.image_url]
+      : []
 
   const formatProductMessage = () => {
-    const stockStatus = product.stock_status === 'in_stock' 
-      ? '✅ In Stock' 
-      : product.stock_status === 'low_stock' 
-      ? '⚠️ Low Stock' 
-      : '❌ Out of Stock'
+    const stockStatus = product.stock_status === 'in_stock'
+      ? 'In Stock'
+      : product.stock_status === 'low_stock'
+        ? 'Low Stock'
+        : 'Out of Stock'
 
-    let message = `🛍️ *${product.name}*\n`
+    let message = `*${product.name}*\n`
     message += `━━━━━━━━━━━━━━━━━━━\n\n`
-    
+
     if (product.description) {
-      message += `📝 ${product.description}\n\n`
+      message += `${product.description}\n\n`
     }
-    
-    message += `💰 *Price:* ₹${product.selling_price.toLocaleString()}\n`
-    message += `📦 *Availability:* ${stockStatus}\n`
-    
+
+    message += `*Price:* ₹${product.selling_price.toLocaleString()}\n`
+    message += `*Availability:* ${stockStatus}\n`
+
     if (product.category) {
-      message += `🏷️ *Category:* ${product.category}\n`
+      message += `*Category:* ${product.category}\n`
     }
 
     // Add images
     if (product.images && product.images.length > 0) {
-      message += `\n📸 *Product Images:*\n`
+      message += `\n *Product Images:*\n`
       product.images.forEach((img, idx) => {
         message += `${idx + 1}. ${img}\n`
       })
     } else if (product.image_url) {
-      message += `\n📸 *Product Image:*\n${product.image_url}\n`
+      message += `\n *Product Image:*\n${product.image_url}\n`
     }
 
     message += `\n━━━━━━━━━━━━━━━━━━━\n`
-    message += `📱 *Interested? Contact us to order!*`
+    message += ` *Interested? Contact us to order!*`
 
     return message
   }
@@ -115,7 +157,7 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
     try {
       // Get the current image URL
       const imageUrl = allImages[selectedImageIndex]
-      
+
       if (!imageUrl) {
         toast({
           title: 'No Image',
@@ -129,20 +171,20 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
       // Fetch the image
       const response = await fetch(imageUrl)
       const blob = await response.blob()
-      
+
       // Create download link
       const link = document.createElement('a')
-      const imageName = allImages.length > 1 
+      const imageName = allImages.length > 1
         ? `${product.name.replace(/[^a-z0-9]/gi, '_')}_image_${selectedImageIndex + 1}.png`
         : `${product.name.replace(/[^a-z0-9]/gi, '_')}.png`
-      
+
       link.download = imageName
       link.href = URL.createObjectURL(blob)
       link.click()
-      
+
       // Clean up
       URL.revokeObjectURL(link.href)
-      
+
       toast({
         title: 'Downloaded!',
         description: `Product image ${allImages.length > 1 ? `${selectedImageIndex + 1}` : ''} saved successfully.`,
@@ -169,7 +211,7 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
     }
 
     const cleanNumber = phoneNumber.replace(/[^\d+]/g, '')
-    
+
     if (cleanNumber.replace('+', '').length < 10) {
       toast({
         title: 'Invalid Phone Number',
@@ -182,14 +224,14 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
     const message = formatProductMessage()
     const encodedMessage = encodeURIComponent(message)
     const whatsappUrl = `https://wa.me/${cleanNumber.replace('+', '')}?text=${encodedMessage}`
-    
+
     window.open(whatsappUrl, '_blank')
-    
+
     toast({
       title: 'Opening WhatsApp...',
       description: 'Message will be sent with product details and images.',
     })
-    
+
     setPhoneNumber('')
   }
 
@@ -247,16 +289,15 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
             {allImages.length > 1 && (
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Select Image to Download</Label>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {allImages.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImageIndex(idx)}
-                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                        selectedImageIndex === idx 
-                          ? 'border-blue-600 ring-2 ring-blue-600' 
+                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx
+                          ? 'border-blue-600 ring-2 ring-blue-600'
                           : 'border-gray-200 hover:border-gray-400'
-                      }`}
+                        }`}
                     >
                       <Image
                         src={img}
@@ -281,12 +322,11 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
 
             <div className="space-y-3">
               <Label className="text-base font-semibold">Product Card Preview</Label>
-              
+
               {/* Downloadable Product Card */}
-              <div 
+              <div
                 ref={cardRef}
-                className="bg-white p-6 rounded-lg border-2 space-y-4"
-                style={{ width: '500px' }}
+                className="bg-white p-6 rounded-lg border-2 space-y-4 w-full max-w-[500px] mx-auto"
               >
                 {/* Header */}
                 <div className="space-y-2">
@@ -315,7 +355,7 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                     <p className="text-sm text-gray-500 uppercase tracking-wide">Price</p>
                     <p className="text-3xl font-bold text-blue-600">₹{product.selling_price.toLocaleString()}</p>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-gray-500 uppercase">Availability</p>
@@ -373,10 +413,10 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                   </>
                 )}
               </Button>
-              
+
               <p className="text-xs text-center text-muted-foreground">
-                {allImages.length > 1 
-                  ? `💡 Downloads clean product image without text overlays` 
+                {allImages.length > 1
+                  ? `💡 Downloads clean product image without text overlays`
                   : `💡 Downloads the product image only, without title or price`
                 }
               </p>
@@ -385,26 +425,63 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
 
           {/* Text Message Tab */}
           <TabsContent value="text" className="space-y-4">
-            {/* Phone Number Input */}
-            <div className="space-y-3">
-              <Label htmlFor="phone" className="text-base font-semibold">
-                Customer's Phone Number
-              </Label>
-              <Input
-                id="phone"
-                placeholder="e.g., +919876543210"
-                value={phoneNumber}
-                onChange={handlePhoneNumberChange}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    shareToWhatsApp()
-                  }
-                }}
-                className="text-base h-12"
-              />
-              <p className="text-xs text-muted-foreground">
-                💡 Include country code (e.g., +91 for India)
-              </p>
+            {/* Customer Selector + Phone Number Input */}
+            <div className="space-y-4">
+              {/* Customer Dropdown */}
+              <div className="space-y-3">
+                <Label htmlFor="customer" className="text-base font-semibold">
+                  Select Customer (Optional)
+                </Label>
+                {customers.length === 0 && !loadingCustomers ? (
+                  <p className="text-xs text-muted-foreground p-4 border rounded-md text-center">No customers found with phone numbers.</p>
+                ) : (
+                  <SearchableSelect
+                    options={customers.map((c): SearchableSelectOption => ({
+                      value: c.id,
+                      label: c.name,
+                      subtitle: c.phone,
+                    }))}
+                    value={selectedCustomer}
+                    onValueChange={handleCustomerSelect}
+                    placeholder={loadingCustomers ? "Loading customers..." : "Choose from your customers"}
+                    searchPlaceholder="Search customers..."
+                    emptyMessage="No customers found."
+                    disabled={loadingCustomers}
+                  />
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">or enter manually</span>
+                </div>
+              </div>
+
+              {/* Manual Phone Number Input */}
+              <div className="space-y-3">
+                <Label htmlFor="phone" className="text-base font-semibold">
+                  Phone Number
+                </Label>
+                <Input
+                  id="phone"
+                  placeholder="e.g., +919876543210"
+                  value={phoneNumber}
+                  onChange={handlePhoneNumberChange}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      shareToWhatsApp()
+                    }
+                  }}
+                  className="text-base h-12"
+                />
+                <p className="text-xs text-muted-foreground">
+                  💡 Include country code (e.g., +91 for India)
+                </p>
+              </div>
             </div>
 
             {/* Message Preview */}

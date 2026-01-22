@@ -6,6 +6,7 @@ import HowItWorksSection from '@/components/landing/HowItWorksSection'
 import FAQSection from '@/components/landing/FAQSection'
 import FinalCTASection from '@/components/landing/FinalCTASection'
 import Footer from '@/components/landing/Footer'
+import EnquiryPopup from '@/components/EnquiryPopup'
 
 export default function LandingPage() {
   return (
@@ -33,6 +34,9 @@ export default function LandingPage() {
 
       {/* Footer */}
       <Footer />
+
+      {/* Enquiry Popup */}
+      <EnquiryPopup />
     </div>
   )
 }

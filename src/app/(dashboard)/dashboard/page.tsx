@@ -90,117 +90,137 @@ export default async function DashboardPage() {
       {/* Quick Actions, Alerts & Daily Tasks */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Quick Actions */}
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
             <CardDescription>Common tasks at your fingertips</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-2">
-            <Button className="justify-start" asChild>
-              <Link href="/enquiries/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Enquiry
-              </Link>
-            </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/orders/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Order
-              </Link>
-            </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/products/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Product
-              </Link>
-            </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/customers/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Customer
-              </Link>
-            </Button>
+          <CardContent className="flex-1 flex flex-col">
+            <div className="grid gap-2 flex-1">
+              <Button className="justify-start" asChild>
+                <Link href="/enquiries/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Enquiry
+                </Link>
+              </Button>
+              <Button variant="outline" className="justify-start" asChild>
+                <Link href="/orders/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Order
+                </Link>
+              </Button>
+              <Button variant="outline" className="justify-start" asChild>
+                <Link href="/products/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Product
+                </Link>
+              </Button>
+              <Button variant="outline" className="justify-start" asChild>
+                <Link href="/customers/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Customer
+                </Link>
+              </Button>
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <Button variant="ghost" size="sm" className="w-full justify-start text-xs" asChild>
+                <Link href="/analytics">
+                  View Analytics
+                  <ArrowRight className="ml-auto h-3 w-3" />
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         {/* Alerts */}
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Alerts & Notifications</CardTitle>
             <CardDescription>Important updates for your business</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {alerts.pendingOrders > 0 && (
-              <AlertItem
-                type="warning"
-                message={pendingOrdersMessage}
-                action="View Orders"
-                href="/orders?status=pending"
-              />
-            )}
-            {alerts.lowStockProducts > 0 && (
-              <AlertItem
-                type="info"
-                message={lowStockMessage}
-                action="Manage Stock"
-                href="/products"
-              />
-            )}
-            {(() => {
-              const now = new Date()
-              const daysElapsed = now.getDate()
-              const totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-              const forecastRevenue = (alerts.monthlyRevenue / daysElapsed) * totalDaysInMonth
-              const isOnTrack = forecastRevenue >= alerts.monthlyTarget
+          <CardContent className="flex-1 flex flex-col">
+            <div className="space-y-3 flex-1">
+              {alerts.pendingOrders > 0 && (
+                <AlertItem
+                  type="warning"
+                  message={pendingOrdersMessage}
+                  action="View Orders"
+                  href="/orders?status=pending"
+                />
+              )}
+              {alerts.lowStockProducts > 0 && (
+                <AlertItem
+                  type="info"
+                  message={lowStockMessage}
+                  action="Manage Stock"
+                  href="/products"
+                />
+              )}
+              {(() => {
+                const now = new Date()
+                const daysElapsed = now.getDate()
+                const totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+                const forecastRevenue = (alerts.monthlyRevenue / daysElapsed) * totalDaysInMonth
+                const isOnTrack = forecastRevenue >= alerts.monthlyTarget
 
-              const milestones = [10000, 25000, 50000, 75000, 100000, 250000, 500000, 1000000]
-              const lastMilestone = [...milestones].reverse().find(m => m <= alerts.monthlyRevenue)
+                const milestones = [10000, 25000, 50000, 75000, 100000, 250000, 500000, 1000000]
+                const lastMilestone = [...milestones].reverse().find(m => m <= alerts.monthlyRevenue)
 
-              if (alerts.totalOrders === 0) {
+                if (alerts.totalOrders === 0) {
+                  return (
+                    <AlertItem
+                      type="info"
+                      message="Your revenue insights will appear once you start receiving orders."
+                      action="View Analytics"
+                      href="/analytics"
+                    />
+                  )
+                }
+
+                // Special "Just Hit" celebration - if within 5% of the last milestone or if exactly the milestone
+                const isJustHit = lastMilestone && (alerts.monthlyRevenue <= lastMilestone * 1.05)
+
+                if (isJustHit) {
+                  return (
+                    <AlertItem
+                      type="success"
+                      message={`Congratulations! You've crossed the ₹${lastMilestone.toLocaleString('en-IN')} milestone!`}
+                      action="View Analytics"
+                      href="/analytics"
+                    />
+                  )
+                }
+
+                if (isOnTrack && alerts.monthlyRevenue > 0) {
+                  return (
+                    <AlertItem
+                      type="success"
+                      message={`At this pace, you may cross ₹${alerts.monthlyTarget.toLocaleString('en-IN')} this month.`}
+                      action="View Analytics"
+                      href="/analytics"
+                    />
+                  )
+                }
+
                 return (
                   <AlertItem
                     type="info"
-                    message="Your revenue insights will appear once you start receiving orders."
+                    message={`You've earned ₹${alerts.monthlyRevenue.toLocaleString('en-IN')} so far this month.`}
                     action="View Analytics"
                     href="/analytics"
                   />
                 )
-              }
-
-              // Special "Just Hit" celebration - if within 5% of the last milestone or if exactly the milestone
-              const isJustHit = lastMilestone && (alerts.monthlyRevenue <= lastMilestone * 1.05)
-
-              if (isJustHit) {
-                return (
-                  <AlertItem
-                    type="success"
-                    message={`Congratulations! You've crossed the ₹${lastMilestone.toLocaleString('en-IN')} milestone!`}
-                    action="View Analytics"
-                    href="/analytics"
-                  />
-                )
-              }
-
-              if (isOnTrack && alerts.monthlyRevenue > 0) {
-                return (
-                  <AlertItem
-                    type="success"
-                    message={`At this pace, you may cross ₹${alerts.monthlyTarget.toLocaleString('en-IN')} this month.`}
-                    action="View Analytics"
-                    href="/analytics"
-                  />
-                )
-              }
-
-              return (
-                <AlertItem
-                  type="info"
-                  message={`You’ve earned ₹${alerts.monthlyRevenue.toLocaleString('en-IN')} so far this month.`}
-                  action="View Analytics"
-                  href="/analytics"
-                />
-              )
-            })()}
+              })()}
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <Button variant="ghost" size="sm" className="w-full justify-start text-xs" asChild>
+                <Link href="/orders">
+                  View All Orders
+                  <ArrowRight className="ml-auto h-3 w-3" />
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

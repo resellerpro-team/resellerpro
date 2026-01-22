@@ -67,7 +67,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           <nav
             className="
               flex overflow-x-auto sm:space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1
-              scrollbar-hide rounded-md p-1 border lg:border-0 border-gray-400
+              scrollbar-hide rounded-md p-1 border lg:border-0 border-border
             "
           >
             {sidebarNavItems.map((item) => (
@@ -75,9 +75,9 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "inline-flex items-center rounded-md  text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-2 py-2 whitespace-nowrap",
+                  "inline-flex items-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-2 py-2 whitespace-nowrap",
                   pathname === item.href
-                    ? "bg-gray-200 hover:bg-muted"
+                    ? "bg-muted hover:bg-muted"
                     : "bg-transparent"
                 )}
               >

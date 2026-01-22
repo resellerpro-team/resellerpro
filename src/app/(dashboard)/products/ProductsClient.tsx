@@ -1,8 +1,10 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useProducts } from "@/lib/react-query/hooks/useProducts";
+import { useProductsStats } from "@/lib/react-query/hooks/stats-hooks";
+import { createClient } from "@/lib/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,7 +40,11 @@ import {
 import Link from "next/link";
 import { ProductCard } from "@/components/products/ProductCard";
 import { ProductRow } from "@/components/products/ProductRow";
+import { ExportProducts } from "@/components/products/ExportProducts";
+import { Pagination } from "@/components/shared/Pagination";
 import ProductsLoading from "./loading";
+import { ProductsSkeleton } from "@/components/shared/skeletons/ProductsSkeleton";
+import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
 
 // ---------------- TYPES ----------------
 export type Product = {
@@ -62,6 +68,30 @@ export function ProductsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [page, setPage] = useState(1);
+  const [businessName, setBusinessName] = useState<string>('ResellerPro');
+
+  // Fetch business name from user profile
+  useEffect(() => {
+    async function fetchBusinessName() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('business_name')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.business_name) {
+          setBusinessName(profile.business_name)
+        }
+      }
+    }
+
+    fetchBusinessName()
+  }, []);
 
   // Extract params
   const search = searchParams.get("search") || "";
@@ -70,52 +100,39 @@ export function ProductsClient() {
   const view = (searchParams.get("view") || "grid") as "grid" | "list";
 
   // Query string for react-query
-  const qs = searchParams.toString();
+  const params = new URLSearchParams(searchParams.toString());
+  params.set('page', page.toString());
+  params.set('limit', '20');
+  const qs = params.toString();
 
   // Fetch products from API route
-  const { data: products = [], isLoading } = useProducts(qs);
+  const { data: productsData, isLoading } = useProducts(qs);
+
+  const products = productsData?.data || [];
+  const totalCount = productsData?.total || 0;
+  const totalPages = Math.ceil(totalCount / 20);
 
   // 👇 Give products a strong type
   const typedProducts: Product[] = products;
 
   // -------------------- STATS --------------------
+  // -------------------- STATS --------------------
+  // Global Stats (Server-side)
+  const { data: statsData } = useProductsStats();
+
   const stats = {
-    total: typedProducts.length,
-
-    inStock: typedProducts.filter(
-      (p: Product) => p.stock_status === "in_stock"
-    ).length,
-
-    lowStock: typedProducts.filter(
-      (p: Product) => p.stock_status === "low_stock"
-    ).length,
-
-    outOfStock: typedProducts.filter(
-      (p: Product) => p.stock_status === "out_of_stock"
-    ).length,
-
-    totalValue: typedProducts.reduce((acc: number, p: Product) => {
-      return acc + p.selling_price * (p.stock_quantity || 0);
-    }, 0),
-
-    totalProfit: typedProducts.reduce((acc: number, p: Product) => {
-      return acc + (p.selling_price - p.cost_price) * (p.stock_quantity || 0);
-    }, 0),
-
-    avgMargin:
-      typedProducts.length === 0
-        ? 0
-        : (
-          typedProducts.reduce((acc: number, p: Product) => {
-            const margin =
-              ((p.selling_price - p.cost_price) / p.selling_price) * 100;
-            return acc + margin;
-          }, 0) / typedProducts.length
-        ).toFixed(1),
+    total: totalCount, // Filtered count
+    inStock: statsData?.inStock || 0,
+    lowStock: statsData?.lowStock || 0,
+    outOfStock: statsData?.outOfStock || 0,
+    totalValue: statsData?.totalValue || 0,
+    totalProfit: statsData?.totalProfit || 0,
+    avgMargin: statsData?.avgMargin || 0,
   };
 
   // -------------------- URL UPDATE --------------------
   const updateURL = (params: Record<string, string>) => {
+    setPage(1);
     const np = new URLSearchParams(searchParams.toString());
 
     Object.entries(params).forEach(([key, value]) => {
@@ -128,33 +145,7 @@ export function ProductsClient() {
     });
   };
 
-  // -------------------- CSV EXPORT --------------------
-  const exportCSV = () => {
-    if (typedProducts.length === 0) return;
 
-    const headers = ["Name", "Category", "Cost", "Sell", "Qty", "Status"];
-
-    const rows = typedProducts.map((p: Product) => [
-      `"${p.name}"`,
-      p.category || "",
-      p.cost_price,
-      p.selling_price,
-      p.stock_quantity,
-      p.stock_status,
-    ]);
-
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "products.csv";
-    a.click();
-
-    URL.revokeObjectURL(url);
-  };
 
   // -------------------- UI --------------------
   return (
@@ -164,10 +155,7 @@ export function ProductsClient() {
         <h1 className="text-3xl font-bold">Products</h1>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={exportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          <ExportProducts products={typedProducts} businessName={businessName} />
 
           <Button asChild>
             <Link href="/products/new">+ Add Product</Link>
@@ -275,11 +263,25 @@ export function ProductsClient() {
 
       {/* PRODUCTS DISPLAY */}
       {isLoading ? (
-        <ProductsLoading />
+        <ProductsSkeleton view={view} />
       ) : typedProducts.length === 0 ? (
-        <p className="text-center text-muted-foreground py-20">
-          No products found.
-        </p>
+        search || category ? (
+          <FilteredEmptyState
+            onClearFilters={() => {
+              updateURL({ search: "", category: "" });
+            }}
+          />
+        ) : (
+          <EmptyState
+            icon={Package}
+            title="No products yet"
+            description="Start adding products to your inventory to track stock and manage sales."
+            action={{
+              label: "Add Product",
+              href: "/products/new"
+            }}
+          />
+        )
       ) : view === "grid" ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {typedProducts.map((p) => (
@@ -294,6 +296,19 @@ export function ProductsClient() {
             ))}
           </CardContent>
         </Card>
+      )}
+      {/* PAGINATION */}
+      {products.length > 0 && (
+         <div className="py-4 border-t">
+           <Pagination 
+             currentPage={page} 
+             totalPages={totalPages} 
+             onPageChange={(p) => {
+               setPage(p);
+               window.scrollTo({ top: 0, behavior: 'smooth' });
+             }} 
+           />
+         </div>
       )}
     </div>
   );

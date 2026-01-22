@@ -5,8 +5,8 @@ import ProfileForm from '@/components/settings/ProfileForm'
 import { useProfile } from '@/lib/react-query/hooks/useProfile'
 import { Loader2 } from 'lucide-react'
 
-export function ProfileClient() {
-    const { data: user, isLoading, error } = useProfile()
+export function ProfileClient({ initialData }: { initialData?: any }) {
+    const { data: user, isLoading, error } = useProfile(initialData)
 
     if (isLoading) {
         return (

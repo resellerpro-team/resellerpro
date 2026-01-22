@@ -1,6 +1,7 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { DateRangePicker } from '@/components/analytics/DateRangePicker'
 import { SalesProfitChart } from '@/components/analytics/SalesProfitChart'
@@ -8,6 +9,8 @@ import { RevenueByCategoryChart } from '@/components/analytics/RevenueByCategory
 import { PaymentStatusChart } from '@/components/analytics/PaymentStatusChart'
 import { OrderStatusChart } from '@/components/analytics/OrderStatusChart'
 import { ExportButton } from '@/components/analytics/ExportButton'
+import { LockedChart } from '@/components/analytics/LockedChart'
+import { FreePlanBanner } from '@/components/analytics/FreePlanBanner'
 import {
     IndianRupee,
     ShoppingCart,
@@ -19,26 +22,101 @@ import {
     Percent,
     Clock,
     Loader2,
+    Crown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Progress } from '@/components/ui/progress'
-import { format } from 'date-fns'
+import { format, subDays } from 'date-fns'
 import { useAnalytics } from '@/lib/react-query/hooks/useAnalytics'
+import { createClient } from '@/lib/supabase/client'
+import { useSubscription } from '@/lib/hooks/useSubscription'
+import { AnalyticsSkeleton } from '@/components/shared/skeletons/AnalyticsSkeleton'
 
 export function AnalyticsClient() {
     const searchParams = useSearchParams()
-    const from = searchParams.get('from') || undefined
-    const to = searchParams.get('to') || undefined
+    const router = useRouter()
+    const { isPremium, isLoading: isCheckingSubscription } = useSubscription()
+    
+    // Free users: max 7 days, Premium: unlimited
+    const FREE_PLAN_MAX_DAYS = 7
+    
+    // Don't even read URL params until we know subscription status
+    const [actualFrom, setActualFrom] = useState<string | undefined>(undefined)
+    const [actualTo, setActualTo] = useState<string | undefined>(undefined)
+    const [isReady, setIsReady] = useState(false)
+    
+    // Calculate dates ONLY after subscription check completes
+    useEffect(() => {
+        if (isCheckingSubscription) {
+            // Still checking, don't do anything
+            setIsReady(false)
+            return
+        }
+        
+        // Subscription status is known
+        const urlFrom = searchParams.get('from') || undefined
+        const urlTo = searchParams.get('to') || undefined
+        
+        if (isPremium) {
+            // Premium: use whatever dates from URL (or undefined for all-time)
+            setActualFrom(urlFrom)
+            setActualTo(urlTo)
+            setIsReady(true)
+        } else {
+            // Free: force 7 days
+            const today = new Date()
+            const limitDate = subDays(today, FREE_PLAN_MAX_DAYS)
+            const restrictedFrom = limitDate.toISOString().split('T')[0]
+            const restrictedTo = today.toISOString().split('T')[0]
+            
+            setActualFrom(restrictedFrom)
+            setActualTo(restrictedTo)
+            setIsReady(true)
+            
+            // Update URL if needed
+            if (urlFrom !== restrictedFrom || urlTo !== restrictedTo) {
+                const params = new URLSearchParams(searchParams.toString())
+                params.set('from', restrictedFrom)
+                params.set('to', restrictedTo)
+                router.replace(`/analytics?${params.toString()}`)
+            }
+        }
+    }, [isCheckingSubscription, isPremium, searchParams, router])
 
-    const { data, isLoading, error } = useAnalytics({ from, to })
+    const [businessName, setBusinessName] = useState<string>('ResellerPro')
 
-    if (isLoading) {
-        return (
-            <div className="flex h-[80vh] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-        )
+    // Fetch business name from user profile
+    useEffect(() => {
+        async function fetchBusinessName() {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('business_name')
+                    .eq('id', user.id)
+                    .single()
+
+                if (profile?.business_name) {
+                    setBusinessName(profile.business_name)
+                }
+            }
+        }
+
+        fetchBusinessName()
+    }, [])
+
+    // ONLY fetch analytics when we're ready (subscription known + dates calculated)
+    const { data, isLoading, error } = useAnalytics(
+        { from: actualFrom, to: actualTo },
+        { enabled: isReady }  // Don't fetch until ready
+    )
+    
+    // Show loading while checking subscription OR fetching data
+    if (isCheckingSubscription || !isReady || isLoading) {
+        return <AnalyticsSkeleton />
     }
 
     if (error) {
@@ -49,7 +127,7 @@ export function AnalyticsClient() {
         )
     }
 
-    const { orders = [], stats, topProducts = [], topCustomers = [], dateRanges } = data
+    const { orders = [], stats, topProducts = [], topCustomers = [], dateRanges } = data || {}
 
     // Provide fallback stats if API returns undefined (though it shouldn't)
     const safeStats = stats || {
@@ -77,8 +155,8 @@ export function AnalyticsClient() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Analytics & Reports</h1>
                     <p className="text-muted-foreground">
-                        {dateRanges?.hasFilter && from && to
-                            ? `Showing data from ${format(new Date(from), 'MMM dd, yyyy')} to ${format(new Date(to), 'MMM dd, yyyy')}`
+                        {dateRanges?.hasFilter && actualFrom && actualTo
+                            ? `Showing data from ${format(new Date(actualFrom), 'MMM dd, yyyy')} to ${format(new Date(actualTo), 'MMM dd, yyyy')}`
                             : 'Showing all time data'
                         }
                     </p>
@@ -86,11 +164,17 @@ export function AnalyticsClient() {
                 <div className="flex items-center gap-2">
                     <ExportButton
                         orders={orders}
-                        dateRange={{ from, to }}
+                        dateRange={{ from: actualFrom, to: actualTo }}
+                        businessName={businessName}
                     />
-                    <DateRangePicker />
+                    <DateRangePicker disabled={!isPremium} />
                 </div>
             </div>
+            
+            {/* Free Plan Banner */}
+            {!isCheckingSubscription && !isPremium && (
+                <FreePlanBanner daysLimit={FREE_PLAN_MAX_DAYS} showingDays={FREE_PLAN_MAX_DAYS} />
+            )}
 
             {/* Key Metrics - 6 Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -154,51 +238,76 @@ export function AnalyticsClient() {
                         <SalesProfitChart
                             orders={orders}
                             dateRange={{
-                                from: dateRanges?.hasFilter && from ? from : new Date(new Date().setDate(new Date().getDate() - 29)).toISOString(),
-                                to: dateRanges?.hasFilter && to ? to : new Date().toISOString()
+                                from: dateRanges?.hasFilter && actualFrom ? actualFrom : new Date(new Date().setDate(new Date().getDate() - 29)).toISOString(),
+                                to: dateRanges?.hasFilter && actualTo ? actualTo : new Date().toISOString()
                             }}
                         />
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Revenue by Category</CardTitle>
-                        <CardDescription>
-                            {dateRanges?.hasFilter
-                                ? 'Top 10 categories in selected period'
-                                : 'All time top 10 categories'
-                            }
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="h-[350px]">
-                        <RevenueByCategoryChart orders={orders} />
-                    </CardContent>
-                </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Payment Status Breakdown</CardTitle>
-                        <CardDescription>
-                            Distribution of payment statuses
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="h-[350px]">
-                        <PaymentStatusChart orders={orders} />
-                    </CardContent>
-                </Card>
+                {isPremium ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Revenue by Category</CardTitle>
+                            <CardDescription>
+                                {dateRanges?.hasFilter
+                                    ? 'Top 10 categories in selected period'
+                                    : 'All time top 10 categories'
+                                }
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="h-[350px]">
+                            <RevenueByCategoryChart orders={orders} />
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <LockedChart
+                        title="Revenue by Category"
+                        description="See category performance breakdown"
+                        chartType="bar"
+                    />
+                )}
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Order Fulfillment Status</CardTitle>
-                        <CardDescription>
-                            Current order processing pipeline
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="h-[350px]">
-                        <OrderStatusChart orders={orders} />
-                    </CardContent>
-                </Card>
+                {isPremium ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Payment Status Breakdown</CardTitle>
+                            <CardDescription>
+                                Distribution of payment statuses
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="h-[350px]">
+                            <PaymentStatusChart orders={orders} />
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <LockedChart
+                        title="Payment Status Breakdown"
+                        description="See detailed payment analytics"
+                        chartType="donut"
+                    />
+                )}
+
+                {isPremium ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Order Fulfillment Status</CardTitle>
+                            <CardDescription>
+                                Current order processing pipeline
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="h-[350px]">
+                            <OrderStatusChart orders={orders} />
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <LockedChart
+                        title="Order Fulfillment Status"
+                        description="Track your order pipeline in real-time"
+                        chartType="bar"
+                    />
+                )}
             </div>
 
             {/* Top Performers Grid */}
@@ -219,12 +328,14 @@ export function AnalyticsClient() {
                     title="Top Customers"
                     description={dateRanges?.hasFilter ? 'Top spenders in selected period' : 'All time top spenders'}
                     icon={User}
-                    items={topCustomers.length > 0 ? topCustomers.map((c: any) => ({
+                    items={topCustomers.length > 0 ? (isPremium ? topCustomers : topCustomers.slice(0, 5)).map((c: any) => ({
                         name: c.name,
                         value: `₹${c.spending.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (${c.orderCount} orders)`,
                         progress: Math.round((c.spending / maxCustomerSpending) * 100)
                     })) : [{ name: 'No data available', value: '₹0', progress: 0 }]}
                     viewAllHref="/customers"
+                    showUpgradeCTA={!isPremium && topCustomers.length > 5}
+                    totalCount={topCustomers.length}
                 />
             </div>
         </div>
@@ -273,13 +384,19 @@ function TopPerformersCard({
     icon: Icon,
     items,
     viewAllHref,
+    showUpgradeCTA = false,
+    totalCount = 0,
 }: {
     title: string
     description: string
     icon: any
     items: { name: string; value: string; progress: number }[]
     viewAllHref: string
+    showUpgradeCTA?: boolean
+    totalCount?: number
 }) {
+    const router = useRouter()
+    
     return (
         <Card>
             <CardHeader className="flex flex-row items-center gap-4">
@@ -301,11 +418,24 @@ function TopPerformersCard({
                         <Progress value={item.progress} />
                     </div>
                 ))}
-                <Button variant="ghost" size="sm" className="w-full" asChild>
-                    <Link href={viewAllHref}>
-                        View All <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
+                
+                {showUpgradeCTA ? (
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full border-amber-200 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:border-amber-800"
+                        onClick={() => router.push('/settings/subscription#pricing')}
+                    >
+                        <Crown className="mr-2 h-4 w-4 text-amber-600" />
+                        Unlock {totalCount - 5} More
+                    </Button>
+                ) : (
+                    <Button variant="ghost" size="sm" className="w-full" asChild>
+                        <Link href={viewAllHref}>
+                            View All <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                )}
             </CardContent>
         </Card>
     )

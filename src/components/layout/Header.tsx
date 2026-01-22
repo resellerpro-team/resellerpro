@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Bell, Plus, Sun, Moon } from 'lucide-react'
+import { Search, Bell, Plus, Sun, Moon, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -17,15 +17,25 @@ import { Badge } from '@/components/ui/badge'
 import { useTheme } from 'next-themes'
 import { NotificationDrawer } from '@/components/notifications/NotificationDrawer'
 import { GlobalSearch } from '@/components/layout/GlobalSearch'
+import { useOfflineQueue } from '@/lib/hooks/useOfflineQueue'
 
 export default function Header() {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const { isOnline } = useOfflineQueue() // ✅ Initialize hook globally
 
   return (
     <header className="flex flex-wrap items-center justify-between px-4 border-b">
       {/* Buttons Section (Top on mobile, Right on desktop) */}
       <div className="order-1 sm:order-2 flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-end py-2 sm:py-0">
+        {/* Offline Indicator */}
+        {!isOnline && (
+          <Badge variant="destructive" className="items-center gap-1 hidden sm:flex">
+            <WifiOff className="h-3 w-3" />
+            <span className="text-xs">Offline</span>
+          </Badge>
+        )}
+
         {/* Theme Toggle */}
         <Button
           variant="ghost"
