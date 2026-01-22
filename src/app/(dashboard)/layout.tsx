@@ -25,19 +25,22 @@ export default async function DashboardLayout({
     redirect('/signin')
   }
 
-  // Fetch the user's profile from the 'profiles' table
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, avatar_url')
-    .eq('id', user.id)
-    .single()
+  // Fetch profile and subscription in parallel for better performance
+  const [profileResult, subscriptionResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('full_name, avatar_url')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('user_subscriptions')
+      .select('plan:subscription_plans(display_name)')
+      .eq('user_id', user.id)
+      .single()
+  ])
 
-  // Fetch the user's subscription to get the plan name
-  const { data: subscription } = await supabase
-    .from('user_subscriptions')
-    .select('plan:subscription_plans(display_name)')
-    .eq('user_id', user.id)
-    .single()
+  const profile = profileResult.data
+  const subscription = subscriptionResult.data
 
   // Prepare the user data object to pass to client components
   const userData: UserData = {

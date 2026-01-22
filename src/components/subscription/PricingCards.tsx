@@ -9,6 +9,7 @@ import { Check, Loader2 } from 'lucide-react'
 import { createCheckoutSession } from '@/app/(dashboard)/settings/subscription/actions'
 import { activateWithWallet } from '@/app/(dashboard)/settings/subscription/walletActions'
 import { PaymentMethodDialog } from './PaymentMethodDialog'
+import { ComingSoonDialog } from './ComingSoonDialog'
 import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
 
@@ -17,7 +18,9 @@ type Plan = {
   name: string
   display_name: string
   price: number
+  offer_price: number | null
   order_limit: number | null
+  tag_line: string | null
   features: any[]
 }
 
@@ -33,10 +36,15 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+  const [showComingSoonDialog, setShowComingSoonDialog] = useState(false)
 
   const handleUpgradeClick = (plan: Plan) => {
     setSelectedPlan(plan)
-    setShowPaymentDialog(true)
+    if (plan.name === 'business') {
+      setShowComingSoonDialog(true)
+    } else {
+      setShowPaymentDialog(true)
+    }
   }
 
   const handlePaymentMethodSelected = async (method: 'wallet' | 'razorpay' | 'wallet+razorpay') => {
@@ -173,18 +181,69 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                   <Badge className="px-3 py-1">Most Popular</Badge>
                 </div>
               )}
+              {plan.name === 'business' && (
+                <div className="absolute -top-3 left-0 right-0 flex justify-center">
+                  <Badge className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white border-none">Coming Soon</Badge>
+                </div>
+              )}
 
               <CardHeader>
                 <CardTitle className="text-2xl">{plan.display_name}</CardTitle>
                 <CardDescription>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold">₹{plan.price}</span>
-                    {plan.price > 0 && <span className="text-muted-foreground">/month</span>}
+                  {isCurrentPlan ? (
+                    <div className="mt-4">
+                      <span className="text-3xl text-foreground me-2">₹{plan.price}</span>
+                      <span className="text-xl text-foreground">/month</span>
+                    </div>
+                  ) : plan.name === 'free' ? (
+                    <div className="mt-4">
+                      <span className="text-3xl text-foreground me-2">₹{plan.price}</span>
+                      <span className="text-xl text-foreground">/month</span>
+                    </div>
+                  ) : (plan.offer_price != null ? (
+                    <div className="mt-4">
+                      <span className="text-3xl text-muted-foreground  line-through me-2">₹{plan.price}</span>
+                      <span className="text-3xl text-foreground ">₹{plan.offer_price}</span>
+                      <span className="text-xl text-foreground">/month</span>
+                    </div>
+                  ) : (<div className="mt-4">
+                    <span className="text-2xl text-foreground me-2">₹{plan.price}</span>
+                    <span className="text-xl text-foreground">/month</span>
+                  </div>)
+
+                  )}
+                  <div className="mt-2 mb-1 h-6">
+                    <span className="text-foreground font-semibold">{plan.tag_line}</span>
                   </div>
                 </CardDescription>
               </CardHeader>
 
               <CardContent>
+                {isCurrentPlan ? (
+                  <Button className="w-full mb-4 " disabled>
+                    Current Plan
+                  </Button>
+                ) : plan.name === 'free' ? (
+                  <Button className="w-full mb-4 text-primary " variant="secondary" disabled>
+                    Starts at end of current plan
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full mb-4 "
+                    onClick={() => handleUpgradeClick(plan)}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      plan.name === 'business' ? 'Notify Me' : 'Upgrade Now'
+                    )}
+                  </Button>
+                )}
+
                 <ul className="space-y-3">
                   {(plan.features as string[]).map((feature, index) => (
                     <li key={index} className="flex items-start gap-2">
@@ -195,36 +254,20 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                 </ul>
               </CardContent>
 
-              <CardFooter>
-                {isCurrentPlan ? (
-                  <Button className="w-full" disabled>
-                    Current Plan
-                  </Button>
-                ) : plan.name === 'free' ? (
-                  <Button className="w-full" variant="outline" disabled>
-                    Downgrade at period end
-                  </Button>
-                ) : (
-                  <Button
-                    className="w-full"
-                    onClick={() => handleUpgradeClick(plan)}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      'Upgrade Now'
-                    )}
-                  </Button>
-                )}
-              </CardFooter>
+
             </Card>
           )
         })}
       </div>
+
+      {/* Coming Soon Dialog */}
+      {selectedPlan && (
+        <ComingSoonDialog
+          open={showComingSoonDialog}
+          onOpenChange={setShowComingSoonDialog}
+          planName={selectedPlan.display_name}
+        />
+      )}
 
       {/* Payment Method Selection Dialog */}
       {selectedPlan && (
@@ -232,7 +275,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
           open={showPaymentDialog}
           onOpenChange={setShowPaymentDialog}
           planName={selectedPlan.display_name}
-          planPrice={selectedPlan.price}
+          planPrice={selectedPlan.offer_price == null ? selectedPlan.price : selectedPlan.offer_price}
           walletBalance={walletBalance}
           onConfirm={handlePaymentMethodSelected}
           isLoading={isLoading}

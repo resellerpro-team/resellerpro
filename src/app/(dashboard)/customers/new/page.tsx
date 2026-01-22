@@ -8,17 +8,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeft, Save, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, WifiOff } from 'lucide-react'
 import Link from 'next/link'
 import { SmartPasteDialog } from '@/components/customers/SmartPasteDialog'
 import type { ParsedCustomerData } from '@/lib/utils/whatsapp-parser'
 import { createCustomer } from '../action'
+import { useOfflineQueue } from '@/lib/hooks/useOfflineQueue'
 
 export default function NewCustomerPage() {
   const router = useRouter()
   const { toast } = useToast()
   const formRef = useRef<HTMLFormElement>(null)
   const [isPending, startTransition] = useTransition()
+  const { queueAction, isOnline } = useOfflineQueue()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -87,6 +89,24 @@ export default function NewCustomerPage() {
       return
     }
 
+    // If offline, queue the action
+    if (!isOnline) {
+      console.log('📌 Offline: Queuing customer creation')
+      queueAction('CREATE_CUSTOMER', formData)
+      toast({
+        title: 'Queued for sync 📌',
+        description: 'Customer will be created when you\'re back online.',
+        duration: 3000,
+      })
+      // Clear form and navigate
+      setTimeout(() => {
+        router.push('/customers')
+      }, 500)
+      return // IMPORTANT: Stop here, don't proceed to online submission
+    }
+
+    // If online, proceed normally (NOT queuing)
+    console.log('🌐 Online: Creating customer directly')
     const formDataObj = new FormData(e.currentTarget)
 
     startTransition(async () => {
@@ -129,12 +149,25 @@ export default function NewCustomerPage() {
         }
       } catch (error) {
         console.error('Submit error:', error)
-        toast({
-          title: 'Error',
-          description: 'An unexpected error occurred',
-          variant: 'destructive',
-          duration: 5000,
-        })
+        
+        // If error is network-related and we're offline, queue it
+        if (!navigator.onLine) {
+          queueAction('CREATE_CUSTOMER', formData)
+          toast({
+            title: 'Queued for sync 📌',
+            description: 'Customer will be created when you\'re back online.',
+          })
+          setTimeout(() => {
+            router.push('/customers')
+          }, 500)
+        } else {
+          toast({
+            title: 'Error',
+            description: 'An unexpected error occurred',
+            variant: 'destructive',
+            duration: 5000,
+          })
+        }
       }
     })
   }
@@ -153,6 +186,17 @@ export default function NewCustomerPage() {
           <p className="text-muted-foreground">Fill in the details or use Smart Paste.</p>
         </div>
       </div>
+
+      {/* Offline Warning */}
+      {!isOnline && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3">
+          <WifiOff className="h-5 w-5 text-amber-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-900">You're offline</p>
+            <p className="text-xs text-amber-700">Customer will be queued and synced when you're back online.</p>
+          </div>
+        </div>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

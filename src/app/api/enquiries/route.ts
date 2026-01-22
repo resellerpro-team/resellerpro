@@ -16,10 +16,13 @@ export async function GET(req: Request) {
     const search = searchParams.get('search')
     const status = searchParams.get('status')
     const sort = searchParams.get('sort') || '-created_at'
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const offset = (page - 1) * limit
 
     let query = supabase
         .from('enquiries')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('user_id', user.id)
         .eq('is_deleted', false)
 
@@ -38,14 +41,21 @@ export async function GET(req: Request) {
 
     query = query.order(sortField, { ascending })
 
-    const { data, error } = await query
+    query = query.range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
 
     if (error) {
         console.error(error)
-        return NextResponse.json([], { status: 500 })
+        return NextResponse.json({ data: [], total: 0, page, limit }, { status: 500 })
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json({
+        data,
+        total: count,
+        page,
+        limit
+    })
 }
 
 

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(req: Request) {
   const supabase = await createClient();
-  const { data: { user }} = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return NextResponse.json([]);
 
@@ -12,10 +12,13 @@ export async function GET(req: Request) {
   const search = searchParams.get("search");
   const category = searchParams.get("category");
   const sort = searchParams.get("sort") || "-created_at";
+  const page = parseInt(searchParams.get('page') || '1')
+  const limit = parseInt(searchParams.get('limit') || '20')
+  const offset = (page - 1) * limit
 
   let query = supabase
     .from("products")
-    .select("*")
+    .select("*", { count: 'exact' })
     .eq("user_id", user.id);
 
   if (search) {
@@ -34,9 +37,16 @@ export async function GET(req: Request) {
   const sortField = sort.replace("-", "");
   query = query.order(sortField, { ascending: sortAsc });
 
-  const { data, error } = await query;
+  query = query.range(offset, offset + limit - 1)
 
-  if (error) return NextResponse.json([]);
+  const { data, error, count } = await query;
 
-  return NextResponse.json(data);
+  if (error) return NextResponse.json({ data: [], total: 0, page, limit });
+
+  return NextResponse.json({
+    data,
+    total: count,
+    page,
+    limit
+  });
 }

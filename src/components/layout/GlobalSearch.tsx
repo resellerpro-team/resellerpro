@@ -89,8 +89,8 @@ export function GlobalSearch() {
                 onClick={() => setOpen(true)}
             >
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-hover:text-foreground transition-colors" />
-                <div className="flex h-10 w-full rounded-md border border-input bg-background pl-10 pr-4 py-2 text-sm text-muted-foreground ring-offset-background group-hover:border-accent transition-colors items-center">
-                    Search orders, customers, products...
+                <div className="flex h-10 w-full rounded-md border border-input bg-background pl-10 pr-4 py-2 text-sm text-muted-foreground ring-offset-background group-hover:border-accent transition-colors items-center truncate">
+                    <span className="truncate">Search orders, customers...</span>
                     <kbd className="pointer-events-none absolute right-3 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
                         <span className="text-xs">⌘</span>K
                     </kbd>
