@@ -160,9 +160,8 @@ function ConversionFormContent({ enquiry, existingCustomer, onClose }: { enquiry
     const [isPending, startTransition] = useTransition();
     const { mutate: updateEnquiry, isPending: isUpdatingStatus } = useUpdateEnquiry();
 
-    // @ts-expect-error - useProducts definition might be slightly off
-    const { data: productsData } = useProducts();
-    const products = productsData || [];
+    const { data: productsData } = useProducts('');
+    const products = Array.isArray(productsData?.data) ? productsData.data : [];
 
     const [activeSection, setActiveSection] = useState<string>("customer");
     const [isProcessingPaste, setIsProcessingPaste] = useState(false);

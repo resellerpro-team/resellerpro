@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { razorpay, verifyPaymentSignature } from '@/lib/razorpay/razorpay'
 import { revalidatePath } from 'next/cache'
 import { createNotification } from '@/lib/services/notificationService'
+import { MailService } from '@/lib/mail'
+import { generateContractPdf } from '@/lib/pdf/contract'
+import { format } from 'date-fns'
 
 // --------------------
 // Helper: Ensure subscription exists
@@ -334,6 +337,78 @@ export async function verifyPaymentAndActivate(
   } catch (rewardError: any) {
     console.error('❌ Referral reward exception:', rewardError.message)
     // Don't fail subscription if referral reward fails
+  }
+
+  // --------------------
+  // Send Confirmation Email
+  // --------------------
+  console.log('📧 Starting email confirmation flow...')
+  try {
+    const { data: profile } = await adminSupabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+
+    console.log('👤 Profile fetched for email:', profile ? 'Found' : 'Not Found')
+
+    const { data: plan } = await adminSupabase
+      .from('subscription_plans')
+      .select('display_name, price')
+      .eq('id', planId)
+      .single()
+
+    console.log('📦 Plan fetched for email:', plan ? plan.display_name : 'Not Found')
+
+    if (plan) {
+      console.log('📄 Generating PDF contract...')
+      const pdfBuffer = await generateContractPdf({
+        userName: profile?.full_name || 'Valued User',
+        planName: plan.display_name,
+        amount: plan.price,
+        startDate: format(now, 'dd MMM yyyy'),
+        endDate: format(periodEnd, 'dd MMM yyyy'),
+      })
+
+
+      console.log('📨 Sending subscription confirmation email to:', user.email)
+      const result = await MailService.sendSubscriptionConfirmation(
+        user.email!,
+        profile?.full_name || 'User',
+        plan.display_name,
+        format(periodEnd, 'dd MMM yyyy'),
+        pdfBuffer
+      )
+
+      if (result.success) {
+        console.log('✅ Confirmation email sent successfully')
+      } else {
+        console.error('❌ MailService reported failure:', result.error)
+
+        // Notify user in-app that email failed, but subscription is active
+        await createNotification({
+          userId: user.id,
+          type: 'system_alert',
+          title: 'Email Delivery Failed',
+          message: `subscription active, but failed to send contract email: ${result.error?.substring(0, 50)}...`,
+          entityType: 'subscription',
+          priority: 'normal'
+        })
+      }
+    }
+  } catch (emailError: any) {
+    console.error('❌ Email sending threw exception:', emailError)
+    console.error('Stack:', emailError.stack)
+
+    // Notify user of exception
+    await createNotification({
+      userId: user.id,
+      type: 'system_alert',
+      title: 'System Error',
+      message: 'Failed to generate contract or send email. Please contact support.',
+      entityType: 'subscription',
+      priority: 'high'
+    })
   }
 
   revalidatePath('/settings/subscription')

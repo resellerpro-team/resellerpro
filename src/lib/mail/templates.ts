@@ -2,10 +2,10 @@
 import { EmailTemplate } from './types'
 
 export const templates = {
-    subscriptionConfirmation: (userName: string, planName: string, endDate: string): EmailTemplate => ({
-        subject: `Subscription Confirmed - Welcome to ResellerPro`,
-        text: `Hello ${userName},\n\nYour subscription to the ${planName} plan is confirmed. It expires on ${endDate}.\n\nPlease find your contract note attached.\n\nRegards,\nResellerPro Team`,
-        html: `
+  subscriptionConfirmation: (userName: string, planName: string, endDate: string): EmailTemplate => ({
+    subject: `Subscription Confirmed - Welcome to ResellerPro`,
+    text: `Hello ${userName},\n\nYour subscription to the ${planName} plan is confirmed. It expires on ${endDate}.\n\nPlease find your contract note attached.\n\nRegards,\nResellerPro Team`,
+    html: `
       <div style="font-family: sans-serif; padding: 20px;">
         <h2>Welcome to ResellerPro!</h2>
         <p>Hello <strong>${userName}</strong>,</p>
@@ -17,12 +17,12 @@ export const templates = {
         <p>The ResellerPro Team</p>
       </div>
     `
-    }),
+  }),
 
-    subscriptionReminder: (userName: string, daysLeft: number, endDate: string): EmailTemplate => ({
-        subject: `Action Required: Your Subscription Expires in ${daysLeft} Days`,
-        text: `Hello ${userName},\n\nYour subscription is expiring on ${endDate}. Please renew to prevent service interruption.\n\nRegards,\nResellerPro Team`,
-        html: `
+  subscriptionReminder: (userName: string, daysLeft: number, endDate: string): EmailTemplate => ({
+    subject: `Action Required: Your Subscription Expires in ${daysLeft} Days`,
+    text: `Hello ${userName},\n\nYour subscription is expiring on ${endDate}. Please renew to prevent service interruption.\n\nRegards,\nResellerPro Team`,
+    html: `
       <div style="font-family: sans-serif; padding: 20px;">
         <h2 style="color: #eab308;">Subscription Expiring Soon</h2>
         <p>Hello <strong>${userName}</strong>,</p>
@@ -32,12 +32,12 @@ export const templates = {
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Renew Now</a>
       </div>
     `
-    }),
+  }),
 
-    otpCode: (otp: string): EmailTemplate => ({
-        subject: `${otp} is your ResellerPro Verification Code`,
-        text: `Your verification code is: ${otp}. Valid for 5 minutes.`,
-        html: `
+  otpCode: (otp: string): EmailTemplate => ({
+    subject: `${otp} is your ResellerPro Verification Code`,
+    text: `Your verification code is: ${otp}. Valid for 5 minutes.`,
+    html: `
       <div style="font-family: sans-serif; padding: 20px;">
         <h2>Verification Code</h2>
         <p>Your OTP code is:</p>
@@ -46,12 +46,12 @@ export const templates = {
         <p>If you didn't request this, please ignore this email.</p>
       </div>
     `
-    }),
+  }),
 
-    enquiryAlert: (userName: string, unreadCount: number): EmailTemplate => ({
-        subject: `You have ${unreadCount} pending enquiries`,
-        text: `Hello ${userName},\n\nYou have ${unreadCount} enquiries waiting for your response. Please check your dashboard.\n\nRegards,\nResellerPro Team`,
-        html: `
+  enquiryAlert: (userName: string, unreadCount: number): EmailTemplate => ({
+    subject: `You have ${unreadCount} pending enquiries`,
+    text: `Hello ${userName},\n\nYou have ${unreadCount} enquiries waiting for your response. Please check your dashboard.\n\nRegards,\nResellerPro Team`,
+    html: `
       <div style="font-family: sans-serif; padding: 20px;">
         <h2>Enquiries Waiting</h2>
         <p>Hello <strong>${userName}</strong>,</p>
@@ -61,14 +61,14 @@ export const templates = {
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/enquiries" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Enquiries</a>
       </div>
     `
-    }),
+  }),
 
-    orderStatus: (customerName: string, orderId: string, status: string, isUpdate: boolean): EmailTemplate => {
-        const title = isUpdate ? `Update on Order #${orderId}` : `Order #${orderId} Status: ${status}`
-        return {
-            subject: title,
-            text: `Hello ${customerName},\n\nThe status of your order #${orderId} is now: ${status}.\n\nRegards,\nResellerPro Team`,
-            html: `
+  orderStatus: (customerName: string, orderId: string, status: string, isUpdate: boolean): EmailTemplate => {
+    const title = isUpdate ? `Update on Order #${orderId}` : `Order #${orderId} Status: ${status}`
+    return {
+      subject: title,
+      text: `Hello ${customerName},\n\nThe status of your order #${orderId} is now: ${status}.\n\nRegards,\nResellerPro Team`,
+      html: `
         <div style="font-family: sans-serif; padding: 20px;">
           <h2>Order Update</h2>
           <p>Hello <strong>${customerName}</strong>,</p>
@@ -78,6 +78,21 @@ export const templates = {
           <p>We will keep you updated.</p>
         </div>
       `
-        }
     }
+  },
+
+  orderAlert: (userName: string, pendingCount: number): EmailTemplate => ({
+    subject: `Start Processing: You have ${pendingCount} new orders`,
+    text: `Hello ${userName},\n\nYou have ${pendingCount} pending orders waiting for processing. Please check your dashboard to avoid delays.\n\nRegards,\nResellerPro Team`,
+    html: `
+      <div style="font-family: sans-serif; padding: 20px;">
+        <h2>Action Required: New Orders</h2>
+        <p>Hello <strong>${userName}</strong>,</p>
+        <p>You have <strong>${pendingCount}</strong> pending orders that need to be processed.</p>
+        <p>Timely processing leads to happier customers!</p>
+        <br/>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Process Orders</a>
+      </div>
+    `
+  })
 }
