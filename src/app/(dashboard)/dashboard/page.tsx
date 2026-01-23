@@ -337,11 +337,11 @@ function StatsCard({
 
   // Icon styling based on type
   const iconBg = type === 'revenue'
-    ? 'bg-blue-500/10 text-blue-600'
-    : 'bg-emerald-500/10 text-emerald-600'
+    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
 
   return (
-    <Card className="overflow-hidden border border-slate-200/60 shadow-none hover:shadow-sm transition-all duration-200 bg-white">
+    <Card className="overflow-hidden border border-border shadow-none hover:shadow-sm transition-all duration-200">
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
         <CardTitle className="text-[13px] font-medium text-muted-foreground tracking-tight">{title}</CardTitle>
         <div className={`p-2 rounded-lg ${iconBg}`}>
@@ -349,7 +349,7 @@ function StatsCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className={`text-2xl font-bold tracking-tight ${type === 'profit' && value > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+        <div className={`text-2xl font-bold tracking-tight ${type === 'profit' && value > 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-foreground'}`}>
           {formattedValue}
         </div>
         <div className="flex items-center gap-1.5 mt-1">
