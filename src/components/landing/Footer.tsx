@@ -16,7 +16,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           {/* Logo + About */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-3">
+            <div
+              className="flex items-center space-x-3 cursor-pointer"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
               <Image
                 src="/icons/icon-512x512.png"
                 alt="ResellerPro"
