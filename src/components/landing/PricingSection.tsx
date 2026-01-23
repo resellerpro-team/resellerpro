@@ -1,6 +1,7 @@
 'use client'
 
-import { Check, Sparkles, Zap, Crown, ArrowRight } from 'lucide-react'
+import { useState } from 'react'
+import { Check, Sparkles, Zap, Crown, ArrowRight, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
 
 interface PricingCardProps {
@@ -10,257 +11,209 @@ interface PricingCardProps {
   features: string[]
   popular?: boolean
   index: number
+  isAnnual: boolean
 }
 
-function PricingCard({ name, price, description, features, popular, index }: PricingCardProps) {
+function PricingCard({ name, price, description, features, popular, index, isAnnual }: PricingCardProps) {
   return (
     <div
-      className={`relative p-8 rounded-2xl transition-all duration-300 ${
-        popular
-          ? 'bg-gradient-to-br from-blue-600 to-cyan-600 text-white shadow-2xl scale-105 hover:scale-110'
-          : 'bg-white border-2 border-gray-100 hover:border-blue-200 hover:shadow-xl hover:-translate-y-2'
-      }`}
-      style={{ animationDelay: `${index * 150}ms` }}
+      className={`relative p-8 lg:p-10 rounded-[2rem] transition-all duration-300 flex flex-col h-full ${popular
+        ? 'bg-card border-2 border-primary shadow-xl scale-100 lg:scale-105 z-10'
+        : 'bg-card border border-border/60 hover:border-border shadow-sm hover:shadow-md'
+        }`}
     >
       {popular && (
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-          <div className="flex items-center space-x-1 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-xs font-bold shadow-lg">
-            <Crown size={14} />
-            <span>MOST POPULAR</span>
+          <div className="bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-xs font-bold shadow-lg tracking-wide uppercase">
+            Most Popular
           </div>
         </div>
       )}
 
-      {!popular && (
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-transparent to-cyan-50 rounded-2xl opacity-0 hover:opacity-100 transition-opacity duration-300" />
-      )}
-
-      <div className="relative z-10">
-        {/* Icon Badge */}
-        <div
-          className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-6 ${
-            popular ? 'bg-white/20 backdrop-blur-sm' : 'bg-gradient-to-br from-blue-500 to-cyan-500'
-          }`}
-        >
-          {name === 'Free' && (
-            <Sparkles className={popular ? 'text-white' : 'text-white'} size={24} />
-          )}
-          {name === 'Professional' && <Zap className="text-white" size={24} />}
-          {name === 'Business' && (
-            <Crown className={popular ? 'text-white' : 'text-white'} size={24} />
-          )}
-        </div>
-
-        {/* Plan Name */}
-        <h3 className={`text-2xl font-bold mb-2 ${popular ? 'text-white' : 'text-gray-900'}`}>
-          {name}
-        </h3>
-
-        {/* Description */}
-        <p className={`text-sm mb-6 ${popular ? 'text-blue-100' : 'text-gray-600'}`}>
+      {/* Header */}
+      <div className="mb-8">
+        <h3 className="text-xl font-bold text-foreground mb-2">{name}</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed h-10">
           {description}
         </p>
-
-        {/* Price */}
-        <div className="mb-8">
-          <div className="flex items-baseline">
-            <span className={`text-5xl font-bold ${popular ? 'text-white' : 'text-gray-900'}`}>
-              {price}
-            </span>
-            <span className={`text-lg ml-2 ${popular ? 'text-blue-100' : 'text-gray-600'}`}>
-              /month
-            </span>
-          </div>
-        </div>
-
-        {/* CTA Button */}
-        <Link href={`/signup?plan=${name.toLowerCase()}`}>
-          <button
-            className={`w-full py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2 mb-8 ${
-              popular
-                ? 'bg-white text-blue-600 hover:bg-gray-50 shadow-lg hover:shadow-xl'
-                : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 shadow-md hover:shadow-lg'
-            }`}
-          >
-            <span>{popular || name !== 'Free' ? 'Get Started Now' : 'Start Free Trial'}</span>
-            <ArrowRight size={18} />
-          </button>
-        </Link>
-
-        {/* Features List */}
-        <div className="space-y-4">
-          {features.map((feature, idx) => (
-            <div key={idx} className="flex items-start space-x-3">
-              <div
-                className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
-                  popular ? 'bg-white/20 backdrop-blur-sm' : 'bg-blue-100'
-                }`}
-              >
-                <Check
-                  className={popular ? 'text-white' : 'text-blue-600'}
-                  size={14}
-                  strokeWidth={3}
-                />
-              </div>
-              <span
-                className={`text-sm leading-relaxed ${popular ? 'text-blue-50' : 'text-gray-700'}`}
-              >
-                {feature}
-              </span>
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* Decorative gradient blob */}
-      {!popular && (
-        <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full opacity-0 group-hover:opacity-10 blur-2xl transition-opacity duration-300" />
-      )}
+      {/* Price */}
+      <div className="mb-8">
+        <div className="flex items-baseline gap-1">
+          <span className="text-4xl md:text-5xl font-bold text-foreground tracking-tight">
+            {price}
+          </span>
+          <span className="text-muted-foreground font-medium">
+            /{isAnnual ? 'year' : 'mo'}
+          </span>
+        </div>
+        {isAnnual && price !== 'Free' && (
+          <p className="text-xs text-green-600 font-medium mt-2 bg-green-50 inline-block px-2 py-1 rounded-md">
+            Save 20%
+          </p>
+        )}
+      </div>
+
+      {/* Button */}
+      <div className="mb-10">
+        <Link href={`/signup?plan=${name.toLowerCase()}`} className="w-full">
+          <button
+            className={`w-full py-4 rounded-full font-bold text-sm transition-all duration-300 shadow-sm ${popular
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/25 hover:shadow-primary/40'
+              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-transparent'
+              }`}
+          >
+            Get Started
+          </button>
+        </Link>
+      </div>
+
+      {/* Features Divider */}
+      <div className="border-t border-border/50 mb-8" />
+
+      {/* Features List */}
+      <div className="space-y-4 flex-grow">
+        {features.map((feature, idx) => (
+          <div key={idx} className="flex items-start gap-3 group">
+            <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${popular ? 'bg-primary/10' : 'bg-secondary'}`}>
+              <Check
+                className={`w-3 h-3 ${popular ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`}
+                strokeWidth={3}
+              />
+            </div>
+            <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+              {feature}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
 export default function PricingSection() {
+  const [isAnnual, setIsAnnual] = useState(false)
+
   const plans = [
     {
-      name: 'Free',
-      price: '₹0',
-      description: 'Perfect for getting started',
+      name: 'Starter',
+      price: isAnnual ? '₹0' : '₹0',
+      description: 'Perfect for testing the waters and organizing your first sales.',
       features: [
         '10 orders per month',
-        '10 products',
         'Unlimited customers',
-        'Smart Paste',
-        'Manual WhatsApp actions',
-        'Basic analytics',
-        'Branded invoice (Powered by us)',
+        'Smart WhatsApp Paste',
+        'Basic Invoice Generation',
         'Email support',
       ],
     },
     {
-      name: 'Professional',
-      price: '₹999',
-      description: 'For growing businesses',
+      name: 'Pro',
+      price: isAnnual ? '₹9,999' : '₹999',
+      description: 'For growing resellers who need automated workflows.',
       popular: true,
       features: [
+        'Everything in Starter',
         '100 orders per month',
-        '100 products',
-        'Advanced analytics',
-        'Semi-auto WhatsApp actions',
-        'PDF invoice with your logo',
-        'Priority support',
-        'Remove branding (from invoice)',
+        'Advanced Profit Analytics',
+        'Remove Branding from Invoice',
+        'Priority Chat Support',
+        'Product Margin Calculator'
       ],
     },
     {
       name: 'Business',
-      price: '₹1,999',
-      description: 'For power users',
+      price: isAnnual ? '₹19,999' : '₹1,999',
+      description: 'Ultimate power for high-volume whatsapp sellers.',
       features: [
+        'Everything in Pro',
         'Unlimited orders',
         'Unlimited products',
-        'Full analytics + Export',
         'AI WhatsApp Assistant',
-        'Smart dealer auto-notifications',
-        'Custom integrations',
-        '10 team members',
-        'Premium support',
+        'Multiple Team Members',
+        'Custom Domain for Catalog',
+        'Dedicated Account Manager'
       ],
     },
   ]
 
   return (
-    <section id="pricing" className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-gray-50 to-white -z-10" />
-      <div className="absolute top-1/3 left-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
-      <div className="absolute bottom-1/3 right-0 w-96 h-96 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+    <section id="pricing" className="py-24 bg-background relative overflow-hidden">
 
-      <div className="max-w-7xl mx-auto">
-        {/* Section Header */}
-        <div className="text-center mb-16 space-y-6">
-          <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-100 to-cyan-100 px-4 py-2 rounded-full text-sm font-medium text-blue-700 mb-4">
-            <Sparkles size={16} />
-            <span>Flexible Pricing</span>
-          </div>
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-secondary/40 rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 left-10 w-[300px] h-[300px] bg-primary/5 rounded-full blur-[80px]" />
+      </div>
 
-          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900">
-            Simple,{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">
-              transparent pricing
-            </span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Header */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight mb-6">
+            Simple & <span className="text-primary">Transparent</span> Pricing
           </h2>
-
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Start free, upgrade when you're ready. No hidden fees, no surprises.
+          <p className="text-lg text-muted-foreground">
+            Choose a plan that fits your business needs. No hidden fees, cancel anytime.
           </p>
+
+          {/* Toggle Switch */}
+          {/* <div className="mt-10 flex items-center justify-center gap-4">
+            <span className={`text-sm font-semibold transition-colors ${!isAnnual ? 'text-foreground' : 'text-muted-foreground'}`}>Monthly</span>
+            <button
+              onClick={() => setIsAnnual(!isAnnual)}
+              className="relative w-14 h-8 bg-secondary rounded-full p-1 transition-colors hover:bg-secondary/80 focus:outline-none ring-offset-2 focus:ring-2 ring-primary/20"
+            >
+              <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${isAnnual ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>
+            <span className={`text-sm font-semibold transition-colors ${isAnnual ? 'text-foreground' : 'text-muted-foreground'}`}>
+              Yearly <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-1">-20%</span>
+            </span>
+          </div> */}
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto items-start">
           {plans.map((plan, index) => (
             <PricingCard
               key={plan.name}
-              name={plan.name}
-              price={plan.price}
-              description={plan.description}
-              features={plan.features}
-              popular={plan.popular}
+              {...plan}
               index={index}
+              isAnnual={isAnnual}
             />
           ))}
         </div>
 
-        {/* Bottom Trust Section */}
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-8 border border-blue-100">
-            <div className="text-center space-y-4">
-              <h3 className="text-2xl font-bold text-gray-900">Still not sure? Try it free!</h3>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Start with our free plan and upgrade anytime. No credit card required. Cancel
-                anytime with no questions asked.
-              </p>
-              <div className="flex flex-wrap justify-center gap-6 pt-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-700">
-                  <Check className="text-green-600" size={18} strokeWidth={3} />
-                  <span>No credit card needed</span>
+        {/* FAQ / Trust Mini Section */}
+        <div className="mt-24 grid md:grid-cols-2 gap-8 items-center bg-secondary/20 rounded-[2rem] p-8 border border-border/50">
+          <div>
+            <h3 className="text-2xl font-bold mb-2">Frequently Asked Questions</h3>
+            <p className="text-muted-foreground">Can't find the answer you're looking for? Chat with our support team.</p>
+          </div>
+          <div className="grid gap-4">
+            <div className="bg-background p-4 rounded-xl border border-border/50 shadow-sm">
+              <div className="flex gap-3">
+                <HelpCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground">Can I upgrade later?</h4>
+                  <p className="text-sm text-muted-foreground mt-1">Yes, you can upgrade or downgrade your plan at any time from your dashboard.</p>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-700">
-                  <Check className="text-green-600" size={18} strokeWidth={3} />
-                  <span>14-day money-back guarantee</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-700">
-                  <Check className="text-green-600" size={18} strokeWidth={3} />
-                  <span>Cancel anytime</span>
+              </div>
+            </div>
+            <div className="bg-background p-4 rounded-xl border border-border/50 shadow-sm">
+              <div className="flex gap-3">
+                <HelpCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground">Is my data secure?</h4>
+                  <p className="text-sm text-muted-foreground mt-1">Absolutely. We use enterprise-grade encryption to keep your customer data safe.</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
       </div>
-
-      <style jsx>{`
-        @keyframes blob {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-        }
-
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-      `}</style>
     </section>
   )
 }
