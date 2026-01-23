@@ -6,12 +6,13 @@ import {
   MessageSquare,
   FileText,
   ArrowRight,
-  Sparkles,
-  CheckCircle,
+  CheckCircle2,
+  PlayCircle
 } from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
 import Link from 'next/link'
 import type { ComponentType } from 'react'
+
 interface StepCardProps {
   number: number
   icon: ComponentType<LucideProps>
@@ -19,7 +20,6 @@ interface StepCardProps {
   description: string
   details: string[]
   index: number
-  isLast: boolean
 }
 
 function StepCard({
@@ -29,240 +29,181 @@ function StepCard({
   description,
   details,
   index,
-  isLast,
 }: StepCardProps) {
   return (
-    <div className="relative">
-      <div
-        className="group relative bg-white rounded-2xl p-8 border-2 border-gray-100 hover:border-blue-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-        style={{ animationDelay: `${index * 200}ms` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-transparent to-cyan-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-        <div className="relative z-10">
-          {/* Step Number Badge */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 text-white font-bold text-xl shadow-lg">
-              {number}
-            </div>
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white group-hover:scale-110 transition-transform duration-300">
-              <Icon size={28} />
-            </div>
-          </div>
-
-          {/* Content */}
-          <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-            {title}
-          </h3>
-
-          <p className="text-gray-600 leading-relaxed mb-4 text-lg">{description}</p>
-
-          {/* Details List */}
-          <div className="space-y-2">
-            {details.map((detail, idx) => (
-              <div key={idx} className="flex items-start space-x-2 text-sm text-gray-700">
-                <CheckCircle className="text-green-500 flex-shrink-0 mt-0.5" size={16} />
-                <span>{detail}</span>
-              </div>
-            ))}
-          </div>
+    <div
+      className="group relative bg-card text-card-foreground rounded-[2rem] p-8 border border-border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+    >
+      {/* Step Badge & Icon Header */}
+      <div className="flex justify-between items-start mb-6">
+        <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+          <Icon size={28} />
         </div>
-
-        <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full opacity-0 group-hover:opacity-10 blur-2xl transition-opacity duration-300" />
+        <div className="bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase">
+          Step 0{number}
+        </div>
       </div>
 
-      {/* Connecting Arrow */}
-      {!isLast && (
-        <div className="hidden lg:block absolute top-1/2 -right-12 transform -translate-y-1/2 z-20">
-          <ArrowRight className="text-blue-300" size={48} strokeWidth={2} />
-        </div>
-      )}
+      {/* Content */}
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-foreground mb-3">
+          {title}
+        </h3>
+        <p className="text-muted-foreground leading-relaxed text-sm">
+          {description}
+        </p>
+      </div>
+
+      {/* Details List (Pushed to bottom) */}
+      <div className="mt-auto space-y-3 pt-6 border-t border-border/50">
+        {details.map((detail, idx) => (
+          <div key={idx} className="flex items-start gap-3">
+            <CheckCircle2 className="text-primary flex-shrink-0 mt-0.5" size={16} />
+            <span className="text-sm text-muted-foreground font-medium">{detail}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
 export default function HowItWorksSection() {
-
   const steps = [
     {
       number: 1,
       icon: MessageSquare,
       title: 'Add WhatsApp Enquiries',
-      description:
-        'When you receive a customer message on WhatsApp, quickly add it as an enquiry in ResellerPro.',
+      description: 'When you receive a customer message, quickly add it as an enquiry. Never lose a lead again.',
       details: [
-        'Save customer name & phone number',
-        'Track every enquiry in one place',
-        'Never forget to follow up',
+        'Save Name & Phone',
+        'Track pending leads',
+        'Set reminders'
       ],
     },
     {
       number: 2,
-      icon: CheckCircle,
+      icon: CheckCircle2,
       title: 'Track Enquiry Status',
-      description:
-        'Manage enquiry progress clearly and stay on top of pending leads.',
+      description: 'Visualize your sales pipeline. Move customers from "Enquiry" to "Converted" with a click.',
       details: [
-        'Mark as Contacted, Converted, or Dropped',
-        'Get reminders for unattended enquiries',
-        'Stay organized as enquiries grow',
+        'Status labels',
+        'Filter by progress',
+        'Follow-up alerts'
       ],
     },
     {
       number: 3,
       icon: Copy,
-      title: 'Convert Enquiry to Order',
-      description:
-        'Once a customer confirms, instantly convert the enquiry into an order.',
+      title: 'Convert to Order',
+      description: 'Customer said yes? Instantly convert the chat into a formal order without re-typing details.',
       details: [
-        'Smart paste customer details or enter manually',
-        'Select products and quantities easily',
-        'Create orders in seconds',
+        'Smart Paste details',
+        'Select products',
+        'Auto-calculate total'
       ],
     },
     {
       number: 4,
       icon: Package,
-      title: 'Update Orders & Message Customers',
-      description:
-        'Manage order status and send updates to customers via WhatsApp.',
+      title: 'Manage & Ship',
+      description: 'Keep track of what needs to be packed, shipped, or delivered. Update customers in real-time.',
       details: [
-        'Update status: Processing, Shipped, Delivered',
-        'Use ready-made WhatsApp message templates',
-        'One-click WhatsApp messaging',
+        'Shipment tracking',
+        'WhatsApp templates',
+        'One-click updates'
       ],
     },
     {
       number: 5,
       icon: FileText,
-      title: 'View Analytics & Reports',
-      description:
-        'Understand how your business is performing with clear reports.',
+      title: 'View Analytics',
+      description: 'Understand your profit margins. See which products are selling and who your best customers are.',
       details: [
-        'Daily, weekly & monthly reports',
-        'Track revenue and order trends',
-        'Make better business decisions',
+        'Daily profit reports',
+        'Order trends',
+        'Export data'
       ],
     },
   ]
 
-
   return (
-    <section
-      id="workflow"
-      className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gradient-to-b from-white via-gray-50 to-white"
-    >
-      {/* Background Effects */}
-      <div className="absolute top-1/4 left-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
-      <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+    <section id="workflow" className="py-24 bg-background relative overflow-hidden">
 
-      <div className="max-w-7xl mx-auto">
-        {/* Section Header */}
-        <div className="text-center mb-20 space-y-6">
-          <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-100 to-cyan-100 px-4 py-2 rounded-full text-sm font-medium text-blue-700 mb-4">
-            <Sparkles size={16} />
-            <span>Simple & Powerful</span>
-          </div>
+      {/* Background Decor */}
+      <div className="absolute top-1/3 right-0 w-[600px] h-[600px] bg-secondary/30 rounded-full blur-[120px] -z-10 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] -z-10 -translate-x-1/3" />
 
-          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900">
-            How{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">
-              It Works
-            </span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Header */}
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight mb-6">
+            From Chaos to <span className="text-primary">Clarity</span>
           </h2>
-
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            From WhatsApp chaos to organized business in 4 simple steps. No complicated setup, no
-            learning curve.
+          <p className="text-lg text-muted-foreground">
+            A simple 5-step workflow designed specifically for WhatsApp resellers.
+            No learning curve required.
           </p>
         </div>
 
         {/* Steps Grid */}
-        <div className="grid gap-8 lg:grid-cols-2 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-24">
           {steps.map((step, index) => (
             <StepCard
               key={step.number}
-              number={step.number}
-              icon={step.icon}
-              title={step.title}
-              description={step.description}
-              details={step.details}
+              {...step}
               index={index}
-              isLast={index === steps.length - 1}
             />
           ))}
+
+          {/* Last card: "Start Now" filler to make the grid even or act as a CTA within the grid */}
+          <div className="hidden lg:flex flex-col items-center justify-center bg-gradient-to-br from-primary to-blue-600 text-primary-foreground rounded-[2rem] p-8 border border-primary shadow-xl text-center">
+            <h3 className="text-2xl font-bold mb-4">Ready to start?</h3>
+            <p className="text-primary-foreground/80 mb-8">Join 10,000+ resellers today.</p>
+            <Link href="/signup">
+              <button className="bg-white text-primary px-8 py-3 rounded-full font-bold hover:bg-gray-50 transition-colors shadow-lg">
+                Get Started Free
+              </button>
+            </Link>
+          </div>
         </div>
 
-        {/* Bottom CTA Section */}
-        <div className="max-w-4xl mx-auto">
-          <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl p-12 shadow-2xl">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full opacity-10 blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full opacity-10 blur-3xl" />
+        {/* Bottom Wide CTA */}
+        <div className="relative rounded-[2.5rem] overflow-hidden bg-foreground text-background p-10 md:p-16 text-center">
+          {/* Abstract Shapes */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
+            <div className="absolute top-[-50%] left-[-20%] w-[80%] h-[150%] bg-primary rounded-full blur-[100px]" />
+          </div>
 
-            <div className="relative z-10 text-center space-y-6">
-              <h3 className="text-3xl sm:text-4xl font-bold text-white">
-                Ready to transform your WhatsApp business?
-              </h3>
-              <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-                Join growing resellers who are saving hours every week with smart automation
-              </p>
+          <div className="relative z-10 max-w-2xl mx-auto space-y-8">
+            <h3 className="text-3xl md:text-4xl font-bold leading-tight">
+              Stop managing your business on a notepad.
+            </h3>
+            <p className="text-muted-foreground/80 text-lg">
+              Experience the power of a dedicated CRM built for your reselling business.
+              Setup takes less than 2 minutes.
+            </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-                <Link href="/signup">
-                  <button className="group px-8 py-4 bg-white text-blue-600 rounded-xl hover:bg-gray-50 transition-all font-semibold shadow-lg hover:shadow-xl flex items-center space-x-2">
-                    <span>Start Free Trial</span>
-                    <ArrowRight
-                      size={20}
-                      className="group-hover:translate-x-1 transition-transform"
-                    />
-                  </button>
-                </Link>
-                <button className="px-8 py-4 bg-transparent text-white rounded-xl hover:bg-white/10 transition-all font-semibold border-2 border-white/30 backdrop-blur-sm">
-                  Watch Demo Video
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/signup" className="w-full sm:w-auto">
+                <button className="w-full sm:w-auto px-8 py-4 bg-primary text-primary-foreground rounded-full font-bold text-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 flex items-center justify-center gap-2">
+                  Start Free Trial <ArrowRight size={20} />
                 </button>
-              </div>
+              </Link>
 
-              <div className="flex flex-wrap justify-center gap-8 pt-6 text-white/90">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle size={20} />
-                  <span>No credit card required</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle size={20} />
-                  <span>Setup in 5 minutes</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle size={20} />
-                  <span>Free forever plan</span>
-                </div>
-              </div>
+              <button className="w-full sm:w-auto px-8 py-4 bg-transparent text-background border border-background/20 rounded-full font-bold text-lg hover:bg-background/10 transition-all flex items-center justify-center gap-2">
+                <PlayCircle size={20} /> Watch Demo
+              </button>
+            </div>
+
+            <div className="flex items-center justify-center gap-6 pt-4 text-sm text-muted-foreground/60">
+              <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-500" /> Free Forever Plan</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-500" /> No Credit Card</span>
             </div>
           </div>
         </div>
+
       </div>
-
-      <style jsx>{`
-        @keyframes blob {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-        }
-
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-      `}</style>
     </section>
   )
 }

@@ -18,11 +18,11 @@ export default function NewProductPage() {
   const router = useRouter()
   const { toast } = useToast()
   const supabase = createClient()
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
-  
+
   // Form state
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -33,9 +33,27 @@ export default function NewProductPage() {
   const [stockQuantity, setStockQuantity] = useState('10')
   const [stockStatus, setStockStatus] = useState('in_stock')
 
+  const handleCostPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // Allow only numbers and one decimal point, prevent negative numbers and other symbols
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setCostPrice(value)
+      // Auto-fill selling price with the same value
+      setSellingPrice(value)
+    }
+  }
+
+  const handleSellingPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // Allow only numbers and one decimal point
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setSellingPrice(value)
+    }
+  }
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    
+
     if (images.length + files.length > 5) {
       toast({
         title: 'Too many images',
@@ -104,7 +122,7 @@ export default function NewProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validation
     if (!name) {
       toast({
@@ -119,6 +137,15 @@ export default function NewProductPage() {
       toast({
         title: 'Error',
         description: 'Cost price and selling price are required',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (parseFloat(sellingPrice) < parseFloat(costPrice)) {
+      toast({
+        title: 'Error',
+        description: 'Selling price cannot be less than cost price',
         variant: 'destructive',
       })
       return
@@ -163,7 +190,7 @@ export default function NewProductPage() {
 
       if (error) {
         console.error('Database error:', error)
-        
+
         // Cleanup uploaded images
         for (const url of imageUrls) {
           const path = url.split('/product-images/')[1]
@@ -171,7 +198,7 @@ export default function NewProductPage() {
             await supabase.storage.from('product-images').remove([path])
           }
         }
-        
+
         toast({
           title: 'Error',
           description: 'Failed to create product: ' + error.message,
@@ -219,16 +246,16 @@ export default function NewProductPage() {
             <CardTitle>Product Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            
+
             {/* Product Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Product Name *</Label>
-              <Input 
-                id="name" 
+              <Input
+                id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Wireless Earbuds" 
-                required 
+                placeholder="e.g., Wireless Earbuds"
+                required
                 disabled={isLoading}
               />
             </div>
@@ -285,27 +312,27 @@ export default function NewProductPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cost_price">Cost Price (₹) *</Label>
-                <Input 
-                  id="cost_price" 
-                  type="number" 
-                  step="0.01"
+                <Input
+                  id="cost_price"
+                  type="text"
+                  inputMode="decimal"
                   value={costPrice}
-                  onChange={(e) => setCostPrice(e.target.value)}
-                  placeholder="What you pay" 
-                  required 
+                  onChange={handleCostPriceChange}
+                  placeholder="What you pay"
+                  required
                   disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="selling_price">Selling Price (₹) *</Label>
-                <Input 
-                  id="selling_price" 
-                  type="number" 
-                  step="0.01"
+                <Input
+                  id="selling_price"
+                  type="text"
+                  inputMode="decimal"
                   value={sellingPrice}
-                  onChange={(e) => setSellingPrice(e.target.value)}
-                  placeholder="What customer pays" 
-                  required 
+                  onChange={handleSellingPriceChange}
+                  placeholder="What customer pays"
+                  required
                   disabled={isLoading}
                 />
               </div>
@@ -340,8 +367,8 @@ export default function NewProductPage() {
 
               <div className="space-y-2">
                 <Label>Stock Status</Label>
-                <Select 
-                  value={stockStatus} 
+                <Select
+                  value={stockStatus}
                   onValueChange={setStockStatus}
                   disabled={isLoading}
                 >
@@ -360,11 +387,11 @@ export default function NewProductPage() {
             {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea 
-                id="description" 
+              <Textarea
+                id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe your product..." 
+                placeholder="Describe your product..."
                 rows={4}
                 disabled={isLoading}
               />
@@ -384,9 +411,9 @@ export default function NewProductPage() {
 
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => router.back()}
                 disabled={isLoading}
               >
