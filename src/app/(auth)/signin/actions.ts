@@ -102,9 +102,26 @@ export async function login(
     }
 
     // ----------------------------------------------
-    // 6️⃣ SUCCESS — CLEAN UP IF YOU WANT (optional)
+    // 6️⃣ SUCCESS — CHECK IF FIRST LOGIN
     // ----------------------------------------------
+    const { data: { user } } = await supabase.auth.getUser()
+
+    let redirectUrl = '/dashboard'
+
+    if (user?.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('welcome_shown, referral_bonus_amount')
+        .eq('id', user.id)
+        .single()
+
+      if (profile && profile.welcome_shown === false) {
+        redirectUrl = `/dashboard?welcome=true&bonus=${profile.referral_bonus_amount || 0}`
+      }
+    }
+
     revalidatePath('/')
+    redirect(redirectUrl)
   } catch (error: any) {
     console.error('Unexpected login error:', error)
     return {
@@ -114,6 +131,4 @@ export async function login(
         : 'An unexpected error occurred. Please try again.',
     }
   }
-
-  redirect('/dashboard')
 }

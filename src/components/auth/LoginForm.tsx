@@ -3,6 +3,7 @@
 import { useFormStatus, useFormState } from 'react-dom'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { login, type LoginFormState } from '@/app/(auth)/signin/actions'
 import { sendLoginOtp, verifyLoginOtp } from '@/app/(auth)/signin/otp-actions'
 import { Eye, EyeOff, Loader2, Mail, Lock, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react'
@@ -26,10 +27,10 @@ function SubmitButton() {
   const isOnline = useOnlineStatus()
 
   return (
-    <Button 
-      type="submit" 
-      className="w-full" 
-      size="lg" 
+    <Button
+      type="submit"
+      className="w-full"
+      size="lg"
       disabled={pending || !isOnline}
     >
       {pending ? (
@@ -48,6 +49,7 @@ function SubmitButton() {
 
 export default function LoginForm() {
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   const [showPassword, setShowPassword] = useState(false)
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password')
 
@@ -67,18 +69,28 @@ export default function LoginForm() {
   const [formState, formAction] = useFormState(login, initialState)
   const state = formState || initialState
 
+  // Check for email verification success
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true') {
+      toast({
+        title: 'Email verified 🎉',
+        description: 'Your account is verified. Please sign in.',
+      })
+    }
+  }, [searchParams, toast])
+
   useEffect(() => {
     if (!state.success && state.message) {
       const isNetwork = state.message.includes('Network') || state.message.includes('fetch')
-      
+
       toast({
         title: 'Sign in failed',
         description: state.message,
         variant: 'destructive',
         action: isNetwork ? (
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => window.location.reload()}
             className="border-white text-white hover:bg-white/20"
           >

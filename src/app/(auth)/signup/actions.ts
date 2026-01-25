@@ -101,6 +101,7 @@ export async function signup(
       email,
       password,
       options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/signin`,
         data: {
           full_name: fullName,
           business_name: businessName ?? '',
@@ -111,6 +112,7 @@ export async function signup(
         },
       },
     })
+
 
   if (signUpError) {
     console.error('❌ AUTH SIGNUP ERROR:', signUpError.message)
