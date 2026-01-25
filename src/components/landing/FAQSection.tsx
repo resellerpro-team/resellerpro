@@ -7,44 +7,40 @@ interface FAQItemProps {
   question: string;
   answer: string;
   index: number;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
-function FAQItem({ question, answer, index }: FAQItemProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
+function FAQItem({ question, answer, index, isOpen, onToggle }: FAQItemProps) {
   return (
-    <div 
+    <div
       className="group border-2 border-gray-100 rounded-2xl overflow-hidden hover:border-blue-200 transition-all duration-300 hover:shadow-lg"
       style={{ animationDelay: `${index * 100}ms` }}
     >
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={onToggle}
         className="w-full flex items-center justify-between p-6 text-left bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 transition-all duration-300"
       >
         <div className="flex items-start space-x-4 flex-1">
-          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            isOpen 
-              ? 'bg-gradient-to-br from-blue-500 to-cyan-500' 
+          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${isOpen
+              ? 'bg-gradient-to-br from-blue-500 to-cyan-500'
               : 'bg-gray-100 group-hover:bg-blue-100'
-          }`}>
-            <HelpCircle 
-              className={`transition-colors duration-300 ${
-                isOpen ? 'text-white' : 'text-gray-600 group-hover:text-blue-600'
-              }`} 
-              size={20} 
+            }`}>
+            <HelpCircle
+              className={`transition-colors duration-300 ${isOpen ? 'text-white' : 'text-gray-600 group-hover:text-blue-600'
+                }`}
+              size={20}
             />
           </div>
-          <h3 className={`text-lg font-semibold transition-colors duration-300 pr-4 ${
-            isOpen ? 'text-blue-600' : 'text-gray-900 group-hover:text-blue-600'
-          }`}>
+          <h3 className={`text-lg font-semibold transition-colors duration-300 pr-4 ${isOpen ? 'text-blue-600' : 'text-gray-900 group-hover:text-blue-600'
+            }`}>
             {question}
           </h3>
         </div>
-        <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
-          isOpen 
-            ? 'bg-blue-600 rotate-180' 
+        <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${isOpen
+            ? 'bg-blue-600 rotate-180'
             : 'bg-gray-100 group-hover:bg-blue-100'
-        }`}>
+          }`}>
           {isOpen ? (
             <Minus className="text-white" size={18} strokeWidth={3} />
           ) : (
@@ -52,11 +48,10 @@ function FAQItem({ question, answer, index }: FAQItemProps) {
           )}
         </div>
       </button>
-      
+
       <div
-        className={`overflow-hidden transition-all duration-300 ${
-          isOpen ? 'max-h-96' : 'max-h-0'
-        }`}
+        className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96' : 'max-h-0'
+          }`}
       >
         <div className="p-6 pt-0 pl-20 bg-gradient-to-r from-blue-50/50 to-cyan-50/50">
           <p className="text-gray-700 leading-relaxed">
@@ -69,6 +64,8 @@ function FAQItem({ question, answer, index }: FAQItemProps) {
 }
 
 export default function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
   const faqs = [
     {
       question: "How does the Smart Paste feature work?",
@@ -112,6 +109,10 @@ export default function FAQSection() {
     }
   ];
 
+  const handleToggle = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
   return (
     <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* Background Effects */}
@@ -126,16 +127,16 @@ export default function FAQSection() {
             <Sparkles size={16} />
             <span>Got Questions?</span>
           </div>
-          
+
           <h2 className="text-4xl sm:text-5xl font-bold text-gray-900">
             Frequently Asked{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">
               Questions
             </span>
           </h2>
-          
+
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Everything you need to know about Reseller Pro. Can't find what you're looking for? 
+            Everything you need to know about Reseller Pro. Can't find what you're looking for?
             <a href="mailto:resellerpro@gmail.com" className="text-blue-600 hover:text-blue-700 font-medium ml-1">
               Contact us
             </a>
@@ -150,6 +151,8 @@ export default function FAQSection() {
               question={faq.question}
               answer={faq.answer}
               index={index}
+              isOpen={openIndex === index}
+              onToggle={() => handleToggle(index)}
             />
           ))}
         </div>
@@ -163,13 +166,13 @@ export default function FAQSection() {
             We're here to help! Reach out to our team and we'll get back to you within 24 hours.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a 
+            <a
               href="mailto:resellerpro@gmail.com"
               className="px-8 py-4 bg-white text-blue-600 rounded-xl hover:bg-gray-50 transition-all font-semibold shadow-lg hover:shadow-xl"
             >
               Email Us
             </a>
-            <a 
+            <a
               href="tel:+917025302327"
               className="px-8 py-4 bg-transparent text-white rounded-xl hover:bg-white/10 transition-all font-semibold border-2 border-white/30 backdrop-blur-sm"
             >
