@@ -10,19 +10,21 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeft, Save, Upload, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Upload, X, Loader2, WifiOff } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useOfflineQueue } from '@/lib/hooks/useOfflineQueue'
 
 export default function NewProductPage() {
   const router = useRouter()
   const { toast } = useToast()
   const supabase = createClient()
-  
+  const { queueAction, isOnline } = useOfflineQueue()
+
   const [isLoading, setIsLoading] = useState(false)
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
-  
+
   // Form state
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -33,9 +35,27 @@ export default function NewProductPage() {
   const [stockQuantity, setStockQuantity] = useState('10')
   const [stockStatus, setStockStatus] = useState('in_stock')
 
+  const handleCostPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // Allow only numbers and one decimal point, prevent negative numbers and other symbols
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setCostPrice(value)
+      // Auto-fill selling price with the same value
+      setSellingPrice(value)
+    }
+  }
+
+  const handleSellingPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // Allow only numbers and one decimal point
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setSellingPrice(value)
+    }
+  }
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    
+
     if (images.length + files.length > 5) {
       toast({
         title: 'Too many images',
@@ -104,7 +124,7 @@ export default function NewProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validation
     if (!name) {
       toast({
@@ -124,10 +144,54 @@ export default function NewProductPage() {
       return
     }
 
+    if (parseFloat(sellingPrice) < parseFloat(costPrice)) {
+      toast({
+        title: 'Error',
+        description: 'Selling price cannot be less than cost price',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      // Get current user
+      // If offline, queue the action
+      if (!isOnline) {
+        const payload = {
+          name,
+          description: description || null,
+          category: category || null,
+          sku: sku || null,
+          cost_price: parseFloat(costPrice),
+          selling_price: parseFloat(sellingPrice),
+          stock_quantity: parseInt(stockQuantity),
+          stock_status: stockStatus,
+        }
+
+        queueAction('CREATE_PRODUCT', payload)
+
+        if (images.length > 0) {
+          toast({
+            title: 'Product queued (Text only) 📌',
+            description: 'Images cannot be saved while offline. Please edit the product later to add images.',
+            duration: 5000,
+          })
+        } else {
+          toast({
+            title: 'Product queued for sync 📌',
+            description: 'This will sync automatically when you\'re back online.',
+            duration: 3000,
+          })
+        }
+
+        setTimeout(() => {
+          router.push('/products')
+        }, 500)
+        return
+      }
+
+      // Get current user (Online path)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         toast({
@@ -163,7 +227,7 @@ export default function NewProductPage() {
 
       if (error) {
         console.error('Database error:', error)
-        
+
         // Cleanup uploaded images
         for (const url of imageUrls) {
           const path = url.split('/product-images/')[1]
@@ -171,7 +235,7 @@ export default function NewProductPage() {
             await supabase.storage.from('product-images').remove([path])
           }
         }
-        
+
         toast({
           title: 'Error',
           description: 'Failed to create product: ' + error.message,
@@ -213,22 +277,35 @@ export default function NewProductPage() {
         </div>
       </div>
 
+      {/* Offline Warning */}
+      {!isOnline && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3">
+          <WifiOff className="h-5 w-5 text-amber-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-900">You're offline</p>
+            <p className="text-xs text-amber-700">Product will be queued and synced when you're back online.
+              <span className="font-semibold"> Note: Images cannot be saved while offline.</span>
+            </p>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Product Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            
+
             {/* Product Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Product Name *</Label>
-              <Input 
-                id="name" 
+              <Input
+                id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Wireless Earbuds" 
-                required 
+                placeholder="e.g., Wireless Earbuds"
+                required
                 disabled={isLoading}
               />
             </div>
@@ -285,27 +362,27 @@ export default function NewProductPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cost_price">Cost Price (₹) *</Label>
-                <Input 
-                  id="cost_price" 
-                  type="number" 
-                  step="0.01"
+                <Input
+                  id="cost_price"
+                  type="text"
+                  inputMode="decimal"
                   value={costPrice}
-                  onChange={(e) => setCostPrice(e.target.value)}
-                  placeholder="What you pay" 
-                  required 
+                  onChange={handleCostPriceChange}
+                  placeholder="What you pay"
+                  required
                   disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="selling_price">Selling Price (₹) *</Label>
-                <Input 
-                  id="selling_price" 
-                  type="number" 
-                  step="0.01"
+                <Input
+                  id="selling_price"
+                  type="text"
+                  inputMode="decimal"
                   value={sellingPrice}
-                  onChange={(e) => setSellingPrice(e.target.value)}
-                  placeholder="What customer pays" 
-                  required 
+                  onChange={handleSellingPriceChange}
+                  placeholder="What customer pays"
+                  required
                   disabled={isLoading}
                 />
               </div>
@@ -340,8 +417,8 @@ export default function NewProductPage() {
 
               <div className="space-y-2">
                 <Label>Stock Status</Label>
-                <Select 
-                  value={stockStatus} 
+                <Select
+                  value={stockStatus}
                   onValueChange={setStockStatus}
                   disabled={isLoading}
                 >
@@ -360,11 +437,11 @@ export default function NewProductPage() {
             {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea 
-                id="description" 
+              <Textarea
+                id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe your product..." 
+                placeholder="Describe your product..."
                 rows={4}
                 disabled={isLoading}
               />
@@ -384,9 +461,9 @@ export default function NewProductPage() {
 
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => router.back()}
                 disabled={isLoading}
               >

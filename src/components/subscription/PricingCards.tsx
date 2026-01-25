@@ -9,6 +9,7 @@ import { Check, Loader2 } from 'lucide-react'
 import { createCheckoutSession } from '@/app/(dashboard)/settings/subscription/actions'
 import { activateWithWallet } from '@/app/(dashboard)/settings/subscription/walletActions'
 import { PaymentMethodDialog } from './PaymentMethodDialog'
+import { ComingSoonDialog } from './ComingSoonDialog'
 import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
 
@@ -35,10 +36,15 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+  const [showComingSoonDialog, setShowComingSoonDialog] = useState(false)
 
   const handleUpgradeClick = (plan: Plan) => {
     setSelectedPlan(plan)
-    setShowPaymentDialog(true)
+    if (plan.name === 'business') {
+      setShowComingSoonDialog(true)
+    } else {
+      setShowPaymentDialog(true)
+    }
   }
 
   const handlePaymentMethodSelected = async (method: 'wallet' | 'razorpay' | 'wallet+razorpay') => {
@@ -157,9 +163,12 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
     }
   }
 
+  // Dynamic grid columns based on number of plans
+  const gridColsClass = plans.length === 4 ? 'xl:grid-cols-4' : 'xl:grid-cols-3'
+
   return (
     <>
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsClass} gap-6 items-stretch`}>
         {plans.map((plan) => {
           const isCurrentPlan = plan.name === currentPlanName
           const isPopular = plan.name === 'professional'
@@ -167,12 +176,17 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
           return (
             <Card
               key={plan.id}
-              className={`relative ${isPopular ? 'border-primary shadow-lg' : ''
+              className={`relative flex flex-col h-full ${isPopular ? 'border-primary shadow-lg' : ''
                 }`}
             >
               {isPopular && (
                 <div className="absolute -top-3 left-0 right-0 flex justify-center">
                   <Badge className="px-3 py-1">Most Popular</Badge>
+                </div>
+              )}
+              {plan.name === 'business' && (
+                <div className="absolute -top-3 left-0 right-0 flex justify-center">
+                  <Badge className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white border-none">Coming Soon</Badge>
                 </div>
               )}
 
@@ -207,7 +221,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                 </CardDescription>
               </CardHeader>
 
-              <CardContent>
+              <CardContent className="flex-1 flex flex-col">
                 {isCurrentPlan ? (
                   <Button className="w-full mb-4 " disabled>
                     Current Plan
@@ -228,7 +242,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                         Processing...
                       </>
                     ) : (
-                      'Upgrade Now'
+                      plan.name === 'business' ? 'Notify Me' : 'Upgrade Now'
                     )}
                   </Button>
                 )}
@@ -248,6 +262,15 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
           )
         })}
       </div>
+
+      {/* Coming Soon Dialog */}
+      {selectedPlan && (
+        <ComingSoonDialog
+          open={showComingSoonDialog}
+          onOpenChange={setShowComingSoonDialog}
+          planName={selectedPlan.display_name}
+        />
+      )}
 
       {/* Payment Method Selection Dialog */}
       {selectedPlan && (
