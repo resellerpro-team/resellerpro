@@ -50,3 +50,44 @@ export async function GET(req: Request) {
     limit
   });
 }
+
+export async function POST(req: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+
+    // Server-side validation
+    if (!body.name) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    }
+
+    if (!body.cost_price || !body.selling_price) {
+      return NextResponse.json({ error: "Pricing is required" }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from("products")
+      .insert({
+        ...body,
+        user_id: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating product:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error("Unexpected error in POST /api/products:", error);
+    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+  }
+}
