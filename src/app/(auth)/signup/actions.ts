@@ -1,10 +1,12 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { headers } from 'next/headers'
 import { createNotification } from '@/lib/services/notificationService'
+import { OtpService } from '@/lib/auth/otp'
 
 // -------------------------------
 // Validation schema
@@ -93,45 +95,62 @@ export async function signup(
   } = validatedFields.data
 
   /* -------------------------------
-     4️⃣ Create Auth user
+     4️⃣ Create Auth user (Admin API)
   -------------------------------- */
+  // We use the Admin API to create the user with `email_confirm: true`
+  // so they can login immediately without clicking a link.
+  // We will enforce "business verification" via the `profiles.email_verified` column.
 
-  const { data: authData, error: signUpError } =
-    await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/signin`,
-        data: {
-          full_name: fullName,
-          business_name: businessName ?? '',
-          phone,
-          referral_code: referralCode
-            ? referralCode.trim().toUpperCase()
-            : null,
-        },
-      },
-    })
+  const adminSupabase = await createAdminClient()
 
+  const { data: adminUser, error: adminError } = await adminSupabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true, // Auto-confirm email at Auth level
+    user_metadata: {
+      full_name: fullName,
+      business_name: businessName ?? '',
+      phone,
+      referral_code: referralCode ? referralCode.trim().toUpperCase() : null,
+    }
+  })
 
-  if (signUpError) {
-    console.error('❌ AUTH SIGNUP ERROR:', signUpError.message)
+  if (adminError) {
+    console.error('❌ ADMIN CREATE USER ERROR:', adminError.message)
     return {
       success: false,
-      message: signUpError.message,
+      message: adminError.message,
     }
   }
 
-  if (!authData.user) {
-    console.error('❌ AUTH USER NOT CREATED')
+  if (!adminUser.user) {
     return {
       success: false,
-      message: 'Signup failed: User not created.',
+      message: 'Signup failed: User could not be created.',
+    }
+  }
+
+  // ---------------------------------------------------------
+  // 5️⃣ Sign In Immediately (Create Session)
+  // ---------------------------------------------------------
+  // Now that the user exists and is confirmed, we can sign them in.
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (signInError) {
+    console.error('❌ AUTO-LOGIN ERROR:', signInError.message)
+    // We don't fail the whole request, but we can't redirect to dashboard logged in.
+    // However, for UX, we should probably return specific message.
+    return {
+      success: true, // Account created successfully
+      message: 'Account created. Please sign in.',
     }
   }
 
   /* -------------------------------
-     5️⃣ Log IP usage AFTER success
+     6️⃣ Log IP usage
   -------------------------------- */
   const { error: ipInsertError } = await supabase
     .from('signup_ip_log')
@@ -143,49 +162,37 @@ export async function signup(
     console.error('❌ IP LOG INSERT ERROR:', ipInsertError)
   }
 
+
+
   /* -------------------------------
-     6️⃣ PROCESS REFERRAL (FIXED - with proper delay and retry)
+     8️⃣ PROCESS REFERRAL
   -------------------------------- */
   let referralResult: any = null
 
   if (referralCode && referralCode.trim()) {
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Increased to 1 second
+    // Wait briefly for triggers to run (profiles creation etc)
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     try {
-      let attempts = 0
-      const maxAttempts = 3
+      const { data: referralData, error: referralError } = await adminSupabase
+        .rpc('process_signup_referral', {
+          p_user_id: adminUser.user.id
+        })
 
-      while (attempts < maxAttempts && !referralResult?.credited) {
-        attempts++
-        const { data: referralData, error: referralError } = await supabase
-          .rpc('process_signup_referral', {
-            p_user_id: authData.user.id
-          })
-
-        if (referralError) {
-          console.error(`⚠️ Referral attempt ${attempts} error:`, referralError.message)
-
-          // Wait before retry
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 500))
-          }
-        } else {
-          referralResult = referralData
-          // If successful or definitely failed (invalid code), break
-          if (referralData?.credited || referralData?.message === 'Invalid referral code') {
-            break
-          }
-        }
+      if (!referralError) {
+        referralResult = referralData
+      } else {
+        console.warn('Referral processing error:', referralError)
       }
 
     } catch (error: any) {
       console.error('⚠️ REFERRAL ERROR (non-critical):', error.message)
     }
 
-    // 7. Create Notification for Signup Reward
+    // Create Notification
     if (referralResult?.credited && referralResult?.amount > 0) {
       await createNotification({
-        userId: authData.user.id,
+        userId: adminUser.user.id,
         type: 'wallet_credited',
         title: 'Wallet credited',
         message: `₹${referralResult.amount} added to your wallet`,

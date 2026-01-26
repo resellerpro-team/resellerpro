@@ -45,6 +45,7 @@ import { Pagination } from "@/components/shared/Pagination";
 import ProductsLoading from "./loading";
 import { ProductsSkeleton } from "@/components/shared/skeletons/ProductsSkeleton";
 import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
+import { RequireVerification } from "@/components/shared/RequireVerification";
 
 // ---------------- TYPES ----------------
 export type Product = {
@@ -76,7 +77,7 @@ export function ProductsClient() {
     async function fetchBusinessName() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -156,10 +157,11 @@ export function ProductsClient() {
 
         <div className="flex gap-2">
           <ExportProducts products={typedProducts} businessName={businessName} />
-
-          <Button asChild>
-            <Link href="/products/new">+ Add Product</Link>
-          </Button>
+          <RequireVerification>
+            <Button asChild>
+              <Link href="/products/new">+ Add Product</Link>
+            </Button>
+          </RequireVerification>
         </div>
       </div>
 
@@ -280,6 +282,7 @@ export function ProductsClient() {
               label: "Add Product",
               href: "/products/new"
             }}
+            requireVerification={true}
           />
         )
       ) : view === "grid" ? (
@@ -299,16 +302,16 @@ export function ProductsClient() {
       )}
       {/* PAGINATION */}
       {products.length > 0 && (
-         <div className="py-4 border-t">
-           <Pagination 
-             currentPage={page} 
-             totalPages={totalPages} 
-             onPageChange={(p) => {
-               setPage(p);
-               window.scrollTo({ top: 0, behavior: 'smooth' });
-             }} 
-           />
-         </div>
+        <div className="py-4 border-t">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={(p) => {
+              setPage(p);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </div>
       )}
     </div>
   );
