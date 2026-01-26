@@ -10,14 +10,16 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeft, Save, Upload, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Upload, X, Loader2, WifiOff } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useOfflineQueue } from '@/lib/hooks/useOfflineQueue'
 
 export default function NewProductPage() {
   const router = useRouter()
   const { toast } = useToast()
   const supabase = createClient()
+  const { queueAction, isOnline } = useOfflineQueue()
 
   const [isLoading, setIsLoading] = useState(false)
   const [images, setImages] = useState<File[]>([])
@@ -154,7 +156,42 @@ export default function NewProductPage() {
     setIsLoading(true)
 
     try {
-      // Get current user
+      // If offline, queue the action
+      if (!isOnline) {
+        const payload = {
+          name,
+          description: description || null,
+          category: category || null,
+          sku: sku || null,
+          cost_price: parseFloat(costPrice),
+          selling_price: parseFloat(sellingPrice),
+          stock_quantity: parseInt(stockQuantity),
+          stock_status: stockStatus,
+        }
+
+        queueAction('CREATE_PRODUCT', payload)
+
+        if (images.length > 0) {
+          toast({
+            title: 'Product queued (Text only) 📌',
+            description: 'Images cannot be saved while offline. Please edit the product later to add images.',
+            duration: 5000,
+          })
+        } else {
+          toast({
+            title: 'Product queued for sync 📌',
+            description: 'This will sync automatically when you\'re back online.',
+            duration: 3000,
+          })
+        }
+
+        setTimeout(() => {
+          router.push('/products')
+        }, 500)
+        return
+      }
+
+      // Get current user (Online path)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         toast({
@@ -239,6 +276,19 @@ export default function NewProductPage() {
           <p className="text-muted-foreground">Fill in the details to add a new product to your catalog.</p>
         </div>
       </div>
+
+      {/* Offline Warning */}
+      {!isOnline && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3">
+          <WifiOff className="h-5 w-5 text-amber-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-900">You're offline</p>
+            <p className="text-xs text-amber-700">Product will be queued and synced when you're back online.
+              <span className="font-semibold"> Note: Images cannot be saved while offline.</span>
+            </p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>

@@ -24,7 +24,7 @@ async function canCreateOrder() {
     return { allowed: false, reason: 'Not authenticated' }
   }
 
-  // Get user's subscription
+  // Get user's subscription WITHOUT filtering by status first (to check expiration)
   const { data: subscription } = await supabase
     .from('user_subscriptions')
     .select(`
@@ -32,21 +32,26 @@ async function canCreateOrder() {
       plan:subscription_plans(*)
     `)
     .eq('user_id', user.id)
-    .eq('status', 'active')
     .single()
 
-  if (!subscription) {
-    return { allowed: false, reason: 'No active subscription found' }
+  // STRICT CHECK: Determine if user has valid premium subscription
+  const isActive = subscription?.status === 'active'
+  const isPaidPlan = subscription?.plan?.name && subscription.plan.name !== 'free'
+  const isNotExpired = subscription?.current_period_end
+    ? new Date(subscription.current_period_end) > new Date()
+    : false
+
+  // All three conditions must be true for premium (unlimited orders)
+  const isPremium = isActive && isPaidPlan && isNotExpired
+
+  if (isPremium) {
+    return { allowed: true }  // Premium users: unlimited orders
   }
 
-  const orderLimit = subscription.plan?.order_limit
+  // Free tier users: check order limit
+  const orderLimit = subscription?.plan?.order_limit || 10  // Default to 10
 
-  // If unlimited (null), allow
-  if (!orderLimit) {
-    return { allowed: true }
-  }
-
-  // Check current month usage
+  // Check current month's order count
   const periodStart = new Date()
   periodStart.setDate(1)
   periodStart.setHours(0, 0, 0, 0)
@@ -62,11 +67,17 @@ async function canCreateOrder() {
   if (currentCount >= orderLimit) {
     return {
       allowed: false,
-      reason: `You've reached your monthly limit of ${orderLimit} orders. Please upgrade your plan to continue.`,
+      reason: `You've reached your monthly limit of ${orderLimit} orders. Upgrade to Professional for unlimited orders!`,
+      currentCount,
+      limit: orderLimit,
     }
   }
 
-  return { allowed: true }
+  return {
+    allowed: true,
+    currentCount,
+    limit: orderLimit,
+  }
 }
 
 // ========================================================
