@@ -16,7 +16,7 @@ import {
   X, Copy, CheckCircle2, Package, Play, Pause, ArrowRight, MessageSquare,
   ClipboardCopy, Users, Phone, MapPin, ShoppingCart, Truck, TrendingUp,
   DollarSign, BarChart3, Award, Sparkles, Send, Clock, Download, FileSpreadsheet, FileText, AlertCircle, Plus,
-  Volume2, VolumeX, SkipBack, SkipForward, RotateCcw, Video, Loader2
+  Volume2, VolumeX, SkipBack, SkipForward, RotateCcw, Video, Loader2, Maximize, Minimize, Gauge
 } from 'lucide-react'
 
 interface DemoModalProps {
@@ -71,10 +71,17 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
   const [isMuted, setIsMuted] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'processing'>('idle')
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showControls, setShowControls] = useState(true)
+  const [playbackSpeed, setPlaybackSpeed] = useState(1)
+  const [hoveredScene, setHoveredScene] = useState<number | null>(null)
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordedChunksRef = useRef<Blob[]>([])
   const contentRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const currentSceneDuration = VIDEO_SCENES[currentScene]?.duration || 4000
 
   // Initialize audio
@@ -112,7 +119,7 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
-        const newProgress = prev + (100 / (currentSceneDuration / 50))
+        const newProgress = prev + (100 / (currentSceneDuration / 50)) * playbackSpeed
         
         if (newProgress >= 100) {
           if (currentScene < totalScenes - 1) {
@@ -184,6 +191,128 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
     }
     
     return `${formatSecs(totalElapsed)} / ${formatSecs(totalDuration)}`
+  }
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!open) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent default for our shortcuts
+      if (['Space', 'ArrowLeft', 'ArrowRight', 'KeyM', 'KeyF', 'Escape'].includes(e.code)) {
+        e.preventDefault()
+      }
+
+      switch (e.code) {
+        case 'Space':
+          setIsPlaying(prev => !prev)
+          break
+        case 'ArrowLeft':
+          goToPreviousScene()
+          break
+        case 'ArrowRight':
+          goToNextScene()
+          break
+        case 'KeyM':
+          toggleMute()
+          break
+        case 'KeyF':
+          toggleFullscreen()
+          break
+        case 'Escape':
+          if (isFullscreen) {
+            toggleFullscreen()
+          } else {
+            onClose()
+          }
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open, isFullscreen])
+
+  // Auto-hide controls
+  const showControlsTemporarily = useCallback(() => {
+    setShowControls(true)
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current)
+    }
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false)
+      }, 3000)
+    }
+  }, [isPlaying])
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setShowControls(true)
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current)
+      }
+    } else {
+      showControlsTemporarily()
+    }
+  }, [isPlaying, showControlsTemporarily])
+
+  // Fullscreen toggle
+  const toggleFullscreen = useCallback(() => {
+    if (!containerRef.current) return
+
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().then(() => {
+        setIsFullscreen(true)
+      }).catch(() => {})
+    } else {
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false)
+      }).catch(() => {})
+    }
+  }, [])
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  // Mobile touch gestures
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return
+
+    const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x
+    const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y
+
+    // Only handle horizontal swipes (ignore vertical)
+    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (deltaX > 0) {
+        goToPreviousScene()
+      } else {
+        goToNextScene()
+      }
+    }
+
+    touchStartRef.current = null
+  }
+
+  // Cycle playback speed
+  const cyclePlaybackSpeed = () => {
+    const speeds = [0.5, 1, 1.5, 2]
+    const currentIndex = speeds.indexOf(playbackSpeed)
+    const nextIndex = (currentIndex + 1) % speeds.length
+    setPlaybackSpeed(speeds[nextIndex])
   }
 
   // Start recording the demo
@@ -285,8 +414,27 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-[98vw] w-full sm:max-w-7xl h-[96vh] sm:h-[92vh] p-0 overflow-hidden bg-black/95 border-none shadow-2xl">
-        <div className="relative h-full flex flex-col">
+      <DialogContent 
+        ref={containerRef}
+        className="max-w-[98vw] w-full sm:max-w-7xl h-[96vh] sm:h-[92vh] p-0 overflow-hidden bg-black/95 border-none shadow-2xl"
+        onMouseMove={showControlsTemporarily}
+        onClick={() => { if (isPlaying) showControlsTemporarily() }}
+      >
+        <div 
+          className="relative h-full flex flex-col"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          
+          {/* Keyboard Shortcuts Hint */}
+          <div className="absolute top-2 left-2 z-40 hidden lg:block">
+            <div className="text-[10px] text-white/40 space-x-3">
+              <span>Space: Play/Pause</span>
+              <span>←→: Navigate</span>
+              <span>M: Mute</span>
+              <span>F: Fullscreen</span>
+            </div>
+          </div>
           
           {/* Close Button - Highly Visible */}
           <button 
@@ -297,15 +445,19 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
           </button>
 
           {/* Video Content */}
-          <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-background via-background to-muted/30">
+          <div 
+            className="flex-1 relative overflow-hidden bg-gradient-to-br from-background via-background to-muted/30 cursor-pointer"
+            onClick={() => setIsPlaying(!isPlaying)}
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentScene}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.02 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
                 className="absolute inset-0 flex items-center justify-center p-2 sm:p-6 md:p-10"
+                onClick={(e) => e.stopPropagation()}
               >
                 {currentScene === 0 && <Scene1WhatsAppOrder />}
                 {currentScene === 1 && <Scene2SendFormat />}
@@ -324,13 +476,34 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                 {currentScene === 14 && <Scene15FinalCTA onClose={onClose} />}
               </motion.div>
             </AnimatePresence>
+
+            {/* Play/Pause Overlay on tap */}
+            <AnimatePresence>
+              {!isPlaying && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                >
+                  <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <Play className="w-10 h-10 text-white ml-1" />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Professional Video Player Controls */}
           <motion.div 
-            initial={{ opacity: 0.3 }}
-            whileHover={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ 
+              opacity: showControls ? 1 : 0, 
+              y: showControls ? 0 : 20 
+            }}
+            transition={{ duration: 0.2 }}
             className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-10 pb-3 px-3 sm:px-6"
+            onMouseEnter={() => setShowControls(true)}
           >
             {/* Progress Bar - Seekable */}
             <div className="mb-2 sm:mb-3 group">
@@ -431,6 +604,18 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
 
               {/* Right: Extra Controls */}
               <div className="flex items-center gap-1 sm:gap-2">
+                {/* Playback Speed */}
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={cyclePlaybackSpeed}
+                  className="h-8 sm:h-10 px-2 text-white hover:bg-white/20"
+                  title="Playback Speed"
+                >
+                  <Gauge className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="text-[10px] sm:text-xs ml-1">{playbackSpeed}x</span>
+                </Button>
+
                 {/* Download/Record Button */}
                 <Button 
                   size="sm" 
@@ -457,6 +642,21 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                       <Video className="w-4 h-4" />
                       <span className="hidden sm:inline text-xs">Record</span>
                     </>
+                  )}
+                </Button>
+
+                {/* Fullscreen */}
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={toggleFullscreen}
+                  className="h-8 w-8 sm:h-10 sm:w-10 p-0 text-white hover:bg-white/20"
+                  title={isFullscreen ? 'Exit Fullscreen (F)' : 'Fullscreen (F)'}
+                >
+                  {isFullscreen ? (
+                    <Minimize className="w-4 h-4 sm:w-5 sm:h-5" />
+                  ) : (
+                    <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />
                   )}
                 </Button>
 
