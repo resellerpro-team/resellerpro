@@ -82,7 +82,7 @@ export default async function InvoicePage({
                 INVOICE
               </h2>
               <p className="text-sm text-muted-foreground">
-                #{order.order_number}
+                Order ID: #{order.order_number}
               </p>
               <p className="text-sm text-muted-foreground">
                 Date: {new Date(order.created_at).toLocaleDateString('en-IN')}
@@ -94,7 +94,7 @@ export default async function InvoicePage({
           {order.customers && (
             <div className="mb-6 sm:mb-8">
               <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2">
-                BILL TO
+                Bill To
               </h3>
               <p className="font-semibold text-sm sm:text-base">
                 {order.customers.name}
@@ -121,8 +121,8 @@ export default async function InvoicePage({
               <thead className="bg-muted">
                 <tr className="border-b">
                   <th className="p-3 text-left font-medium">Item</th>
-                  <th className="p-3 text-center font-medium">Qty</th>
-                  <th className="p-3 text-right font-medium">Unit</th>
+                  <th className="p-3 text-center font-medium">Quantity</th>
+                  <th className="p-3 text-right font-medium">Unit Price</th>
                   <th className="p-3 text-right font-medium">Total</th>
                 </tr>
               </thead>
@@ -155,7 +155,7 @@ export default async function InvoicePage({
                 <span>₹{parseFloat(order.shipping_cost || 0).toFixed(2)}</span>
               </div>
               {order.discount > 0 && (
-                <div className="flex justify-between text-red-500">
+                <div className="flex justify-between text-green-500">
                   <span>Discount</span>
                   <span>-₹{parseFloat(order.discount).toFixed(2)}</span>
                 </div>
@@ -174,7 +174,7 @@ export default async function InvoicePage({
                     : '0.00'}
                 </span>
               </div>
-              <div className="flex justify-between font-bold">
+              <div className="flex justify-between text-red-500 font-bold">
                 <span>Amount Due</span>
                 <span>
                   ₹
@@ -191,7 +191,12 @@ export default async function InvoicePage({
             <p>Thank you for your business!</p>
             <p>
               For any questions, contact us at{' '}
-              <span className="font-medium">{businessEmail}</span>
+              <a
+                href={`mailto:${businessEmail}`}
+                className="font-medium text-primary hover:underline"
+              >
+                {businessEmail}
+              </a>
             </p>
             <div className="mt-4 ">
               <a
