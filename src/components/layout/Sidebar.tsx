@@ -72,7 +72,6 @@ export default function Sidebar({ user }: { user: UserData }) {
   }
 
   const displayName = user?.name || user?.email?.split('@')[0] || 'User'
-  const businessDisplayName = user?.businessName || user?.name || 'ResellerPro'
   const planName = user?.planName || 'Free Plan'
   const initials = getInitials(user?.name)
 
@@ -118,26 +117,12 @@ export default function Sidebar({ user }: { user: UserData }) {
         {/* Header / Logo */}
         <div className="relative flex h-16 items-center gap-2 border-b px-6">
           <Link href="/dashboard" className="flex items-center gap-2">
-            {user?.avatarUrl ? (
-              <div className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg overflow-hidden">
-                <img
-                  src={user.avatarUrl}
-                  alt={businessDisplayName}
-                  className="h-full w-full object-contain p-1"
-                />
-              </div>
-            ) : (
-              <div className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Sparkles className="h-6 w-6" />
-              </div>
-            )}
-            <div className="flex flex-col min-w-0">
-              <span className="text-lg font-bold truncate leading-tight">
-                {businessDisplayName}
-              </span>
-              <span className="text-[10px] text-muted-foreground truncate">
-                {user?.businessName ? 'Manage Business' : 'Manage with ease'}
-              </span>
+            <div className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold">ResellerPro</span>
+              <span className="text-xs text-muted-foreground">Make It Professional</span>
             </div>
           </Link>
 
