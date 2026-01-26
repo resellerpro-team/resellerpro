@@ -1,10 +1,13 @@
 "use client"
 
-
+import { useState } from 'react'
 import { ArrowRight, CheckCircle, TrendingUp, Users, ShoppingBag, Sparkles, Play, Star, Zap, ShieldCheck, Bell, Search, Home, PieChart, MessageSquare, User, Wallet } from 'lucide-react'
 import Link from 'next/link'
+import { AnimatedDemoModal } from '@/components/demo/AnimatedDemoModal'
 
 export default function HeroSection() {
+  const [showDemo, setShowDemo] = useState(false)
+
   return (
     <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-background">
 
@@ -119,7 +122,10 @@ export default function HeroSection() {
                 </button>
               </Link>
 
-              <button className="w-full sm:w-auto px-8 py-4 bg-background text-foreground rounded-2xl font-semibold text-lg border-2 border-border hover:border-primary/50 hover:bg-secondary/50 transition-all duration-300 flex items-center justify-center gap-2 group">
+              <button 
+                onClick={() => setShowDemo(true)}
+                className="w-full sm:w-auto px-8 py-4 bg-background text-foreground rounded-2xl font-semibold text-lg border-2 border-border hover:border-primary/50 hover:bg-secondary/50 transition-all duration-300 flex items-center justify-center gap-2 group"
+              >
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                   <Play className="w-3.5 h-3.5 text-primary fill-primary" />
                 </div>
@@ -483,6 +489,9 @@ export default function HeroSection() {
         </div> */}
 
       </div>
+
+      {/* Animated Demo Modal */}
+      <AnimatedDemoModal open={showDemo} onClose={() => setShowDemo(false)} />
     </section>
   )
 }
