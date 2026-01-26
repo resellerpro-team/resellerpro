@@ -7,11 +7,11 @@ import {
     ArrowRight,
     Clock,
     Plus,
-    Inbox,
+    ShoppingBag,
     CheckCircle2,
-    Sparkles,
-    ShoppingBag
+    Inbox
 } from 'lucide-react'
+import { AnalyticsIcon } from '../logos/AnalyticsIcon'
 import type { Enquiry } from '@/app/(dashboard)/dashboard/action'
 import Link from 'next/link'
 
@@ -107,7 +107,7 @@ export function EnquiriesCard({ enquiries }: EnquiriesCardProps) {
 
                             <div className="pt-4 border-t border-blue-100/50 dark:border-blue-900/50 w-full text-left">
                                 <div className="flex gap-2">
-                                    <Sparkles size={14} className="text-blue-400 shrink-0 mt-0.5" />
+                                    <AnalyticsIcon size={14} className="text-blue-400 shrink-0 mt-0.5" />
                                     <p className="text-[11px] text-blue-600/80 dark:text-blue-400/80 leading-relaxed">
                                         Tip: After replying on WhatsApp, mark as contacted to keep your dashboard accurate.
                                     </p>
@@ -122,7 +122,7 @@ export function EnquiriesCard({ enquiries }: EnquiriesCardProps) {
 
     // Scenario 3: All Converted/Dropped (Success State)
     return (
-        <Card className="relative overflow-hidden border-green-500/10 bg-gradient-to-br from-green-50/50 via-white to-blue-50/50 dark:from-slate-950 dark:via-slate-950 dark:to-green-950/10">
+        <Card className="group relative overflow-hidden border-green-500/10 bg-gradient-to-br from-green-50/50 via-white to-blue-50/50 dark:from-slate-950 dark:via-slate-950 dark:to-green-950/10">
             <div className="absolute top-0 right-0 w-64 h-64 bg-green-400/5 rounded-full blur-3xl shadow-green-500/20" />
 
             <CardContent className="flex flex-col md:flex-row items-center py-10 px-8 gap-8 relative z-10">
@@ -152,8 +152,34 @@ export function EnquiriesCard({ enquiries }: EnquiriesCardProps) {
                 </div>
                 <div className="hidden md:flex flex-1 justify-center">
                     <div className="relative">
-                        <div className="w-32 h-32 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
-                            <Sparkles className="h-16 w-16 text-green-500" />
+                        {/* Dynamic Background Glows */}
+                        <div className="absolute inset-0 bg-green-500/20 rounded-full blur-3xl animate-pulse scale-150" />
+                        <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-2xl animate-pulse delay-700 -translate-x-4 translate-y-4" />
+
+                        {/* Icon Container */}
+                        <div className="relative">
+                            {/* Orbiting Rings */}
+                            <div className="absolute -inset-8 border-2 border-dashed border-green-500/20 rounded-full animate-[spin_20s_linear_infinite]" />
+                            <div className="absolute -inset-4 border-2 border-dotted border-blue-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
+
+                            {/* Main Floating Platform */}
+                            <div className="relative w-40 h-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(34,197,94,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex items-center justify-center border border-green-100 dark:border-green-800/50 transform rotate-6 group-hover:rotate-0 transition-transform duration-700 ease-out">
+                                <div className="transform -rotate-6 group-hover:rotate-0 transition-transform duration-700 ease-out flex items-center justify-center">
+                                    <AnalyticsIcon
+                                        size={96}
+                                        className="text-green-600 dark:text-green-400 drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                                    />
+                                </div>
+
+                                {/* Status Badge Floating Around */}
+                                <div className="absolute -top-3 -right-3 bg-green-500 text-white p-2 rounded-2xl shadow-lg border-4 border-white dark:border-slate-800 animate-bounce delay-500">
+                                    <CheckCircle2 size={24} strokeWidth={3} />
+                                </div>
+
+                                {/* Floating Micro-interactions */}
+                                <div className="absolute bottom-6 -left-2 w-3 h-3 bg-blue-400 rounded-full animate-ping" />
+                                <div className="absolute top-10 -left-6 w-2 h-2 bg-green-400 rounded-full animate-bounce" />
+                            </div>
                         </div>
                     </div>
                 </div>
