@@ -51,6 +51,7 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
   const [isAdding, setIsAdding] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isSelecting, setIsSelecting] = useState(false)
+  const [consumedSuggestionIds, setConsumedSuggestionIds] = useState<string[]>([])
 
   // ⚡ OPTIMISTIC UI STATE
   const [optimisticTodos, dispatchOptimistic] = useOptimistic(
@@ -175,6 +176,9 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
   }
 
   const handleAddSuggestion = async (suggestion: TodoSuggestion) => {
+    // Optimistically hide from suggestions list
+    setConsumedSuggestionIds(prev => [...prev, suggestion.id])
+
     const tempId = crypto.randomUUID()
     dispatchOptimistic({
       type: 'add',
@@ -296,6 +300,8 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
         return AlertCircle
     }
   }
+
+  const displaySuggestions = suggestions.filter(s => !consumedSuggestionIds.includes(s.id))
 
   return (
     <Card className="flex flex-col h-[500px] shadow-lg border-2">
@@ -460,7 +466,7 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
             >
               <span className="flex items-center gap-2 text-xs font-medium">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                Smart Suggestions ({suggestions.length})
+                Smart Suggestions ({displaySuggestions.length})
               </span>
               {showSuggestions ? (
                 <ChevronUp className="h-3.5 w-3.5" />
@@ -472,36 +478,42 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
             {showSuggestions && (
               <ScrollArea className="max-h-[150px]">
                 <div className="space-y-2 animate-fade-in pr-4">
-                  {suggestions.map((suggestion) => {
-                    const SourceIcon = getSourceIcon(suggestion.source_type)
-                    return (
-                      <div
-                        key={suggestion.id}
-                        className="flex items-start gap-2 p-2 rounded-md bg-primary/5 border border-primary/10 group hover:bg-primary/10 transition-colors"
-                      >
-                        <SourceIcon className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${getPriorityColor(suggestion.priority)}`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium leading-tight">
-                            {suggestion.text}
-                          </p>
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] h-4 px-1 mt-1 ${getPriorityColor(suggestion.priority)}`}
-                          >
-                            {suggestion.priority}
-                          </Badge>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleAddSuggestion(suggestion)}
-                          className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  {displaySuggestions.length > 0 ? (
+                    displaySuggestions.map((suggestion) => {
+                      const SourceIcon = getSourceIcon(suggestion.source_type)
+                      return (
+                        <div
+                          key={suggestion.id}
+                          className="flex items-start gap-2 p-2 rounded-md bg-primary/5 border border-primary/10 group hover:bg-primary/10 transition-colors"
                         >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )
-                  })}
+                          <SourceIcon className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${getPriorityColor(suggestion.priority)}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium leading-tight">
+                              {suggestion.text}
+                            </p>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] h-4 px-1 mt-1 ${getPriorityColor(suggestion.priority)}`}
+                            >
+                              {suggestion.priority}
+                            </Badge>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleAddSuggestion(suggestion)}
+                            className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground italic text-xs">
+                      All caught up! ✨
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             )}
