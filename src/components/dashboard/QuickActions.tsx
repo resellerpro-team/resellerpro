@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Plus, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { RequireVerification } from '../shared/RequireVerification'
 
 export function QuickActions() {
     return (
@@ -15,30 +16,38 @@ export function QuickActions() {
             <CardContent className="flex-1 flex flex-col overflow-hidden">
                 <ScrollArea className="flex-1 -mx-6 px-6">
                     <div className="grid gap-2">
-                        <Button className="justify-start" asChild>
-                            <Link href="/enquiries/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                New Enquiry
-                            </Link>
-                        </Button>
-                        <Button variant="outline" className="justify-start" asChild>
-                            <Link href="/orders/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                New Order
-                            </Link>
-                        </Button>
-                        <Button variant="outline" className="justify-start" asChild>
-                            <Link href="/products/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                New Product
-                            </Link>
-                        </Button>
-                        <Button variant="outline" className="justify-start" asChild>
-                            <Link href="/customers/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                New Customer
-                            </Link>
-                        </Button>
+                        <RequireVerification>
+                            <Button className="w-full justify-start" asChild>
+                                <Link href="/enquiries/new">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    New Enquiry
+                                </Link>
+                            </Button>
+                        </RequireVerification>
+                        <RequireVerification>
+                            <Button variant="outline" className="w-full justify-start" asChild>
+                                <Link href="/orders/new">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    New Order
+                                </Link>
+                            </Button>
+                        </RequireVerification>
+                        <RequireVerification>
+                            <Button variant="outline" className="w-full justify-start" asChild>
+                                <Link href="/products/new">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    New Product
+                                </Link>
+                            </Button>
+                        </RequireVerification>
+                        <RequireVerification>
+                            <Button variant="outline" className="w-full justify-start" asChild>
+                                <Link href="/customers/new">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    New Customer
+                                </Link>
+                            </Button>
+                        </RequireVerification>
                     </div>
                 </ScrollArea>
 
