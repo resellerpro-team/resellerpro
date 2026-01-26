@@ -10,23 +10,6 @@ export default function EnquiryPopup() {
     const { isVisible, closePopup } = usePopupController()
     const popupRef = useRef<HTMLDivElement>(null)
 
-    // Handle click outside to close
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-                closePopup()
-            }
-        }
-
-        if (isVisible) {
-            document.addEventListener('mousedown', handleClickOutside)
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
-    }, [isVisible, closePopup])
-
     // Handle ESC key to close
     useEffect(() => {
         const handleEscKey = (event: KeyboardEvent) => {
