@@ -36,7 +36,7 @@ interface TodoWidgetProps {
   suggestions: TodoSuggestion[]
 }
 
-type TodoAction = 
+type TodoAction =
   | { type: 'add'; payload: Todo }
   | { type: 'toggle'; payload: { id: string; completed: boolean } }
   | { type: 'delete'; payload: string }
@@ -47,8 +47,10 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
   const [isPending, startTransition] = useTransition()
   const [newTodoText, setNewTodoText] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [showCompleted, setShowCompleted] = useState(false) // Collapsed by default
+  const [showCompleted, setShowCompleted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [isSelecting, setIsSelecting] = useState(false)
 
   // ⚡ OPTIMISTIC UI STATE
   const [optimisticTodos, dispatchOptimistic] = useOptimistic(
@@ -77,12 +79,26 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
     if (!newTodoText.trim() || isAdding) return
 
     const tempId = crypto.randomUUID()
-    const text = newTodoText
-    
-    // 1. Optimistic Update
+    let text = newTodoText.trim()
+    let priority: 'low' | 'medium' | 'high' = 'medium'
+
+    // Smart Shortcut Parsing
+    if (text.toLowerCase().includes('#high')) {
+      priority = 'high'
+      text = text.replace(/#high/gi, '').trim()
+    } else if (text.toLowerCase().includes('#low')) {
+      priority = 'low'
+      text = text.replace(/#low/gi, '').trim()
+    } else if (text.toLowerCase().includes('#medium')) {
+      priority = 'medium'
+      text = text.replace(/#medium/gi, '').trim()
+    }
+
+    if (!text) return
+
     setIsAdding(true)
-    setNewTodoText('') // Clear input immediately for better UX
-    
+    setNewTodoText('')
+
     dispatchOptimistic({
       type: 'add',
       payload: {
@@ -92,16 +108,15 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         user_id: 'optimistic',
-        priority: 'medium',
+        priority: priority,
         is_auto_generated: false,
         source_type: null,
         source_id: null
       }
     })
 
-    // 2. Server Action
     const result = await createTodo(text)
-    
+
     if (result.success) {
       toast.success('Task added!')
       startTransition(() => {
@@ -109,48 +124,57 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
       })
     } else {
       toast.error(result.error || 'Failed to add task')
-      // Revert is automatic on refresh failure usually, or we'd need a revert mechanism
-      // For simple apps, router.refresh() syncs back to source of truth
       router.refresh()
     }
     setIsAdding(false)
   }
 
   const handleToggleTodo = async (id: string, completed: boolean) => {
-    // 1. Optimistic Update (Instant!)
     dispatchOptimistic({ type: 'toggle', payload: { id, completed: !completed } })
 
-    // 2. Server Action
     const result = await toggleTodo(id, !completed)
-    
+
     if (result.success) {
-      // toast.success(completed ? 'Task reopened' : 'Task completed! 🎉') // Optional: remove toast for "speed" feel
+      toast.success(completed ? 'Task reopened' : 'Task completed! 🎉', {
+        action: {
+          label: 'Undo',
+          onClick: () => handleToggleTodo(id, !completed),
+        },
+      })
     } else {
       toast.error(result.error || 'Failed to update task')
-      router.refresh() // Revert
+      router.refresh()
     }
   }
 
-  const handleDeleteTodo = async (id: string) => {
-    // 1. Optimistic Update
-    dispatchOptimistic({ type: 'delete', payload: id })
+  const handleDeleteTodo = async (todo: Todo) => {
+    dispatchOptimistic({ type: 'delete', payload: todo.id })
 
-    // 2. Server Action
-    const result = await deleteTodo(id)
-    
+    const result = await deleteTodo(todo.id)
+
     if (result.success) {
-      toast.success('Task deleted')
+      toast.success('Task deleted', {
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            const res = await createTodo(todo.text)
+            if (res.success) {
+              toast.success('Task restored')
+              router.refresh()
+            }
+          },
+        },
+      })
       startTransition(() => {
         router.refresh()
       })
     } else {
       toast.error(result.error || 'Failed to delete task')
-      router.refresh() // Revert
+      router.refresh()
     }
   }
 
   const handleAddSuggestion = async (suggestion: TodoSuggestion) => {
-    // Optimistic Add for Suggestion
     const tempId = crypto.randomUUID()
     dispatchOptimistic({
       type: 'add',
@@ -174,7 +198,7 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
       suggestion.source_id,
       suggestion.priority
     )
-    
+
     if (result.success) {
       toast.success('Added to your tasks!')
       startTransition(() => {
@@ -184,6 +208,58 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
       toast.error(result.error || 'Failed to add task')
       router.refresh()
     }
+  }
+
+  const handleBulkComplete = async () => {
+    if (selectedIds.length === 0) return
+    const ids = [...selectedIds]
+    setSelectedIds([])
+    setIsSelecting(false)
+
+    for (const id of ids) {
+      const todo = optimisticTodos.find(t => t.id === id)
+      if (todo && !todo.completed) {
+        dispatchOptimistic({ type: 'toggle', payload: { id, completed: true } })
+        await toggleTodo(id, true)
+      }
+    }
+
+    toast.success(`${ids.length} task${ids.length > 1 ? 's' : ''} completed!`)
+    router.refresh()
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return
+    const ids = [...selectedIds]
+    const todos = optimisticTodos.filter(t => ids.includes(t.id))
+    setSelectedIds([])
+    setIsSelecting(false)
+
+    ids.forEach(id => dispatchOptimistic({ type: 'delete', payload: id }))
+
+    for (const id of ids) {
+      await deleteTodo(id)
+    }
+
+    toast.success(`${ids.length} task${ids.length > 1 ? 's' : ''} deleted`, {
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          for (const todo of todos) {
+            await createTodo(todo.text)
+          }
+          toast.success('Tasks restored')
+          router.refresh()
+        },
+      },
+    })
+    router.refresh()
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    )
   }
 
   const getPriorityColor = (priority: string) => {
@@ -196,6 +272,15 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
         return 'text-blue-500 dark:text-blue-400'
       default:
         return 'text-muted-foreground'
+    }
+  }
+
+  const getPriorityBorder = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'border-l-4 border-l-red-500'
+      case 'medium': return 'border-l-4 border-l-yellow-500'
+      case 'low': return 'border-l-4 border-l-blue-500'
+      default: return 'border-l-4 border-l-transparent'
     }
   }
 
@@ -213,23 +298,36 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
   }
 
   return (
-    <Card className="h-full flex flex-col shadow-lg border-2 max-h-[600px]">
+    <Card className="flex flex-col h-[500px] shadow-lg border-2">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Daily Tasks</CardTitle>
           </div>
-          <Badge variant="secondary" className="text-xs">
-            {incompleteTodos.length} active
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-[10px] px-2"
+              onClick={() => {
+                setIsSelecting(!isSelecting)
+                setSelectedIds([])
+              }}
+            >
+              {isSelecting ? 'Cancel' : 'Select'}
+            </Button>
+            <Badge variant="secondary" className="text-xs">
+              {incompleteTodos.length} active
+            </Badge>
+          </div>
         </div>
         <CardDescription className="text-xs">
-          Stay on top of your daily work
+          Stay on top of your daily work. <span className="text-muted-foreground/60 italic font-mono">#high #medium #low</span>
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col gap-4 pb-4">
+      <CardContent className="flex-1 flex flex-col gap-4 pb-4 overflow-hidden">
         {/* Add Todo Form */}
         <form onSubmit={handleAddTodo} className="flex gap-2">
           <Input
@@ -240,9 +338,9 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
             className="flex-1 h-9 text-sm"
             disabled={isAdding}
           />
-          <Button 
-            type="submit" 
-            size="sm" 
+          <Button
+            type="submit"
+            size="sm"
             className="h-9 px-3"
             disabled={isAdding || !newTodoText.trim()}
           >
@@ -256,6 +354,33 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
             )}
           </Button>
         </form>
+
+        {/* Bulk Action Bar */}
+        {selectedIds.length > 0 && (
+          <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/20 rounded-md">
+            <span className="text-xs font-bold text-primary">{selectedIds.length} selected</span>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-[10px] px-2 hover:bg-green-500/10 hover:text-green-600"
+                onClick={handleBulkComplete}
+              >
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Complete
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-[10px] px-2 hover:bg-destructive/10 hover:text-destructive"
+                onClick={handleBulkDelete}
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Todos List */}
         <ScrollArea className="flex-1 -mx-6 px-6">
@@ -274,8 +399,12 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
                     key={todo.id}
                     todo={todo}
                     onToggle={handleToggleTodo}
-                    onDelete={handleDeleteTodo}
+                    onDelete={() => handleDeleteTodo(todo)}
                     getPriorityColor={getPriorityColor}
+                    getPriorityBorder={getPriorityBorder}
+                    isSelecting={isSelecting}
+                    isSelected={selectedIds.includes(todo.id)}
+                    onSelect={toggleSelect}
                   />
                 ))}
 
@@ -303,8 +432,12 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
                             key={todo.id}
                             todo={todo}
                             onToggle={handleToggleTodo}
-                            onDelete={handleDeleteTodo}
+                            onDelete={() => handleDeleteTodo(todo)}
                             getPriorityColor={getPriorityColor}
+                            getPriorityBorder={getPriorityBorder}
+                            isSelecting={isSelecting}
+                            isSelected={selectedIds.includes(todo.id)}
+                            onSelect={toggleSelect}
                           />
                         ))}
                       </div>
@@ -318,7 +451,7 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
 
         {/* Suggestions Section */}
         {suggestions.length > 0 && (
-          <div className="border-t pt-3 mt-2">
+          <div className="border-t pt-3">
             <Button
               variant="ghost"
               size="sm"
@@ -337,7 +470,7 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
             </Button>
 
             {showSuggestions && (
-              <ScrollArea className="max-h-[200px]">
+              <ScrollArea className="max-h-[150px]">
                 <div className="space-y-2 animate-fade-in pr-4">
                   {suggestions.map((suggestion) => {
                     const SourceIcon = getSourceIcon(suggestion.source_type)
@@ -384,48 +517,64 @@ function TodoItem({
   onToggle,
   onDelete,
   getPriorityColor,
+  getPriorityBorder,
+  isSelecting,
+  isSelected,
+  onSelect,
 }: {
   todo: Todo
   onToggle: (id: string, completed: boolean) => void
-  onDelete: (id: string) => void
+  onDelete: () => void
   getPriorityColor: (priority: string) => string
+  getPriorityBorder: (priority: string) => string
+  isSelecting: boolean
+  isSelected: boolean
+  onSelect: (id: string) => void
 }) {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
-    // Optimistic delete is handled by parent, so we don't need local Loading state blocking UI, 
-    // but we can show it for feedback if needed.
-    // However, parent optimistic update removes it from the list instantly, so this component unmounts.
-    // So we don't need 'isDeleting' state really, but let's keep it for safety if logic changes
     setIsDeleting(true)
-    await onDelete(todo.id)
+    await onDelete()
   }
 
   return (
     <div
-      className={`group flex items-start gap-2 p-2 rounded-md hover:bg-accent/50 transition-all ${
-        todo.completed ? 'opacity-60' : ''
-      } ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
+      onClick={() => isSelecting && onSelect(todo.id)}
+      className={`group flex items-start gap-2 p-2 rounded-md hover:bg-accent/50 transition-all ${getPriorityBorder(todo.priority)} ${todo.completed ? 'opacity-60' : ''
+        } ${isSelected ? 'bg-primary/5 border-primary/20' : ''} ${isDeleting ? 'opacity-50 pointer-events-none' : ''
+        } ${isSelecting ? 'cursor-pointer select-none' : ''}`}
     >
-      <button
-        onClick={() => onToggle(todo.id, todo.completed)}
-        className="mt-0.5 flex-shrink-0 hover:scale-110 transition-transform"
-        aria-label={todo.completed ? "Mark as incomplete" : "Mark as complete"}
-      >
-        {todo.completed ? (
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
-        ) : (
-          <Circle className="h-4 w-4 text-muted-foreground hover:text-primary" />
-        )}
-      </button>
+      {isSelecting ? (
+        <div className="mt-1 flex-shrink-0">
+          <div
+            className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-primary border-primary' : 'border-muted-foreground'
+              }`}
+          >
+            {isSelected && <CheckCircle2 className="h-3 w-3 text-white" />}
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggle(todo.id, todo.completed)
+          }}
+          className="mt-0.5 flex-shrink-0 hover:scale-110 transition-transform"
+          aria-label={todo.completed ? 'Mark as incomplete' : 'Mark as complete'}
+        >
+          {todo.completed ? (
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          ) : (
+            <Circle className="h-4 w-4 text-muted-foreground hover:text-primary" />
+          )}
+        </button>
+      )}
 
       <div className="flex-1 min-w-0">
         <p
-          className={`text-sm leading-tight ${
-            todo.completed
-              ? 'line-through text-muted-foreground'
-              : 'text-foreground'
-          }`}
+          className={`text-sm leading-tight ${todo.completed ? 'line-through text-muted-foreground' : 'text-foreground'
+            }`}
         >
           {todo.text}
         </p>
@@ -437,20 +586,22 @@ function TodoItem({
         )}
       </div>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleDelete}
-        disabled={isDeleting}
-        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
-        aria-label="Delete task"
-      >
-        {isDeleting ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
-        ) : (
-          <Trash2 className="h-3 w-3" />
-        )}
-      </Button>
+      {!isSelecting && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+          aria-label="Delete task"
+        >
+          {isDeleting ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Trash2 className="h-3 w-3" />
+          )}
+        </Button>
+      )}
     </div>
   )
 }
