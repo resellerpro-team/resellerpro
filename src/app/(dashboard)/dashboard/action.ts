@@ -584,3 +584,25 @@ export async function getEnquiries(): Promise<Enquiry[]> {
     return []
   }
 }
+
+/**
+ * Fetches user profile for verification status
+ */
+export async function getUserProfile() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email, email_verified')
+      .eq('id', user.id)
+      .single()
+
+    return profile
+  } catch (error) {
+    console.error('Error fetching profile:', error)
+    return null
+  }
+}

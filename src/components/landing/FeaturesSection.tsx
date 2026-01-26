@@ -74,8 +74,6 @@ export default function FeaturesSection() {
                     </li>
                   ))}
                 </ul>
-
-
               </div>
 
               {/* Right Visual */}
