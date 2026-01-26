@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { StatsCard } from '@/components/shared/StatsCard'
-  // ... (rest of code)
+// ... (rest of code)
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,6 +39,7 @@ import { useOrdersStats } from '@/lib/react-query/hooks/stats-hooks'
 import { OrdersSkeleton } from '@/components/shared/skeletons/OrdersSkeleton'
 import { EmptyState, FilteredEmptyState } from '@/components/shared/EmptyState'
 import { ExportOrders } from '@/components/orders/ExportOrders'
+import { RequireVerification } from '@/components/shared/RequireVerification'
 
 export function OrdersClient() {
   const router = useRouter()
@@ -69,7 +70,7 @@ export function OrdersClient() {
 
   // 📊 Global Stats (Server-side)
   const { data: statsData } = useOrdersStats()
-  
+
   const stats = {
     totalOrders: totalCount, // Filtered count
     totalRevenue: statsData?.totalRevenue || 0,
@@ -114,14 +115,16 @@ export function OrdersClient() {
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
           <p className="text-muted-foreground text-nowrap">Manage and track your orders</p>
         </div>
-        <div className='w-full flex justify-end gap-2'>
+        <div className='flex justify-end gap-2'>
           <ExportOrders orders={orders} />
-          
-          <Button asChild>
-            <Link href="/orders/new">
-              <Plus className="mr-2 h-4 w-4" /> New Order
-            </Link>
-          </Button>
+
+          <RequireVerification>
+            <Button asChild>
+              <Link href="/orders/new">
+                <Plus className="mr-2 h-4 w-4" /> New Order
+              </Link>
+            </Button>
+          </RequireVerification>
         </div>
       </div>
 
@@ -250,7 +253,8 @@ export function OrdersClient() {
                 totalPages={totalPages}
                 onPageChange={(p) => {
                   setPage(p)
-                  window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }
                 }
               />
             </div>
@@ -271,6 +275,7 @@ export function OrdersClient() {
               label: "Create Order",
               href: "/orders/new"
             }}
+            requireVerification={true}
           />
         )}
       </Card>

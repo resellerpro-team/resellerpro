@@ -14,6 +14,7 @@ import {
 import { AnalyticsIcon } from '../logos/AnalyticsIcon'
 import type { Enquiry } from '@/app/(dashboard)/dashboard/action'
 import Link from 'next/link'
+import { RequireVerification } from '../shared/RequireVerification'
 
 interface EnquiriesCardProps {
     enquiries: Enquiry[]
@@ -39,12 +40,14 @@ export function EnquiriesCard({ enquiries }: EnquiriesCardProps) {
                     <p className="text-muted-foreground max-w-md mb-8">
                         Connect your sources or add your first enquiry manually to track potential sales and build relationships.
                     </p>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 h-12 rounded-xl shadow-lg transition-all" asChild>
-                        <Link href="/enquiries/new">
-                            <Plus className="mr-2 h-5 w-5" />
-                            Add Your First Enquiry
-                        </Link>
-                    </Button>
+                    <RequireVerification>
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 h-12 rounded-xl shadow-lg transition-all" asChild>
+                            <Link href="/enquiries/new">
+                                <Plus className="mr-2 h-5 w-5" />
+                                Add Your First Enquiry
+                            </Link>
+                        </Button>
+                    </RequireVerification>
                 </CardContent>
             </Card>
         )
@@ -142,12 +145,14 @@ export function EnquiriesCard({ enquiries }: EnquiriesCardProps) {
                                 Check Orders
                             </Link>
                         </Button>
-                        <Button variant="outline" className="rounded-xl" asChild>
-                            <Link href="/enquiries/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add New Enquiry
-                            </Link>
-                        </Button>
+                        <RequireVerification>
+                            <Button variant="outline" className="rounded-xl" asChild>
+                                <Link href="/enquiries/new">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add New Enquiry
+                                </Link>
+                            </Button>
+                        </RequireVerification>
                     </div>
                 </div>
                 <div className="hidden md:flex flex-1 justify-center">
