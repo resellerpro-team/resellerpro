@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import NextImage from 'next/image'
 import { Eye, EyeOff, Loader2, Mail, Lock, User, Briefcase, Sparkles, Phone, Gift, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -121,8 +122,14 @@ export default function SignupForm() {
         <div className="grid grid-cols-1 md:grid-cols-2">
           {/* Left Side - Logo and Description */}
           <div className="hidden md:flex flex-col items-center justify-center p-6 bg-blue-600 rounded-t-xl">
-            <div className="flex h-16 w-16 items-center justify-center bg-white/20 backdrop-blur-sm shadow-lg mb-4">
-              <Sparkles className="h-8 w-8 rounded-lg text-white" />
+            <div className="flex h-20 w-20 items-center justify-center bg-white shadow-2xl mb-4 rounded-2xl overflow-hidden p-2 border border-white/20">
+              <NextImage
+                src="/logo.png"
+                alt="ResellerPro Logo"
+                width={64}
+                height={64}
+                className="h-16 w-16 object-contain"
+              />
             </div>
             <CardTitle className="text-2xl font-bold text-white text-center mb-2">
               Create Account

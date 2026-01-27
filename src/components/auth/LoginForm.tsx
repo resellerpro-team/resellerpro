@@ -3,6 +3,7 @@
 import { useFormStatus, useFormState } from 'react-dom'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import NextImage from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { login, type LoginFormState } from '@/app/(auth)/signin/actions'
 import { sendLoginOtp, verifyLoginOtp } from '@/app/(auth)/signin/otp-actions'
@@ -156,8 +157,14 @@ export default function LoginForm() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
       <Card className="w-full max-w-md relative z-10 border-2">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-            <Sparkles className="h-8 w-8" />
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-xl border border-gray-100 p-2 overflow-hidden">
+            <NextImage
+              src="/logo.png"
+              alt="ResellerPro Logo"
+              width={64}
+              height={64}
+              className="h-16 w-16 object-contain"
+            />
           </div>
 
           <div className="space-y-2">

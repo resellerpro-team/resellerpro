@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Sparkles } from 'lucide-react'
+import NextImage from 'next/image'
 
 export default async function InvoicePage({
   params,
@@ -60,8 +61,14 @@ export default async function InvoicePage({
             {/* Left side - Logo + Names */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                  <Sparkles className="h-5 w-5" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm overflow-hidden border">
+                  <NextImage
+                    src="/logo.png"
+                    alt="ResellerPro Logo"
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 object-contain"
+                  />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold leading-tight">

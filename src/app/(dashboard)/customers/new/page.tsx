@@ -38,7 +38,13 @@ export default function NewCustomerPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
+    let { name, value } = e.target
+
+    // Restrict phone and whatsapp to digits only
+    if (name === 'phone' || name === 'whatsapp') {
+      value = value.replace(/\D/g, '')
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }))
     setErrors(prev => ({ ...prev, [name]: '' }))
   }
@@ -58,11 +64,13 @@ export default function NewCustomerPage() {
   }
 
   const handleSmartPaste = (data: ParsedCustomerData) => {
+    const sanitize = (val: string | null | undefined) => val?.replace(/\D/g, '') || ''
+
     setFormData(prev => ({
       ...prev,
       name: data.name || prev.name,
-      phone: data.phone || prev.phone,
-      whatsapp: data.whatsapp || data.phone || prev.whatsapp,
+      phone: sanitize(data.phone) || prev.phone,
+      whatsapp: sanitize(data.whatsapp) || sanitize(data.phone) || prev.whatsapp,
       email: data.email || prev.email,
       address_line1: data.addressLine1 || prev.address_line1,
       address_line2: data.addressLine2 || prev.address_line2,
@@ -149,7 +157,7 @@ export default function NewCustomerPage() {
         }
       } catch (error) {
         console.error('Submit error:', error)
-        
+
         // If error is network-related and we're offline, queue it
         if (!navigator.onLine) {
           queueAction('CREATE_CUSTOMER', formData)
@@ -221,14 +229,33 @@ export default function NewCustomerPage() {
               {/* Phone */}
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number <span className="text-red-500">*</span></Label>
-                <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="10-digit mobile number" required />
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="10-digit mobile number"
+                  required
+                />
                 {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
               </div>
 
               {/* WhatsApp */}
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp Number</Label>
-                <Input id="whatsapp" name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} placeholder="Same as phone (optional)" />
+                <Input
+                  id="whatsapp"
+                  name="whatsapp"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={formData.whatsapp}
+                  onChange={handleInputChange}
+                  placeholder="Same as phone (optional)"
+                />
               </div>
 
               {/* Email */}

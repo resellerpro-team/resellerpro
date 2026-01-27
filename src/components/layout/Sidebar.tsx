@@ -18,6 +18,7 @@ import {
   User,
   MessageSquare,
 } from 'lucide-react'
+import NextImage from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -116,8 +117,14 @@ export default function Sidebar({ user }: { user: UserData }) {
         {/* Header / Logo */}
         <div className="relative flex h-16 items-center gap-2 border-b px-6">
           <Link href="/dashboard">
-            <div className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="h-6 w-6" />
+            <div className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-white overflow-hidden border">
+              <NextImage
+                src="/logo.png"
+                alt="ResellerPro Logo"
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain"
+              />
             </div>
           </Link>
           <div className="flex flex-col">

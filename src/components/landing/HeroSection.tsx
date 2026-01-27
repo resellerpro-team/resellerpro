@@ -3,6 +3,7 @@
 
 import { ArrowRight, CheckCircle, TrendingUp, Users, ShoppingBag, Sparkles, Play, Star, Zap, ShieldCheck, Bell, Search, Home, PieChart, MessageSquare, User, Wallet } from 'lucide-react'
 import Link from 'next/link'
+import NextImage from 'next/image'
 
 export default function HeroSection() {
   return (
@@ -240,8 +241,14 @@ export default function HeroSection() {
                           {/* App Header - proper spacing below status bar */}
                           <div className="px-4 pt-3 pb-2 flex justify-between items-center">
                             <div className="flex items-center gap-2.5">
-                              <div className="w-[42px] h-[42px] rounded-[14px] bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-[14px] shadow-lg shadow-primary/40">
-                                RS
+                              <div className="w-[42px] h-[42px] rounded-[14px] bg-white flex items-center justify-center shadow-lg shadow-primary/40 overflow-hidden border">
+                                <NextImage
+                                  src="/logo.png"
+                                  alt="RS"
+                                  width={28}
+                                  height={28}
+                                  className="w-[28px] h-[28px] object-contain"
+                                />
                               </div>
                               <div>
                                 <p className="text-[11px] text-gray-500 leading-tight">Welcome back</p>

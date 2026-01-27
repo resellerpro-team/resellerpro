@@ -2,7 +2,7 @@
 
 import { Mail, Phone, Facebook, Instagram, MessageCircle, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
+import NextImage from 'next/image'
 
 export default function Footer() {
   return (
@@ -20,12 +20,12 @@ export default function Footer() {
               className="flex items-center space-x-3 cursor-pointer"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             >
-              <Image
-                src="/icons/icon-512x512.png"
+              <NextImage
+                src="/logo.png"
                 alt="ResellerPro"
                 width={48}
                 height={48}
-                className="w-12 h-12"
+                className="w-12 h-12 object-contain"
               />
               <span className="text-2xl font-bold text-gray-900">ResellerPro</span>
             </div>
