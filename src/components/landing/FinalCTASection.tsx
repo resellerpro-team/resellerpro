@@ -156,10 +156,13 @@
 
 'use client'
 
-import { ArrowRight, CheckCircle2, Rocket, Zap, ShieldCheck, Smartphone } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowRight, CheckCircle2, Rocket, Zap, ShieldCheck, Smartphone, PlayCircle } from 'lucide-react'
 import Link from 'next/link'
+import { AnimatedDemoModal } from '@/components/demo/AnimatedDemoModal'
 
 export default function FinalCTASection() {
+  const [showDemo, setShowDemo] = useState(false)
   return (
     <section className="py-24 px-4 sm:px-6 lg:px-8 bg-background overflow-hidden">
       <div className="max-w-7xl mx-auto">
@@ -206,9 +209,12 @@ export default function FinalCTASection() {
                 </button>
               </Link>
 
-              <button className="h-14 px-8 bg-white/10 text-white border border-white/20 rounded-full font-bold text-lg hover:bg-white/20 transition-all backdrop-blur-sm flex items-center gap-2">
-                <Smartphone className="w-5 h-5" />
-                View Demo
+              <button 
+                onClick={() => setShowDemo(true)}
+                className="h-14 px-8 bg-white/10 text-white border border-white/20 rounded-full font-bold text-lg hover:bg-white/20 transition-all backdrop-blur-sm flex items-center gap-2"
+              >
+                <PlayCircle className="w-5 h-5" />
+                Watch Demo
               </button>
             </div>
 
@@ -249,6 +255,8 @@ export default function FinalCTASection() {
           </div>
         </div>
       </div>
+
+      <AnimatedDemoModal open={showDemo} onClose={() => setShowDemo(false)} />
     </section>
   )
 }
