@@ -7,6 +7,8 @@ interface ActivePlanCardProps {
     status: string
     currentPeriodEnd: string
     isBusiness: boolean
+    description?: string
+    children?: React.ReactNode
 }
 
 export function ActivePlanCard({
@@ -14,6 +16,8 @@ export function ActivePlanCard({
     status,
     currentPeriodEnd,
     isBusiness,
+    description,
+    children
 }: ActivePlanCardProps) {
     // Format date
     const formattedDate = new Date(currentPeriodEnd).toLocaleDateString('en-IN', {
@@ -24,7 +28,7 @@ export function ActivePlanCard({
 
     return (
         <div className="relative overflow-hidden rounded-xl border border-green-200 bg-green-50/50 p-6 dark:border-green-800 dark:bg-green-950/20">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between mb-6">
                 <div className="space-y-4">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -41,7 +45,7 @@ export function ActivePlanCard({
                     </div>
 
                     <div className="space-y-1 text-sm text-green-800 dark:text-green-200">
-                        <p>Unlimited orders • Premium features enabled</p>
+                        <p>{description || 'Premium features enabled'}</p>
                         <p className="opacity-80">Active until {formattedDate}</p>
                     </div>
                 </div>
@@ -55,6 +59,13 @@ export function ActivePlanCard({
                     <SubscriptionMenu currentPeriodEnd={currentPeriodEnd} />
                 </div>
             </div>
+
+            {children && (
+                <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
+                    {children}
+                </div>
+            )}
+
 
             {/* Background decoration */}
             <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-green-200/20 blur-3xl dark:bg-green-500/10" />
