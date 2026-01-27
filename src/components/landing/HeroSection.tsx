@@ -9,7 +9,7 @@ export default function HeroSection() {
   const [showDemo, setShowDemo] = useState(false)
 
   return (
-    <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-background">
+    <section className="relative pt-18 pb-18 lg:pt-32 lg:pb-24 overflow-hidden bg-background">
 
       {/* Custom Styles for Animations */}
       <style jsx>{`
@@ -261,10 +261,6 @@ export default function HeroSection() {
                                   <span className="text-[9px] font-bold text-white">3</span>
                                 </div>
                               </div>
-                              {/* <div className="relative w-[38px] h-[38px] rounded-full overflow-hidden ring-2 ring-primary/30">
-                                <img src="https://i.pravatar.cc/100?img=33" alt="Profile" className="w-full h-full object-cover" />
-                                <div className="absolute bottom-0 right-0 w-[10px] h-[10px] bg-green-500 rounded-full border-[1.5px] border-white" />
-                              </div> */}
                             </div>
                           </div>
 
@@ -466,28 +462,6 @@ export default function HeroSection() {
             </div>
           </div>
         </div>
-
-        {/* Logo Cloud Section */}
-        {/* <div className="mt-24 pt-12 border-t border-border/50">
-          <p className="text-center text-sm text-muted-foreground mb-8">
-            Trusted by <span className="font-semibold text-foreground">8,500+</span> resellers and growing businesses
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
-            {[
-              { name: 'WhatsApp', icon: '💬' },
-              { name: 'Shopify', icon: '🛍️' },
-              { name: 'Stripe', icon: '💳' },
-              { name: 'Razorpay', icon: '⚡' },
-              { name: 'Instagram', icon: '📸' },
-            ].map((brand, i) => (
-              <div key={i} className="flex items-center gap-2 text-muted-foreground/60 hover:text-foreground transition-colors cursor-default group">
-                <span className="text-2xl group-hover:scale-110 transition-transform">{brand.icon}</span>
-                <span className="text-lg font-semibold">{brand.name}</span>
-              </div>
-            ))}
-          </div>
-        </div> */}
-
       </div>
 
       {/* Animated Demo Modal */}

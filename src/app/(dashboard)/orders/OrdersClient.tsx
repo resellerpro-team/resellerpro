@@ -3,8 +3,6 @@
 import { useState, useEffect, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { StatsCard } from '@/components/shared/StatsCard'
-// ... (rest of code)
-
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -283,5 +281,4 @@ export function OrdersClient() {
   )
 }
 
-// Stats Card Component
 
