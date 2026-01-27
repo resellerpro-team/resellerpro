@@ -139,7 +139,7 @@ export default function PricingSection() {
   ]
 
   return (
-    <section id="pricing" className="py-24 bg-background relative overflow-hidden">
+    <section id="pricing" className="py-19 bg-background relative overflow-hidden">
 
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
@@ -157,20 +157,6 @@ export default function PricingSection() {
           <p className="text-lg text-muted-foreground">
             Choose a plan that fits your business needs. No hidden fees, cancel anytime.
           </p>
-
-          {/* Toggle Switch */}
-          {/* <div className="mt-10 flex items-center justify-center gap-4">
-            <span className={`text-sm font-semibold transition-colors ${!isAnnual ? 'text-foreground' : 'text-muted-foreground'}`}>Monthly</span>
-            <button
-              onClick={() => setIsAnnual(!isAnnual)}
-              className="relative w-14 h-8 bg-secondary rounded-full p-1 transition-colors hover:bg-secondary/80 focus:outline-none ring-offset-2 focus:ring-2 ring-primary/20"
-            >
-              <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${isAnnual ? 'translate-x-6' : 'translate-x-0'}`} />
-            </button>
-            <span className={`text-sm font-semibold transition-colors ${isAnnual ? 'text-foreground' : 'text-muted-foreground'}`}>
-              Yearly <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-1">-20%</span>
-            </span>
-          </div> */}
         </div>
 
         {/* Pricing Cards */}
