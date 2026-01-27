@@ -14,6 +14,8 @@ import { ArrowLeft, Save, Upload, X, Loader2, WifiOff } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useOfflineQueue } from '@/lib/hooks/useOfflineQueue'
+import { RequireVerification } from '@/components/shared/RequireVerification'
+
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -264,228 +266,230 @@ export default function NewProductPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/products">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Add New Product</h1>
-          <p className="text-muted-foreground">Fill in the details to add a new product to your catalog.</p>
-        </div>
-      </div>
-
-      {/* Offline Warning */}
-      {!isOnline && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3">
-          <WifiOff className="h-5 w-5 text-amber-600" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-amber-900">You're offline</p>
-            <p className="text-xs text-amber-700">Product will be queued and synced when you're back online.
-              <span className="font-semibold"> Note: Images cannot be saved while offline.</span>
-            </p>
+    <RequireVerification autoOpen={true}>
+      <div className="space-y-6 max-w-4xl mx-auto">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/products">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Add New Product</h1>
+            <p className="text-muted-foreground">Fill in the details to add a new product to your catalog.</p>
           </div>
         </div>
-      )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-
-            {/* Product Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Product Name *</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Wireless Earbuds"
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Images Upload */}
-            <div className="space-y-2">
-              <Label>Product Images (up to 5, max 5MB each)</Label>
-              <div className="grid grid-cols-5 gap-4">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative aspect-square group">
-                    <Image
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      fill
-                      className="object-cover rounded-lg border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      disabled={isLoading}
-                      className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                    {index === 0 && (
-                      <span className="absolute top-2 left-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
-                        Main
-                      </span>
-                    )}
-                  </div>
-                ))}
-
-                {images.length < 5 && (
-                  <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted transition-colors">
-                    <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                    <span className="text-xs text-muted-foreground">Add Image</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageChange}
-                      className="hidden"
-                      disabled={isLoading}
-                    />
-                  </label>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                First image will be the main product image. Max 5 images, 5MB each.
+        {/* Offline Warning */}
+        {!isOnline && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3">
+            <WifiOff className="h-5 w-5 text-amber-600" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-900">You're offline</p>
+              <p className="text-xs text-amber-700">Product will be queued and synced when you're back online.
+                <span className="font-semibold"> Note: Images cannot be saved while offline.</span>
               </p>
             </div>
+          </div>
+        )}
 
-            {/* Pricing */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="cost_price">Cost Price (₹) *</Label>
-                <Input
-                  id="cost_price"
-                  type="text"
-                  inputMode="decimal"
-                  value={costPrice}
-                  onChange={handleCostPriceChange}
-                  placeholder="What you pay"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="selling_price">Selling Price (₹) *</Label>
-                <Input
-                  id="selling_price"
-                  type="text"
-                  inputMode="decimal"
-                  value={sellingPrice}
-                  onChange={handleSellingPriceChange}
-                  placeholder="What customer pays"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Product Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
 
-            {/* Category and Stock */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Product Name */}
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="name">Product Name *</Label>
                 <Input
-                  id="category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  placeholder="e.g., Electronics"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="stock_quantity">Stock Quantity *</Label>
-                <Input
-                  id="stock_quantity"
-                  type="number"
-                  value={stockQuantity}
-                  onChange={(e) => setStockQuantity(e.target.value)}
-                  placeholder="Available units"
-                  min="0"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Wireless Earbuds"
                   required
                   disabled={isLoading}
                 />
               </div>
 
+              {/* Images Upload */}
               <div className="space-y-2">
-                <Label>Stock Status</Label>
-                <Select
-                  value={stockStatus}
-                  onValueChange={setStockStatus}
+                <Label>Product Images (up to 5, max 5MB each)</Label>
+                <div className="grid grid-cols-5 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative aspect-square group">
+                      <Image
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        fill
+                        className="object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        disabled={isLoading}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      {index === 0 && (
+                        <span className="absolute top-2 left-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
+                          Main
+                        </span>
+                      )}
+                    </div>
+                  ))}
+
+                  {images.length < 5 && (
+                    <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted transition-colors">
+                      <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                      <span className="text-xs text-muted-foreground">Add Image</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageChange}
+                        className="hidden"
+                        disabled={isLoading}
+                      />
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  First image will be the main product image. Max 5 images, 5MB each.
+                </p>
+              </div>
+
+              {/* Pricing */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cost_price">Cost Price (₹) *</Label>
+                  <Input
+                    id="cost_price"
+                    type="text"
+                    inputMode="decimal"
+                    value={costPrice}
+                    onChange={handleCostPriceChange}
+                    placeholder="What you pay"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="selling_price">Selling Price (₹) *</Label>
+                  <Input
+                    id="selling_price"
+                    type="text"
+                    inputMode="decimal"
+                    value={sellingPrice}
+                    onChange={handleSellingPriceChange}
+                    placeholder="What customer pays"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+
+              {/* Category and Stock */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Input
+                    id="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder="e.g., Electronics"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="stock_quantity">Stock Quantity *</Label>
+                  <Input
+                    id="stock_quantity"
+                    type="number"
+                    value={stockQuantity}
+                    onChange={(e) => setStockQuantity(e.target.value)}
+                    placeholder="Available units"
+                    min="0"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Stock Status</Label>
+                  <Select
+                    value={stockStatus}
+                    onValueChange={setStockStatus}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="in_stock">In Stock</SelectItem>
+                      <SelectItem value="low_stock">Low Stock</SelectItem>
+                      <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe your product..."
+                  rows={4}
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* SKU */}
+              <div className="space-y-2">
+                <Label htmlFor="sku">SKU (Stock Keeping Unit)</Label>
+                <Input
+                  id="sku"
+                  value={sku}
+                  onChange={(e) => setSku(e.target.value)}
+                  placeholder="e.g., WE-BLK-001"
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.back()}
                   disabled={isLoading}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="in_stock">In Stock</SelectItem>
-                    <SelectItem value="low_stock">Low Stock</SelectItem>
-                    <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-                  </SelectContent>
-                </Select>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating product...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Product
+                    </>
+                  )}
+                </Button>
               </div>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe your product..."
-                rows={4}
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* SKU */}
-            <div className="space-y-2">
-              <Label htmlFor="sku">SKU (Stock Keeping Unit)</Label>
-              <Input
-                id="sku"
-                value={sku}
-                onChange={(e) => setSku(e.target.value)}
-                placeholder="e.g., WE-BLK-001"
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                disabled={isLoading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating product...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Product
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </form>
-    </div>
+            </CardContent>
+          </Card>
+        </form>
+      </div>
+    </RequireVerification>
   )
 }

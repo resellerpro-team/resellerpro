@@ -7,6 +7,8 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { NewOrderForm } from '@/components/orders/NewOrderForm'
 import { redirect } from 'next/navigation'
+import { RequireVerification } from '@/components/shared/RequireVerification'
+
 
 export default async function NewOrderPage({
   searchParams,
@@ -42,30 +44,32 @@ export default async function NewOrderPage({
 
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" asChild>
-              <Link href="/orders">
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
-            <div>
-              <CardTitle className="text-2xl">Create New Order</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Select a customer and add products to create an order
-              </p>
+    <RequireVerification autoOpen={true}>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="icon" asChild>
+                <Link href="/orders">
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+              </Button>
+              <div>
+                <CardTitle className="text-2xl">Create New Order</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Select a customer and add products to create an order
+                </p>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-      </Card>
+          </CardHeader>
+        </Card>
 
-      <NewOrderForm
-        customers={customers || []}
-        products={products || []}
-        preSelectedCustomerId={preSelectedCustomerId}
-      />
-    </div>
+        <NewOrderForm
+          customers={customers || []}
+          products={products || []}
+          preSelectedCustomerId={preSelectedCustomerId}
+        />
+      </div>
+    </RequireVerification>
   )
 }
