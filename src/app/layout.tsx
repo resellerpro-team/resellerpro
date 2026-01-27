@@ -7,7 +7,7 @@ import { ThemeProvider } from '../components/providers/theme-provider'
 // import { AppLoader } from '@/components/onboarding/PremiumLoader'
 import { Providers } from './providers'
 import { OfflineBanner } from '@/components/shared/OfflineBanner'
-// Or, if using absolute imports, ensure your tsconfig.json has the correct "paths" and "baseUrl" set.
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -89,6 +89,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <OfflineBanner />
             {children}
+            <Analytics />
             <Toaster />
           </ThemeProvider>
         </Providers>
