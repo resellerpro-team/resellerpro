@@ -88,17 +88,15 @@ export default function SignupForm() {
 
 
       // Show verification toast and redirect to login
-      toast({
-        title: 'Verify your email',
-        description: 'We’ve sent a confirmation link to your email. Please verify to continue.',
-      })
+      // toast({
+      //   title: 'Verify your email',
+      //   description: 'We’ve sent a confirmation link to your email. Please verify to continue.',
+      // })
 
       setIsLoading(false)
 
-      // Redirect to login page after 2 seconds
-      setTimeout(() => {
-        router.push('/signin')
-      }, 2000)
+      // Redirect to dashboard immediately
+      router.push('/dashboard')
 
     } catch (error: any) {
       console.error('Signup error:', error)

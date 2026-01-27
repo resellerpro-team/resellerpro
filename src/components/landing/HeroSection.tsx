@@ -1,13 +1,16 @@
 "use client"
 
-
+import { useState } from 'react'
 import { ArrowRight, CheckCircle, TrendingUp, Users, ShoppingBag, Sparkles, Play, Star, Zap, ShieldCheck, Bell, Search, Home, PieChart, MessageSquare, User, Wallet } from 'lucide-react'
 import Link from 'next/link'
+import { AnimatedDemoModal } from '@/components/demo/AnimatedDemoModal'
 import NextImage from 'next/image'
 
 export default function HeroSection() {
+  const [showDemo, setShowDemo] = useState(false)
+
   return (
-    <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-background">
+    <section className="relative pt-18 pb-18 lg:pt-32 lg:pb-24 overflow-hidden bg-background">
 
       {/* Custom Styles for Animations */}
       <style jsx>{`
@@ -120,7 +123,10 @@ export default function HeroSection() {
                 </button>
               </Link>
 
-              <button className="w-full sm:w-auto px-8 py-4 bg-background text-foreground rounded-2xl font-semibold text-lg border-2 border-border hover:border-primary/50 hover:bg-secondary/50 transition-all duration-300 flex items-center justify-center gap-2 group">
+              <button
+                onClick={() => setShowDemo(true)}
+                className="w-full sm:w-auto px-8 py-4 bg-background text-foreground rounded-2xl font-semibold text-lg border-2 border-border hover:border-primary/50 hover:bg-secondary/50 transition-all duration-300 flex items-center justify-center gap-2 group"
+              >
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                   <Play className="w-3.5 h-3.5 text-primary fill-primary" />
                 </div>
@@ -262,10 +268,6 @@ export default function HeroSection() {
                                   <span className="text-[9px] font-bold text-white">3</span>
                                 </div>
                               </div>
-                              {/* <div className="relative w-[38px] h-[38px] rounded-full overflow-hidden ring-2 ring-primary/30">
-                                <img src="https://i.pravatar.cc/100?img=33" alt="Profile" className="w-full h-full object-cover" />
-                                <div className="absolute bottom-0 right-0 w-[10px] h-[10px] bg-green-500 rounded-full border-[1.5px] border-white" />
-                              </div> */}
                             </div>
                           </div>
 
@@ -467,29 +469,10 @@ export default function HeroSection() {
             </div>
           </div>
         </div>
-
-        {/* Logo Cloud Section */}
-        {/* <div className="mt-24 pt-12 border-t border-border/50">
-          <p className="text-center text-sm text-muted-foreground mb-8">
-            Trusted by <span className="font-semibold text-foreground">8,500+</span> resellers and growing businesses
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
-            {[
-              { name: 'WhatsApp', icon: '💬' },
-              { name: 'Shopify', icon: '🛍️' },
-              { name: 'Stripe', icon: '💳' },
-              { name: 'Razorpay', icon: '⚡' },
-              { name: 'Instagram', icon: '📸' },
-            ].map((brand, i) => (
-              <div key={i} className="flex items-center gap-2 text-muted-foreground/60 hover:text-foreground transition-colors cursor-default group">
-                <span className="text-2xl group-hover:scale-110 transition-transform">{brand.icon}</span>
-                <span className="text-lg font-semibold">{brand.name}</span>
-              </div>
-            ))}
-          </div>
-        </div> */}
-
       </div>
+
+      {/* Animated Demo Modal */}
+      <AnimatedDemoModal open={showDemo} onClose={() => setShowDemo(false)} />
     </section>
   )
 }

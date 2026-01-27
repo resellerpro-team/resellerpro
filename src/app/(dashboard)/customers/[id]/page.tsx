@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { notFound } from 'next/navigation'
 import { getCustomer, getCustomerOrders } from '../action'
 import DeleteCustomerButton from '@/components/customers/DeleteCustomerButton'
+import { RequireVerification } from '@/components/shared/RequireVerification'
 
 export default async function CustomerDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -251,18 +252,22 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
             <CardTitle>Order History</CardTitle>
             <CardDescription>Recent orders from this customer</CardDescription>
           </div>
-          <Button asChild>
-            <Link href={`/orders/new?customerId=${id}`}>New Order</Link>
-          </Button>
+          <RequireVerification>
+            <Button asChild>
+              <Link href={`/orders/new?customerId=${id}`}>New Order</Link>
+            </Button>
+          </RequireVerification>
         </CardHeader>
         <CardContent>
           {orders.length === 0 ? (
             <div className="text-center py-12">
               <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground">No orders yet</p>
-              <Button className="mt-4" asChild>
-                <Link href={`/orders/new?customerId=${id}`}>Create First Order</Link>
-              </Button>
+              <RequireVerification>
+                <Button className="mt-4" asChild>
+                  <Link href={`/orders/new?customerId=${id}`}>Create First Order</Link>
+                </Button>
+              </RequireVerification>
             </div>
           ) : (
             <div className="space-y-3">

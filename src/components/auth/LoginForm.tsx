@@ -4,7 +4,7 @@ import { useFormStatus, useFormState } from 'react-dom'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import NextImage from 'next/image'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { login, type LoginFormState } from '@/app/(auth)/signin/actions'
 import { sendLoginOtp, verifyLoginOtp } from '@/app/(auth)/signin/otp-actions'
 import { Eye, EyeOff, Loader2, Mail, Lock, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react'
@@ -51,6 +51,7 @@ function SubmitButton() {
 export default function LoginForm() {
   const { toast } = useToast()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password')
 
@@ -101,6 +102,18 @@ export default function LoginForm() {
       })
     }
   }, [state, toast])
+
+  // Handle successful login redirect
+  useEffect(() => {
+    if (state.success && state.redirectUrl) {
+      toast({
+        title: "Success",
+        description: "Login successful! Redirecting...",
+      });
+      // Use window.location.href to ensure a full refresh of the server-side session
+      window.location.href = state.redirectUrl;
+    }
+  }, [state.success, state.redirectUrl, toast])
 
   const isOnline = useOnlineStatus()
 

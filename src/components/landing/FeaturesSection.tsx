@@ -14,7 +14,7 @@ import {
 
 export default function FeaturesSection() {
   return (
-    <section className="relative py-24 lg:py-32 overflow-hidden bg-gradient-to-b from-background via-secondary/20 to-background">
+    <section className="relative py-18 lg:py-20 overflow-hidden bg-gradient-to-b from-background via-secondary/20 to-background">
 
       {/* Background Elements */}
       <div className="absolute inset-0 -z-10">
@@ -74,8 +74,6 @@ export default function FeaturesSection() {
                     </li>
                   ))}
                 </ul>
-
-
               </div>
 
               {/* Right Visual */}

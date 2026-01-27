@@ -31,36 +31,29 @@ export default function Navbar() {
             </span>
           </div>
 
+          {/* Center Links */}
           <div className="hidden md:flex items-center space-x-8">
-            <a
-              href="#features"
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              Features
-            </a>
-            <a
-              href="#pricing"
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              Pricing
-            </a>
-            <a
-              href="#workflow"
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              Workflow
-            </a>
+            {['Features', 'Pricing', 'Blog', 'Workflow'].map((item) => (
+              <a
+                key={item}
+                href={`#${item.toLowerCase()}`}
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                {item}
+              </a>
+            ))}
+          </div>
+
+          {/* Right Buttons */}
+          <div className="flex items-center space-x-4">
             <Link href="/signin">
-              <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium shadow-sm hover:shadow-md">
+              <button className="bg-primary sm:bg-transparent text-sm px-6 py-2.5 font-semibold text-primary-foreground rounded-full sm:rounded-none sm:text-foreground sm:hover:text-primary transition-colors">
                 Sign in
               </button>
             </Link>
-          </div>
-
-          <div className="md:hidden">
-            <Link href="/signin">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium shadow-sm hover:shadow-md">
-                Sign in
+            <Link href="/signup">
+              <button className="hidden sm:block px-6 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40 transform hover:-translate-y-0.5">
+                Start now
               </button>
             </Link>
           </div>
