@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useVerification } from '@/components/auth/VerificationProvider'
 import { cn } from '@/lib/utils'
 
@@ -7,14 +8,22 @@ interface RequireVerificationProps {
     children: React.ReactNode
     fallback?: React.ReactNode
     className?: string
+    autoOpen?: boolean
 }
 
 export function RequireVerification({
     children,
     fallback,
-    className
+    className,
+    autoOpen = false
 }: RequireVerificationProps) {
     const { isVerified, openVerificationModal } = useVerification()
+
+    React.useEffect(() => {
+        if (autoOpen && !isVerified) {
+            openVerificationModal()
+        }
+    }, [autoOpen, isVerified, openVerificationModal])
 
     if (isVerified) {
         return <>{children}</>
