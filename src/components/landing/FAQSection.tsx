@@ -17,14 +17,13 @@ function FAQItem({ question, answer, index, isOpen, onToggle }: FAQItemProps) {
       className="group border-2 border-gray-100 rounded-2xl overflow-hidden hover:border-blue-200 transition-all duration-300 hover:shadow-lg"
       style={{ animationDelay: `${index * 100}ms` }}
     >
-      <button
-        onClick={onToggle}
+      <div
         className="w-full flex items-center justify-between p-6 text-left bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 transition-all duration-300"
       >
         <div className="flex items-start space-x-4 flex-1">
           <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${isOpen
-              ? 'bg-gradient-to-br from-blue-500 to-cyan-500'
-              : 'bg-gray-100 group-hover:bg-blue-100'
+            ? 'bg-gradient-to-br from-blue-500 to-cyan-500'
+            : 'bg-gray-100 group-hover:bg-blue-100'
             }`}>
             <HelpCircle
               className={`transition-colors duration-300 ${isOpen ? 'text-white' : 'text-gray-600 group-hover:text-blue-600'
@@ -37,17 +36,26 @@ function FAQItem({ question, answer, index, isOpen, onToggle }: FAQItemProps) {
             {question}
           </h3>
         </div>
-        <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${isOpen
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggle();
+          }}
+          className={`relative z-10 flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 ${isOpen
             ? 'bg-blue-600 rotate-180'
-            : 'bg-gray-100 group-hover:bg-blue-100'
-          }`}>
+            : 'bg-gray-100 group-hover:bg-blue-100 hover:bg-blue-200'
+            }`}
+          aria-label={isOpen ? "Collapse answer" : "Expand answer"}
+        >
           {isOpen ? (
-            <Minus className="text-white" size={18} strokeWidth={3} />
+            <Minus className="text-white" size={20} strokeWidth={3} />
           ) : (
-            <Plus className="text-gray-600 group-hover:text-blue-600" size={18} strokeWidth={3} />
+            <Plus className="text-gray-600 group-hover:text-blue-600" size={20} strokeWidth={3} />
           )}
-        </div>
-      </button>
+        </button>
+      </div>
 
       <div
         className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96' : 'max-h-0'
