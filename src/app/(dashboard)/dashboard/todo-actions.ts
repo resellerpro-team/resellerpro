@@ -65,7 +65,11 @@ export async function getTodos(): Promise<Todo[]> {
 /**
  * Creates a new todo
  */
-export async function createTodo(text: string): Promise<{ success: boolean; error?: string }> {
+export async function createTodo(
+    text: string,
+    priority: 'low' | 'medium' | 'high' = 'medium',
+    is_auto_generated: boolean = false
+): Promise<{ success: boolean; error?: string }> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -84,8 +88,8 @@ export async function createTodo(text: string): Promise<{ success: boolean; erro
                 user_id: user.id,
                 text: text.trim(),
                 completed: false,
-                is_auto_generated: false,
-                priority: 'medium'
+                is_auto_generated: is_auto_generated,
+                priority: priority
             })
 
         if (error) {

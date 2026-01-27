@@ -39,9 +39,17 @@ export default function EnquiryForm() {
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name } = e.target
+        let { value } = e.target
+
+        if (name === 'whatsapp') {
+            // Only allow digits 0-9
+            value = value.replace(/\D/g, '')
+        }
+
         setFormData(prev => ({
             ...prev,
-            [e.target.name]: e.target.value
+            [name]: value
         }))
     }
 

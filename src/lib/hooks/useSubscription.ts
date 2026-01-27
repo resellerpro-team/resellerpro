@@ -38,14 +38,24 @@ export function useSubscription(): SubscriptionStatus {
                     return
                 }
 
+                // Fetch subscription with current_period_end for expiration check
                 const { data: subscription } = await supabase
                     .from('user_subscriptions')
-                    .select('plan_id, status, subscription_plans(name, display_name)')
+                    .select('plan_id, status, current_period_end, subscription_plans(name, display_name)')
                     .eq('user_id', user.id)
                     .single()
 
                 const planName = (subscription?.subscription_plans as any)?.name || 'free'
-                const isPremium = subscription?.status === 'active' && planName !== 'free'
+
+                // STRICT CHECK: Must be active + paid plan + NOT expired
+                const isActive = subscription?.status === 'active'
+                const isPaidPlan = planName !== 'free'
+                const isNotExpired = subscription?.current_period_end
+                    ? new Date(subscription.current_period_end) > new Date()
+                    : false
+
+                // All three conditions must be true for premium access
+                const isPremium = isActive && isPaidPlan && isNotExpired
 
                 setSubscriptionStatus({
                     isPremium,
