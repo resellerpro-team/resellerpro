@@ -70,7 +70,6 @@ export function useOfflineQueue() {
 
     // Execute individual action
     const executeAction = async (action: QueuedAction) => {
-        console.log('🔄 Executing queued action:', action.type, action.payload)
 
         switch (action.type) {
             case 'CREATE_CUSTOMER': {
@@ -89,7 +88,6 @@ export function useOfflineQueue() {
                 }
 
                 const result = await response.json()
-                console.log('✅ Customer created successfully:', result)
                 break
             }
 
@@ -154,8 +152,6 @@ export function useOfflineQueue() {
                 const isDuplicate = error.message?.includes('409') || error.message?.includes('duplicate')
 
                 if (isDuplicate) {
-                    // Don't retry duplicates, just remove from queue
-                    console.log(`⚠️ Skipping duplicate ${action.type}:`, action.payload.name || action.payload.id)
                     successCount++ //Count as success so we don't fail the whole sync
                 } else if (action.retries < MAX_RETRIES) {
                     // Retry logic for real errors
@@ -205,18 +201,14 @@ export function useOfflineQueue() {
 
     // Listen for online/offline events
     useEffect(() => {
-        // Check initial state and log it
-        console.log('🔌 useOfflineQueue initialized, navigator.onLine:', navigator.onLine)
         setIsOnline(navigator.onLine)
 
         const handleOnline = () => {
-            console.log('🟢 Back online! Processing queue...')
             setIsOnline(true)
             processQueue()
         }
 
         const handleOffline = () => {
-            console.log('🔴 Gone offline')
             setIsOnline(false)
             toast.info('You\'re offline', {
                 description: 'Changes will be queued and synced when you\'re back online.',
@@ -230,11 +222,8 @@ export function useOfflineQueue() {
         if (navigator.onLine) {
             const queue = getQueue()
             if (queue.length > 0) {
-                console.log(`📋 Found ${queue.length} queued items, processing...`)
                 processQueue()
             }
-        } else {
-            console.log('⚠️ Starting in offline mode')
         }
 
         return () => {
