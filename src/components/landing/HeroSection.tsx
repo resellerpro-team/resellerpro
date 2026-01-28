@@ -9,7 +9,7 @@ export default function HeroSection() {
   const [showDemo, setShowDemo] = useState(false)
 
   return (
-    <section className="relative pt-18 pb-18 lg:pt-32 lg:pb-24 overflow-hidden bg-background">
+    <section className="relative pt-28 pb-16 lg:pt-32 lg:pb-24 overflow-hidden bg-background">
 
       {/* Custom Styles for Animations */}
       <style jsx>{`
@@ -122,7 +122,7 @@ export default function HeroSection() {
                 </button>
               </Link>
 
-              <button 
+              <button
                 onClick={() => setShowDemo(true)}
                 className="w-full sm:w-auto px-8 py-4 bg-background text-foreground rounded-2xl font-semibold text-lg border-2 border-border hover:border-primary/50 hover:bg-secondary/50 transition-all duration-300 flex items-center justify-center gap-2 group"
               >

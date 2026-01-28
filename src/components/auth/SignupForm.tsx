@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, EyeOff, Loader2, Mail, Lock, User, Briefcase, Sparkles, Phone, Gift, ChevronDown } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Mail, Lock, User, Briefcase, Sparkles, Phone, Gift } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,7 +21,6 @@ export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [showReferralField, setShowReferralField] = useState(false)
 
-  // Check for referral code in URL
   useEffect(() => {
     const refCode = searchParams.get('ref')
     if (refCode) {
@@ -59,7 +58,6 @@ export default function SignupForm() {
     setIsLoading(true)
 
     try {
-      // Prepare FormData for server action
       const fd = new FormData()
       fd.append('fullName', formData.fullName)
       fd.append('businessName', formData.businessName)
@@ -70,80 +68,73 @@ export default function SignupForm() {
 
       const result = await signup({ success: false, message: '' }, fd)
 
-      // --------------------------
-      // Handle server-side errors
-      // --------------------------
       if (!result.success) {
         toast({
           title: 'Signup Failed',
           description: result.message,
           variant: 'destructive'
         })
-
         setIsLoading(false)
         return
       }
 
-
-
-      // Show verification toast and redirect to login
-      // toast({
-      //   title: 'Verify your email',
-      //   description: 'We’ve sent a confirmation link to your email. Please verify to continue.',
-      // })
-
       setIsLoading(false)
-
-      // Redirect to dashboard immediately
       router.push('/dashboard')
 
     } catch (error: any) {
       console.error('Signup error:', error)
-
       toast({
         title: 'Signup Failed',
         description: error?.message || 'Unexpected error occurred.',
         variant: 'destructive'
       })
-
       setIsLoading(false)
     }
   }
 
+  // ✅ Add this handler for Enter key
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      // Don't submit if target is a textarea or button
+      const target = e.target as HTMLElement
+      if (target.tagName === 'TEXTAREA') return
+
+      e.preventDefault()
+      handleSubmit(e)
+    }
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 ">
-      {/* Animated background elements */}
-
-
+    <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-4xl relative z-10 backdrop-blur-sm shadow-lg border">
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* Left Side - Logo and Description */}
-          <div className="hidden md:flex flex-col items-center justify-center p-6 bg-blue-600 rounded-t-xl">
-            <div className="flex h-16 w-16 items-center justify-center bg-white/20 backdrop-blur-sm shadow-lg mb-4">
-              <Sparkles className="h-8 w-8 rounded-lg text-white" />
+        {/* ✅ Add onKeyDown to form */}
+        <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {/* Left Side - Logo and Description */}
+            <div className="hidden md:flex flex-col items-center justify-center p-6 bg-blue-600 rounded-t-xl">
+              <div className="flex h-16 w-16 items-center justify-center bg-white/20 backdrop-blur-sm shadow-lg mb-4">
+                <Sparkles className="h-8 w-8 rounded-lg text-white" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-white text-center mb-2">
+                Create Account
+              </CardTitle>
+              <CardDescription className="text-base text-white/90 text-center">
+                Start your reselling journey today
+              </CardDescription>
             </div>
-            <CardTitle className="text-2xl font-bold text-white text-center mb-2">
-              Create Account
-            </CardTitle>
-            <CardDescription className="text-base text-white/90 text-center">
-              Start your reselling journey today
-            </CardDescription>
-          </div>
 
-          <div className="block md:hidden items-center justify-center p-6  rounded-t-xl">
-            <CardTitle className="text-2xl font-bold text-black text-center mb-2">
-              Create Account
-            </CardTitle>
-            <CardDescription className="text-base text-black text-center">
-              Start your reselling journey today
-            </CardDescription>
-          </div>
+            <div className="block md:hidden items-center justify-center p-6 rounded-t-xl">
+              <CardTitle className="text-2xl font-bold text-black text-center mb-2">
+                Create Account
+              </CardTitle>
+              <CardDescription className="text-base text-black text-center">
+                Start your reselling journey today
+              </CardDescription>
+            </div>
 
-          {/* Right Side - Form Fields */}
-          <CardContent className="pt-3 pb-3">
-            <div className="space-y-3">
-              {/* Two Column Layout for Name and Business */}
-              <div className="grid grid-cols-1 gap-4">
+            {/* Right Side - Form Fields */}
+            <CardContent className="pt-3 pb-3">
+              <div className="space-y-3">
                 {/* Full Name */}
                 <div className="space-y-1">
                   <Label htmlFor="fullName" className="text-sm font-medium">Full Name</Label>
@@ -176,10 +167,7 @@ export default function SignupForm() {
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Two Column Layout for Email and Phone */}
-              <div className="grid grid-cols-1 gap-4">
                 {/* Email */}
                 <div className="space-y-1">
                   <Label htmlFor="email" className="text-sm font-medium">Email</Label>
@@ -215,96 +203,106 @@ export default function SignupForm() {
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Password */}
-              <div className="space-y-1">
-                <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
+                {/* Password */}
+                <div className="space-y-1">
+                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground -translate-y-1/2" />
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="At least 6 characters"
+                      className="pl-10 pr-10 h-8"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Referral Code */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Gift className="h-4 w-4 text-gray" />
+                    <Label htmlFor="referralCode" className="text-sm font-medium">Referral Code (Optional)</Label>
+                  </div>
                   <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="At least 6 characters"
-                    className="pl-10 pr-10 h-8"
-                    value={formData.password}
+                    id="referralCode"
+                    placeholder="Enter referral code"
+                    className="h-8"
+                    value={formData.referralCode}
                     onChange={handleInputChange}
-                    required
                     disabled={isLoading}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                  <p className="text-xs text-black font-small">
+                    Use a referral code to earn ₹50 wallet credit instantly.
+                  </p>
                 </div>
-              </div>
 
-              {/* Referral Code */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <Gift className="h-4 w-4 text-gray" />
-                  <Label htmlFor="referralCode" className="text-sm font-medium">Referral Code (Optional)</Label>
+                {/* Terms - ✅ Added onKeyDown to handle Enter on checkbox */}
+                <div
+                  className="flex items-start space-x-2 p-2.5 bg-gray-50 dark:bg-gray-800/50"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      // Toggle checkbox on Enter
+                      setFormData(prev => ({ ...prev, agreeToTerms: !prev.agreeToTerms }))
+                    }
+                  }}
+                >
+                  <Checkbox
+                    id="terms"
+                    checked={formData.agreeToTerms}
+                    onCheckedChange={(checked) => setFormData({ ...formData, agreeToTerms: checked as boolean })}
+                    disabled={isLoading}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
+                    I agree to the{' '}
+                    <Link href="/terms" className="text-blue-600 font-medium hover:underline">Terms of Service</Link>
+                    {' '}and{' '}
+                    <Link href="/privacy" className="text-blue-600 font-medium hover:underline">Privacy Policy</Link>
+                  </label>
                 </div>
-                <Input
-                  id="referralCode"
-                  placeholder="Enter referral code"
-                  className="h-8"
-                  value={formData.referralCode}
-                  onChange={handleInputChange}
+
+                {/* Submit */}
+                <Button
+                  type="submit"
+                  className="w-full h-9 text-sm font-semibold bg-blue-600"
                   disabled={isLoading}
-                />
-                <p className="text-xs text-black font-small">
-                  Use a referral code to earn ₹50 wallet credit instantly.
-                </p>
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    'Create Free Account'
+                  )}
+                </Button>
               </div>
+            </CardContent>
 
-              {/* Terms */}
-              <div className="flex items-start space-x-2 p-2.5 bg-gray-50 dark:bg-gray-800/50">
-                <Checkbox
-                  id="terms"
-                  checked={formData.agreeToTerms}
-                  onCheckedChange={(checked) => setFormData({ ...formData, agreeToTerms: checked as boolean })}
-                  disabled={isLoading}
-                  className="mt-0.5"
-                />
-                <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
-                  I agree to the{' '}
-                  <Link href="/terms" className="text-blue-600 font-medium hover:underline">Terms of Service</Link>
-                  {' '}and{' '}
-                  <Link href="/privacy" className="text-blue-600 font-medium hover:underline">Privacy Policy</Link>
-                </label>
-              </div>
-
-              {/* Submit */}
-              <Button
-                onClick={handleSubmit}
-                className="w-full h-9 text-sm font-semibold bg-blue-600"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  'Create Free Account'
-                )}
-              </Button>
-            </div>
-          </CardContent>
-
-          <CardFooter className="border-t pt-3 md:col-span-2">
-            <p className="w-full text-center text-sm font-bold text-muted-foreground">
-              Already have an account?{' '}
-              <Link href="/signin" className="text-primary font-medium hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </div>
+            <CardFooter className="border-t pt-3 md:col-span-2">
+              <p className="w-full text-center text-sm font-bold text-muted-foreground">
+                Already have an account?{' '}
+                <Link href="/signin" className="text-primary font-medium hover:underline">
+                  Sign in
+                </Link>
+              </p>
+            </CardFooter>
+          </div>
+        </form>
       </Card>
     </div>
   )
