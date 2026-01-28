@@ -65,7 +65,6 @@ export async function verifyLoginOtp(email: string, code: string) {
             throw new Error('Could not generate login link.')
         }
 
-        console.log('Generated Magic Link:', data.properties.action_link)
 
         return { success: true, redirectUrl: data.properties.action_link }
 
