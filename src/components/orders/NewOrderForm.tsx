@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,7 @@ import { SearchableSelect, SearchableSelectOption } from '@/components/ui/search
 import { useToast } from '@/hooks/use-toast'
 import { Plus, Trash2, Save, Loader2, Package, AlertTriangle } from 'lucide-react'
 import { createOrder } from '@/app/(dashboard)/orders/actions'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
 
 type Customer = {
   id: string
@@ -34,7 +36,7 @@ type Product = {
   selling_price: number
   cost_price: number
   stock_status: string
-  stock_quantity: number // Made required
+  stock_quantity: number
 }
 
 type OrderItem = {
@@ -45,7 +47,7 @@ type OrderItem = {
   unitPrice: number
   unitCost: number
   stockStatus: string
-  maxStock: number // Add max available stock
+  maxStock: number
 }
 
 export function NewOrderForm({
@@ -59,6 +61,10 @@ export function NewOrderForm({
 }) {
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const { subscription } = usePlanLimits()
+  const planName = subscription?.plan?.display_name || 'Free Plan'
+
   const [isPending, startTransition] = useTransition()
 
   const [selectedCustomerId, setSelectedCustomerId] = useState(preSelectedCustomerId || '')
@@ -84,22 +90,18 @@ export function NewOrderForm({
   }, [preSelectedCustomerId, customers, toast])
 
   const handleNumberInput = (value: string, setter: (val: string) => void) => {
-    // Allow empty input
     if (value === '') {
       setter('')
       return
     }
-
-    // Allow only numbers + decimal
     if (/^\d*\.?\d*$/.test(value)) {
       setter(value)
     }
   }
 
-const discountValue = parseFloat(discount) || 0;
-const shippingValue = parseFloat(shippingCost) || 0;
+  const discountValue = parseFloat(discount) || 0;
+  const shippingValue = parseFloat(shippingCost) || 0;
 
-  // Helper function to get stock status badge
   const getStockBadge = (status: string, quantity?: number) => {
     if (quantity !== undefined && quantity === 0) {
       return (
@@ -136,15 +138,12 @@ const shippingValue = parseFloat(shippingCost) || 0;
     }
   }
 
-  // Check if any item exceeds available stock
   const hasStockIssues = orderItems.some((item) => item.quantity > item.maxStock)
 
-  // Add product to order
   const handleAddProduct = (productId: string) => {
     const product = products.find((p) => p.id === productId)
     if (!product) return
 
-    // Check if product is out of stock
     if (product.stock_quantity === 0) {
       toast({
         title: 'Out of Stock',
@@ -172,20 +171,18 @@ const shippingValue = parseFloat(shippingCost) || 0;
       unitPrice: product.selling_price,
       unitCost: product.cost_price,
       stockStatus: product.stock_status,
-      maxStock: product.stock_quantity, // Store max available stock
+      maxStock: product.stock_quantity,
     }
 
     setOrderItems([...orderItems, newItem])
   }
 
-  // Updated quantity handler with validation
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
     if (quantity < 1) return
 
     const item = orderItems.find((i) => i.id === itemId)
     if (!item) return
 
-    // Enforce max stock limit
     if (quantity > item.maxStock) {
       toast({
         title: 'Insufficient Stock',
@@ -193,7 +190,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
         variant: 'destructive',
       })
 
-      // Set to max available
       setOrderItems(
         orderItems.map((i) => (i.id === itemId ? { ...i, quantity: item.maxStock } : i))
       )
@@ -214,7 +210,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
     setOrderItems(orderItems.filter((item) => item.id !== itemId))
   }
 
-  // Calculate totals
   const subtotal = orderItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
   const totalCost = orderItems.reduce((sum, item) => sum + item.quantity * item.unitCost, 0)
   const total = subtotal + shippingValue - discountValue
@@ -241,7 +236,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
       return
     }
 
-    // Final stock validation before submission
     if (hasStockIssues) {
       toast({
         title: 'Stock Issues',
@@ -271,14 +265,38 @@ const shippingValue = parseFloat(shippingCost) || 0;
           title: 'Success',
           description: result.message,
         })
+
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+
         router.push(`/orders/${result.orderId}`)
         router.refresh()
       } else {
-        toast({
-          title: 'Error',
-          description: result.message,
-          variant: 'destructive',
-        })
+        // Handle Limit or Database errors
+        const isLimitError = result.message.toLowerCase().includes('limit') ||
+          result.message.toLowerCase().includes('database error') &&
+          (result.message.toLowerCase().includes('reached') || result.message.toLowerCase().includes('exceeded'));
+
+        if (isLimitError) {
+          toast({
+            title: "Limit Reached 🔒",
+            description: `You've reached your order limit on the ${planName}. Upgrade to grow your business!`,
+            variant: "default",
+            action: (
+              <Link
+                href="/settings/subscription"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3"
+              >
+                Upgrade
+              </Link>
+            ),
+          })
+        } else {
+          toast({
+            title: 'Error',
+            description: result.message,
+            variant: 'destructive',
+          })
+        }
       }
     })
   }
@@ -288,7 +306,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
-        {/* Customer Selection */}
         <Card>
           <CardHeader>
             <CardTitle>Customer Details</CardTitle>
@@ -327,7 +344,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
           </CardContent>
         </Card>
 
-        {/* Product Selection */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -352,8 +368,8 @@ const shippingValue = parseFloat(shippingCost) || 0;
                   options={products.map((p): SearchableSelectOption => ({
                     value: p.id,
                     label: `${p.name} - ₹${p.selling_price}`,
-                    subtitle: p.stock_quantity <= 10 
-                      ? `⚠️ Low Stock: ${p.stock_quantity} units` 
+                    subtitle: p.stock_quantity <= 10
+                      ? `⚠️ Low Stock: ${p.stock_quantity} units`
                       : `Stock: ${p.stock_quantity} units`,
                   }))}
                   value=""
@@ -365,7 +381,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
               )}
             </div>
 
-            {/* Order Items List */}
             {orderItems.length > 0 ? (
               <div className="space-y-3 pt-4">
                 {orderItems.map((item) => {
@@ -375,9 +390,8 @@ const shippingValue = parseFloat(shippingCost) || 0;
                   return (
                     <div
                       key={item.id}
-                      className={`p-4 border rounded-lg ${
-                        hasError ? 'border-red-500 bg-red-50 dark:bg-red-950/10' : ''
-                      }`}
+                      className={`p-4 border rounded-lg ${hasError ? 'border-red-500 bg-red-50 dark:bg-red-950/10' : ''
+                        }`}
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex-1">
@@ -388,14 +402,12 @@ const shippingValue = parseFloat(shippingCost) || 0;
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span>Cost: ₹{item.unitCost}</span>
                             <span
-                              className={`font-medium ${
-                                item.maxStock < 5 ? 'text-yellow-600' : ''
-                              }`}
+                              className={`font-medium ${item.maxStock < 5 ? 'text-yellow-600' : ''
+                                }`}
                             >
                               Available: {item.maxStock} units
                             </span>
                           </div>
-                          {/* Show low stock warning */}
                           {isLowStock && !hasError && (
                             <div className="flex items-center gap-1 mt-2 text-xs text-yellow-600">
                               <AlertTriangle className="h-3 w-3" />
@@ -405,7 +417,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {/* Quantity input with max validation */}
                           <div className="space-y-1">
                             <Label className="text-xs">
                               Qty{' '}
@@ -455,7 +466,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
                         </div>
                       </div>
 
-                      {/* Error message for exceeded stock */}
                       {hasError && (
                         <Alert variant="destructive" className="mt-3">
                           <AlertTriangle className="h-4 w-4" />
@@ -478,7 +488,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
           </CardContent>
         </Card>
 
-        {/* Additional Details */}
         <Card>
           <CardHeader>
             <CardTitle>Additional Details</CardTitle>
@@ -547,7 +556,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
         </Card>
       </div>
 
-      {/* Order Summary Sidebar */}
       <div className="lg:col-span-1">
         <Card className="sticky top-6">
           <CardHeader>
@@ -579,7 +587,6 @@ const shippingValue = parseFloat(shippingCost) || 0;
               </div>
             </div>
 
-            {/* Stock warning before submission */}
             {hasStockIssues && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />

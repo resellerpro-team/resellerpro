@@ -136,6 +136,7 @@ export function ProductCard({ product }: { product: Product }) {
       })
 
       setShowDeleteDialog(false)
+      queryClient.invalidateQueries({ queryKey: ['products'] })
       router.refresh() // Refresh the page to show updated list
     } catch (error: any) {
       console.error('Unexpected error:', error)

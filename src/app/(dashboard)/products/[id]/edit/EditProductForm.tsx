@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,8 +11,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Save, Upload, X, Loader2, Trash2, AlertTriangle } from 'lucide-react'
+import { Save, Upload, X, Loader2, Trash2, AlertTriangle, Lock } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,23 +28,24 @@ import {
 
 export default function EditProductForm({ product }: { product: any }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { toast } = useToast()
   const supabase = createClient()
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  
+
   // Get existing images
-  const existingImages = product.images && product.images.length > 0 
-    ? product.images 
-    : product.image_url 
-    ? [product.image_url] 
-    : []
-  
+  const existingImages = product.images && product.images.length > 0
+    ? product.images
+    : product.image_url
+      ? [product.image_url]
+      : []
+
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [keepExistingImages, setKeepExistingImages] = useState<string[]>(existingImages)
-  
+
   // Form state
   const [name, setName] = useState(product.name)
   const [description, setDescription] = useState(product.description || '')
@@ -59,7 +62,7 @@ export default function EditProductForm({ product }: { product: any }) {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    
+
     const totalImages = keepExistingImages.length + images.length + files.length
     if (totalImages > 5) {
       toast({
@@ -141,7 +144,7 @@ export default function EditProductForm({ product }: { product: any }) {
 
   const deleteUnusedImages = async () => {
     const removedImages = existingImages.filter((url: string) => !keepExistingImages.includes(url))
-    
+
     for (const url of removedImages) {
       try {
         const path = url.split('/product-images/')[1]
@@ -156,7 +159,7 @@ export default function EditProductForm({ product }: { product: any }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!name.trim()) {
       toast({
         title: 'Validation Error',
@@ -203,6 +206,7 @@ export default function EditProductForm({ product }: { product: any }) {
           title: 'Authentication Error',
           description: 'You must be logged in to edit products',
           variant: 'destructive',
+
         })
         setIsLoading(false)
         return
@@ -261,6 +265,8 @@ export default function EditProductForm({ product }: { product: any }) {
         description: `"${name}" has been updated successfully`,
       })
 
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['product', product.id] })
       router.push(`/products/${product.id}`)
       router.refresh()
     } catch (error: any) {
@@ -323,6 +329,7 @@ export default function EditProductForm({ product }: { product: any }) {
         description: `"${product.name}" has been permanently deleted`,
       })
 
+      queryClient.invalidateQueries({ queryKey: ['products'] })
       router.push('/products')
       router.refresh()
     } catch (error: any) {
@@ -345,18 +352,18 @@ export default function EditProductForm({ product }: { product: any }) {
           <CardTitle>Product Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          
+
           {/* Product Name */}
           <div className="space-y-2">
             <Label htmlFor="name">
               Product Name <span className="text-destructive">*</span>
             </Label>
-            <Input 
-              id="name" 
+            <Input
+              id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Wireless Earbuds Pro" 
-              required 
+              placeholder="e.g., Wireless Earbuds Pro"
+              required
               disabled={isLoading}
             />
           </div>
@@ -371,7 +378,7 @@ export default function EditProductForm({ product }: { product: any }) {
                 {totalImages} / 5 images
               </span>
             </div>
-            
+
             {/* Existing Images */}
             {keepExistingImages.length > 0 && (
               <div className="space-y-2">
@@ -437,7 +444,7 @@ export default function EditProductForm({ product }: { product: any }) {
             )}
 
             {/* Add More Images */}
-            {totalImages < 5 && (
+            {totalImages < 5 ? (
               <label className="flex items-center justify-center aspect-square border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors p-6 max-w-[200px]">
                 <div className="text-center">
                   <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
@@ -457,6 +464,26 @@ export default function EditProductForm({ product }: { product: any }) {
                   disabled={isLoading}
                 />
               </label>
+            ) : (
+              <div
+                className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted-foreground/25 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors p-6 max-w-[200px]"
+                onClick={() => {
+                  toast({
+                    title: 'Limit Reached 🔒',
+                    description: `You can only add up to 5 images per product. Upgrade to Business plan for more!`,
+                    variant: 'default',
+                    action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
+                  })
+                }}
+              >
+                <Lock className="h-8 w-8 text-muted-foreground/60 mx-auto mb-2" />
+                <span className="text-sm font-medium text-muted-foreground/60">
+                  Limit Reached
+                </span>
+                <span className="text-xs text-primary font-medium mt-1">
+                  Upgrade Plan
+                </span>
+              </div>
             )}
 
             <p className="text-xs text-muted-foreground flex items-start gap-1.5">
@@ -472,15 +499,15 @@ export default function EditProductForm({ product }: { product: any }) {
                 <Label htmlFor="cost_price">
                   Cost Price (₹) <span className="text-destructive">*</span>
                 </Label>
-                <Input 
-                  id="cost_price" 
-                  type="number" 
+                <Input
+                  id="cost_price"
+                  type="number"
                   step="0.01"
                   min="0"
                   value={costPrice}
                   onChange={(e) => setCostPrice(e.target.value)}
-                  placeholder="What you paid" 
-                  required 
+                  placeholder="What you paid"
+                  required
                   disabled={isLoading}
                 />
               </div>
@@ -488,15 +515,15 @@ export default function EditProductForm({ product }: { product: any }) {
                 <Label htmlFor="selling_price">
                   Selling Price (₹) <span className="text-destructive">*</span>
                 </Label>
-                <Input 
-                  id="selling_price" 
-                  type="number" 
+                <Input
+                  id="selling_price"
+                  type="number"
                   step="0.01"
                   min="0"
                   value={sellingPrice}
                   onChange={(e) => setSellingPrice(e.target.value)}
-                  placeholder="What customer pays" 
-                  required 
+                  placeholder="What customer pays"
+                  required
                   disabled={isLoading}
                 />
               </div>
@@ -552,8 +579,8 @@ export default function EditProductForm({ product }: { product: any }) {
 
             <div className="space-y-2">
               <Label>Stock Status</Label>
-              <Select 
-                value={stockStatus} 
+              <Select
+                value={stockStatus}
                 onValueChange={setStockStatus}
                 disabled={isLoading}
               >
@@ -572,11 +599,11 @@ export default function EditProductForm({ product }: { product: any }) {
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea 
-              id="description" 
+            <Textarea
+              id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your product features, specifications, condition..." 
+              placeholder="Describe your product features, specifications, condition..."
               rows={4}
               disabled={isLoading}
             />
@@ -606,9 +633,9 @@ export default function EditProductForm({ product }: { product: any }) {
             {/* Delete Button */}
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button 
-                  type="button" 
-                  variant="destructive" 
+                <Button
+                  type="button"
+                  variant="destructive"
                   disabled={isLoading || isDeleting}
                 >
                   {isDeleting ? (
@@ -649,9 +676,9 @@ export default function EditProductForm({ product }: { product: any }) {
 
             {/* Save/Cancel Buttons */}
             <div className="flex gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => router.back()}
                 disabled={isLoading || isDeleting}
               >

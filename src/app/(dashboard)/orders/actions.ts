@@ -37,7 +37,7 @@ async function canCreateOrder() {
     .eq('user_id', user.id)
     .single()
 
-  const { PLAN_LIMITS, PlanId } = await import('@/config/pricing') // Dynamic import to avoid cycles if any
+  const { PLAN_LIMITS } = await import('@/config/pricing') // Dynamic import to avoid cycles if any
 
   // Determine plan name (normalize to lowercase keys in PLAN_LIMITS)
   const planNameRaw = subscription?.plan?.name?.toLowerCase() || 'free'
@@ -217,15 +217,44 @@ export async function createOrder(
       for (const item of items) {
         if (!item.productId) continue
 
-        const { data: newQuantity, error: stockError } = await supabase
+        let newQuantity: number | null = null
+
+        const { data: q, error: stockError } = await supabase
           .rpc('deduct_product_stock', {
             p_product_id: item.productId,
             p_quantity: item.quantity,
           })
 
         if (stockError) {
-          console.error(`⚠️ Failed to deduct stock for product ${item.productId}:`, stockError)
-          continue
+          console.error(`⚠️ RPC failed for ${item.productId}, trying manual update:`, stockError)
+
+          // Fallback: Manual Update
+          const { data: product } = await supabase
+            .from('products')
+            .select('stock_quantity')
+            .eq('id', item.productId)
+            .single()
+
+          if (product) {
+            const current = product.stock_quantity
+            const next = Math.max(0, current - item.quantity)
+            const status = next === 0 ? 'out_of_stock' : (next <= 5 ? 'low_stock' : 'in_stock')
+
+            const { error: updateError } = await supabase
+              .from('products')
+              .update({
+                stock_quantity: next,
+                stock_status: status,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', item.productId)
+
+            if (!updateError) {
+              newQuantity = next
+            }
+          }
+        } else {
+          newQuantity = q
         }
 
         // Trigger LOW_STOCK notification if quantity <= 5
@@ -248,6 +277,8 @@ export async function createOrder(
 
     // Revalidate pages
     revalidatePath('/orders')
+    revalidatePath('/orders/new')
+    revalidatePath('/products')
     revalidatePath('/dashboard')
     revalidatePath('/settings/subscription')
 

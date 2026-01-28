@@ -10,17 +10,19 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeft, Save, Upload, X, Loader2, WifiOff } from 'lucide-react'
+import { ArrowLeft, Save, Upload, X, Loader2, WifiOff, Lock } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
 import { LimitReachedModal } from '@/components/subscription/LimitReachedModal'
 import { useOfflineQueue } from '@/lib/hooks/useOfflineQueue'
+import { useQueryClient } from '@tanstack/react-query'
 import { createProduct } from '../actions'
 import { RequireVerification } from '@/components/shared/RequireVerification'
 
 export default function NewProductPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { toast } = useToast()
   const supabase = createClient()
   const { queueAction, isOnline } = useOfflineQueue()
@@ -255,6 +257,7 @@ export default function NewProductPage() {
         description: `Product "${name}" created successfully!`,
       })
 
+      queryClient.invalidateQueries({ queryKey: ['products'] })
       router.push('/products')
       router.refresh()
     } catch (error: any) {
@@ -344,7 +347,7 @@ export default function NewProductPage() {
                     </div>
                   ))}
 
-                  {images.length < imageLimit && (
+                  {images.length < imageLimit ? (
                     <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted transition-colors">
                       <Upload className="h-6 w-6 text-muted-foreground mb-1" />
                       <span className="text-xs text-muted-foreground">Add Image</span>
@@ -357,6 +360,22 @@ export default function NewProductPage() {
                         disabled={isLoading}
                       />
                     </label>
+                  ) : (
+                    <div
+                      className="aspect-square border-2 border-dashed border-muted-foreground/25 bg-muted/30 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        toast({
+                          title: 'Limit Reached 🔒',
+                          description: `You've reached the limit of ${imageLimit} images on the ${planName}. Upgrade to add more!`,
+                          variant: 'default',
+                          action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
+                        })
+                      }}
+                    >
+                      <Lock className="h-6 w-6 text-muted-foreground/60 mb-1" />
+                      <span className="text-xs text-muted-foreground/60">Limit Reached</span>
+                      <span className="text-[10px] text-primary font-medium mt-1">Upgrade Plan</span>
+                    </div>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -20,6 +21,7 @@ import { RequireVerification } from '@/components/shared/RequireVerification'
 export default function NewCustomerPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const formRef = useRef<HTMLFormElement>(null)
   const [isPending, startTransition] = useTransition()
   const { queueAction, isOnline } = useOfflineQueue()
@@ -124,6 +126,9 @@ export default function NewCustomerPage() {
             description: result.message,
             duration: 3000,
           })
+
+          queryClient.invalidateQueries({ queryKey: ["customers"] })
+
           setTimeout(() => {
             router.push('/customers')
             router.refresh()
