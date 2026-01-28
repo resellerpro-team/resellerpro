@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { FilterX, Search, Package } from "lucide-react"
 import Link from "next/link"
+import { RequireVerification } from "./RequireVerification"
 
 interface EmptyStateProps {
   icon?: React.ElementType
@@ -15,15 +16,25 @@ interface EmptyStateProps {
     label: string
     onClick: () => void
   }
+  requireVerification?: boolean
 }
 
-export function EmptyState({ 
-  icon: Icon = Package, 
-  title, 
-  description, 
+export function EmptyState({
+  icon: Icon = Package,
+  title,
+  description,
   action,
-  secondaryAction 
+  secondaryAction,
+  requireVerification = false
 }: EmptyStateProps) {
+  const ActionButton = action?.href ? (
+    <Button asChild>
+      <Link href={action.href}>{action.label}</Link>
+    </Button>
+  ) : action?.onClick ? (
+    <Button onClick={action.onClick}>{action.label}</Button>
+  ) : null
+
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
       <div className="rounded-full bg-muted/50 p-6 mb-4">
@@ -31,17 +42,17 @@ export function EmptyState({
       </div>
       <h3 className="text-lg font-semibold mb-2">{title}</h3>
       <p className="text-sm text-muted-foreground mb-6 max-w-md">{description}</p>
-      
+
       {action && (
         <div className="flex items-center gap-3">
-          {action.href ? (
-            <Button asChild>
-              <Link href={action.href}>{action.label}</Link>
-            </Button>
+          {requireVerification ? (
+            <RequireVerification>
+              {ActionButton}
+            </RequireVerification>
           ) : (
-            <Button onClick={action.onClick}>{action.label}</Button>
+            ActionButton
           )}
-          
+
           {secondaryAction && (
             <Button variant="outline" onClick={secondaryAction.onClick}>
               {secondaryAction.label}

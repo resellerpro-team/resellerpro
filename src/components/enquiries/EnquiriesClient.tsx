@@ -26,6 +26,7 @@ import { ExportEnquiries } from '@/components/enquiries/ExportEnquiries';
 import { StatsCard } from "@/components/shared/StatsCard"
 import { Enquiry } from "@/types"
 import { createClient } from '@/lib/supabase/client';
+import { RequireVerification } from "../shared/RequireVerification";
 
 export function EnquiriesClient() {
     const router = useRouter();
@@ -42,7 +43,7 @@ export function EnquiriesClient() {
         async function fetchBusinessName() {
             const supabase = createClient()
             const { data: { user } } = await supabase.auth.getUser()
-            
+
             if (user) {
                 const { data: profile } = await supabase
                     .from('profiles')
@@ -68,7 +69,7 @@ export function EnquiriesClient() {
     const { data: enquiriesData, isLoading } = useEnquiries(qs);
     // Explicitly cast to any if necessary, or assume hook handles generic
     // const enquiriesDataAny = enquiriesData as any; // No longer needed with types
-    
+
     // Handle both old array format (safety) and new object format
     const enquiries = (Array.isArray(enquiriesData) ? enquiriesData : (enquiriesData as any)?.data || []) as Enquiry[];
     const totalCount = Array.isArray(enquiriesData) ? enquiriesData.length : ((enquiriesData as any)?.total || 0);
@@ -98,19 +99,21 @@ export function EnquiriesClient() {
 
     return (
         <div className="space-y-6">
-      {/* ONE: Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Enquiries</h1>
-          <p className="text-muted-foreground">Manage ongoing customer conversations and leads</p>
-        </div>
-        <div className="flex items-center gap-2">
-            <ExportEnquiries enquiries={enquiries} businessName={businessName} />
-            <Button onClick={() => router.push('/enquiries/new')}>
-                <MessageSquare className="mr-2 h-4 w-4" /> Add Enquiry
-            </Button>
-        </div>
-      </div>
+            {/* ONE: Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Enquiries</h1>
+                    <p className="text-muted-foreground">Manage ongoing customer conversations and leads</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <ExportEnquiries enquiries={enquiries} businessName={businessName} />
+                    <RequireVerification>
+                        <Button onClick={() => router.push('/enquiries/new')}>
+                            <MessageSquare className="mr-2 h-4 w-4" /> Add Enquiry
+                        </Button>
+                    </RequireVerification>
+                </div>
+            </div>
 
             {/* TWO: Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -188,6 +191,7 @@ export function EnquiriesClient() {
                             label: "Add Enquiry",
                             href: "/enquiries/new"
                         }}
+                        requireVerification={true}
                     />
                 )
             ) : (
@@ -197,7 +201,7 @@ export function EnquiriesClient() {
                     ))}
                 </div>
             )}
-            
+
             {/* Pagination */}
             {!isLoading && enquiries.length > 0 && (
                 <div className="py-4 border-t">

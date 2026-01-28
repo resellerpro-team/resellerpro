@@ -21,6 +21,7 @@ import { CustomersSkeleton } from "@/components/shared/skeletons/CustomersSkelet
 import { StatsCard } from "@/components/shared/StatsCard";
 import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
 import { createClient } from "@/lib/supabase/client";
+import { RequireVerification } from "../shared/RequireVerification";
 
 // -----------------------------------------
 
@@ -36,7 +37,7 @@ export function CustomersClient() {
     async function fetchBusinessName() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -65,7 +66,7 @@ export function CustomersClient() {
 
   // Fetch customers
   const { data: customersData, isLoading } = useCustomers(qs);
-  
+
   const customers = customersData?.data || [];
   const totalCount = customersData?.total || 0;
   const totalPages = Math.ceil(totalCount / 20);
@@ -112,12 +113,14 @@ export function CustomersClient() {
 
         <div className="flex gap-2">
           <ExportCustomers customers={customers} businessName={businessName} />
-          
-          <Button asChild>
-            <Link href="/customers/new">
-              <Plus className="mr-2 h-4 w-4" /> Add Customer
-            </Link>
-          </Button>
+
+          <RequireVerification>
+            <Button asChild>
+              <Link href="/customers/new">
+                <Plus className="mr-2 h-4 w-4" /> Add Customer
+              </Link>
+            </Button>
+          </RequireVerification>
         </div>
       </div>
 
@@ -188,6 +191,7 @@ export function CustomersClient() {
               label: "Add Customer",
               href: "/customers/new"
             }}
+            requireVerification={true}
           />
         )
       ) : (

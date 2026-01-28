@@ -15,6 +15,7 @@ export type LoginFormState = {
   success: boolean
   message: string
   errors?: Record<string, string[] | undefined>
+  redirectUrl?: string
 }
 
 export async function login(
@@ -121,7 +122,11 @@ export async function login(
     }
 
     revalidatePath('/')
-    redirect(redirectUrl)
+    return {
+      success: true,
+      message: 'Login successful',
+      redirectUrl
+    }
   } catch (error: any) {
     console.error('Unexpected login error:', error)
     return {

@@ -4,6 +4,7 @@ import { Badge } from "../ui/badge"
 import { Card, CardContent, CardHeader } from "../ui/card"
 import { Button } from "../ui/button"
 import Link from "next/link"
+import { RequireVerification } from "../shared/RequireVerification"
 
 const CustomerCard = ({
   id,
@@ -40,7 +41,7 @@ const CustomerCard = ({
   // Format last order date
   const formatLastOrder = (date: string | null): string => {
     if (!date) return 'No orders yet'
-    
+
     const lastOrderDate = new Date(date)
     const now = new Date()
     const diffTime = Math.abs(now.getTime() - lastOrderDate.getTime())
@@ -108,12 +109,14 @@ const CustomerCard = ({
           <Button size="sm" variant="outline" className="flex-1" asChild>
             <Link href={`/customers/${id}`}>View Details</Link>
           </Button>
-          <Button size="sm" className="flex-1" asChild>
-            <Link href={`/orders/new?customerId=${id}`}>
-              <Plus className="mr-1 h-3 w-3" />
-              New Order
-            </Link>
-          </Button>
+          <RequireVerification>
+            <Button size="sm" className="flex-1" asChild>
+              <Link href={`/orders/new?customerId=${id}`}>
+                <Plus className="mr-1 h-3 w-3" />
+                New Order
+              </Link>
+            </Button>
+          </RequireVerification>
         </div>
       </CardContent>
     </Card>

@@ -3,6 +3,7 @@ import Header from '@/components/layout/Header'
 import MobileNav from '@/components/layout/MobileNav'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { VerificationProvider } from '@/components/auth/VerificationProvider'
 
 // Define the type for the user data we will pass down
 type UserData = {
@@ -27,10 +28,11 @@ export default async function DashboardLayout({
   }
 
   // Fetch profile and subscription in parallel for better performance
+  // Added email_verified to profile selection
   const [profileResult, subscriptionResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('full_name, avatar_url, business_name')
+      .select('full_name, avatar_url, business_name, email_verified')
       .eq('id', user.id)
       .single(),
     supabase
@@ -59,14 +61,19 @@ export default async function DashboardLayout({
       {/* Pass the fetched user data to the Sidebar component */}
       <Sidebar user={userData} />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Also pass it to the Header component */}
-        <Header />
+      <VerificationProvider
+        initialVerified={profile?.email_verified ?? false}
+        email={user.email || ''}
+      >
+        <div className="flex flex-1 flex-col overflow-hidden">
+          {/* Also pass it to the Header component */}
+          <Header />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 lg:pb-6">
-          {children}
-        </main>
-      </div>
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 lg:pb-6">
+            {children}
+          </main>
+        </div>
+      </VerificationProvider>
 
       <MobileNav />
     </div>

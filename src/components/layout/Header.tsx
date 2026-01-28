@@ -18,6 +18,7 @@ import { useTheme } from 'next-themes'
 import { NotificationDrawer } from '@/components/notifications/NotificationDrawer'
 import { GlobalSearch } from '@/components/layout/GlobalSearch'
 import { useOfflineQueue } from '@/lib/hooks/useOfflineQueue'
+import { RequireVerification } from '../shared/RequireVerification'
 
 export default function Header() {
   const router = useRouter()
@@ -66,18 +67,26 @@ export default function Header() {
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuLabel>Create New</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/enquiries/new')}>
-              New Enquiry
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/orders/new')}>
-              New Order
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/products/new')}>
-              New Product
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/customers/new')}>
-              New Customer
-            </DropdownMenuItem>
+            <RequireVerification>
+              <DropdownMenuItem onClick={() => router.push('/enquiries/new')}>
+                New Enquiry
+              </DropdownMenuItem>
+            </RequireVerification>
+            <RequireVerification>
+              <DropdownMenuItem onClick={() => router.push('/orders/new')}>
+                New Order
+              </DropdownMenuItem>
+            </RequireVerification>
+            <RequireVerification>
+              <DropdownMenuItem onClick={() => router.push('/products/new')}>
+                New Product
+              </DropdownMenuItem>
+            </RequireVerification>
+            <RequireVerification>
+              <DropdownMenuItem onClick={() => router.push('/customers/new')}>
+                New Customer
+              </DropdownMenuItem>
+            </RequireVerification>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
