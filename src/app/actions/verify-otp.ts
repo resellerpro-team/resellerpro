@@ -29,15 +29,15 @@ export async function verifyOtp(email: string, code: string) {
             return { success: false, message: 'Invalid or expired OTP.' }
         }
 
-        // Update profile
+        // Update profile with upsert for resilience
         const { error } = await supabase
             .from('profiles')
-            .update({
+            .upsert({
+                id: user.id,
                 email_verified: true,
-                // We can also mark welcome shown here if we want to treat verification as the "real" welcome
-                // welcome_shown: true 
-            })
-            .eq('id', user.id)
+                full_name: user.user_metadata?.full_name || 'User',
+                updated_at: new Date().toISOString(),
+            }, { onConflict: 'id' })
 
         if (error) {
             console.error('Profile Update Error:', error)

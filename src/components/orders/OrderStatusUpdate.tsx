@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Loader2, Truck, AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { updateOrderStatus } from '@/app/(dashboard)/orders/actions'
+import { useQueryClient } from '@tanstack/react-query'
 
 // Define allowed status transitions
 const STATUS_FLOW: Record<string, string[]> = {
@@ -101,6 +102,7 @@ export function OrderStatusUpdate({
 }) {
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [isPending, startTransition] = useTransition()
   const [selectedStatus, setSelectedStatus] = useState('')
   const [courierName, setCourierName] = useState('')
@@ -202,6 +204,9 @@ export function OrderStatusUpdate({
         setCourierName('')
         setTrackingNumber('')
 
+        // Invalidate orders query
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+
         router.refresh()
       } else {
         toast({
@@ -241,6 +246,10 @@ export function OrderStatusUpdate({
         setLastUpdatedStatus('')
         
         onStatusUpdated?.(oldStatus)
+
+        // Invalidate orders query
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+
         router.refresh()
       } else {
         // FAILURE: Show error but don't change anything

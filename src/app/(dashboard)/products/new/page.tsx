@@ -15,11 +15,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useOfflineQueue } from '@/lib/hooks/useOfflineQueue'
 import { RequireVerification } from '@/components/shared/RequireVerification'
+import { useQueryClient } from '@tanstack/react-query'
 
 
 export default function NewProductPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const supabase = createClient()
   const { queueAction, isOnline } = useOfflineQueue()
 
@@ -251,6 +253,9 @@ export default function NewProductPage() {
         title: 'Success',
         description: `Product "${product.name}" created successfully!`,
       })
+
+      // Invalidate products query
+      queryClient.invalidateQueries({ queryKey: ['products'] })
 
       router.push('/products')
       router.refresh()
