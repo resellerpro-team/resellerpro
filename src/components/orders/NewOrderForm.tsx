@@ -64,7 +64,6 @@ export function NewOrderForm({
   const queryClient = useQueryClient()
   const { subscription } = usePlanLimits()
   const planName = subscription?.plan?.display_name || 'Free Plan'
-
   const [isPending, startTransition] = useTransition()
 
   const [selectedCustomerId, setSelectedCustomerId] = useState(preSelectedCustomerId || '')
@@ -261,6 +260,9 @@ export function NewOrderForm({
       const result = await createOrder({ success: false, message: '' }, formData)
 
       if (result.success) {
+        // Invalidate orders query
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+
         toast({
           title: 'Success',
           description: result.message,

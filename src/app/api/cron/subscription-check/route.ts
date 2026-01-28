@@ -61,7 +61,6 @@ export async function GET(req: NextRequest) {
         const alreadySent = existingLogs && existingLogs.length > 0
 
         if (!alreadySent) {
-            console.log(`Sending ${daysUntilExpiry}-day reminder to ${profile.email}`)
             const { success, error: sendError } = await MailService.sendSubscriptionReminder(
                 profile.email,
                 profile.full_name || 'User',

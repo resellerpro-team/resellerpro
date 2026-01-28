@@ -12,12 +12,14 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 import { useCreateEnquiry } from "@/lib/react-query/hooks/useEnquiries";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 export default function NewEnquiryForm() {
     const router = useRouter();
     const { toast } = useToast();
+    const queryClient = useQueryClient();
     const { mutate: createEnquiry, isPending: isLoading } = useCreateEnquiry();
 
     // Check limits
@@ -67,6 +69,9 @@ export default function NewEnquiryForm() {
                     duration: 4000,
                     className: "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-900",
                 });
+                // Invalidate enquiries query
+                queryClient.invalidateQueries({ queryKey: ["enquiries"] });
+                
                 router.push("/enquiries");
                 router.refresh();
             },

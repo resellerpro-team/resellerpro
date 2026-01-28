@@ -257,7 +257,9 @@ export default function NewProductPage() {
         description: `Product "${name}" created successfully!`,
       })
 
+      // Invalidate products query
       queryClient.invalidateQueries({ queryKey: ['products'] })
+
       router.push('/products')
       router.refresh()
     } catch (error: any) {

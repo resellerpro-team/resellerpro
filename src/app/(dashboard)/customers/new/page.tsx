@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft, Save, Loader2, WifiOff } from 'lucide-react'
 import Link from 'next/link'
+import { useQueryClient } from '@tanstack/react-query'
 import { SmartPasteDialog } from '@/components/customers/SmartPasteDialog'
 import type { ParsedCustomerData } from '@/lib/utils/whatsapp-parser'
 import { createCustomer } from '../action'
@@ -95,7 +96,6 @@ export default function NewCustomerPage() {
 
     // If offline, queue the action
     if (!isOnline) {
-      console.log('📌 Offline: Queuing customer creation')
       queueAction('CREATE_CUSTOMER', formData)
       toast({
         title: 'Queued for sync 📌',
@@ -110,7 +110,6 @@ export default function NewCustomerPage() {
     }
 
     // If online, proceed normally (NOT queuing)
-    console.log('🌐 Online: Creating customer directly')
     const formDataObj = new FormData(e.currentTarget)
 
     startTransition(async () => {
@@ -121,6 +120,9 @@ export default function NewCustomerPage() {
         )
 
         if (result.success) {
+          // Invalidate customers query to refresh list
+          queryClient.invalidateQueries({ queryKey: ['customers'] })
+
           toast({
             title: 'Customer Added! ',
             description: result.message,

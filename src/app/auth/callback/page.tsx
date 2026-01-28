@@ -67,7 +67,6 @@ function AuthCallbackContent() {
             } else {
                 // Listen for late auth state change
                 const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-                    console.log('Auth State Change:', event)
                     if (event === 'SIGNED_IN' && session) {
                         setMsg('Login successful (Async)! Redirecting...')
                         router.refresh()

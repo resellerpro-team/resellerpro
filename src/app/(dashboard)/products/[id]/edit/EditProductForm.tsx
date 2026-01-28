@@ -13,7 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast'
 import { Save, Upload, X, Loader2, Trash2, AlertTriangle, Lock } from 'lucide-react'
 import Image from 'next/image'
+<<<<<<< HEAD
 import Link from 'next/link'
+=======
+import { useQueryClient } from '@tanstack/react-query'
+>>>>>>> 7704756db6d8889b3ccc6f260bc61f0f0e0ed6c6
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +34,7 @@ export default function EditProductForm({ product }: { product: any }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const supabase = createClient()
 
   const [isLoading, setIsLoading] = useState(false)
@@ -265,8 +270,14 @@ export default function EditProductForm({ product }: { product: any }) {
         description: `"${name}" has been updated successfully`,
       })
 
+<<<<<<< HEAD
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['product', product.id] })
+=======
+      // Invalidate products query
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+
+>>>>>>> 7704756db6d8889b3ccc6f260bc61f0f0e0ed6c6
       router.push(`/products/${product.id}`)
       router.refresh()
     } catch (error: any) {
@@ -329,7 +340,13 @@ export default function EditProductForm({ product }: { product: any }) {
         description: `"${product.name}" has been permanently deleted`,
       })
 
+<<<<<<< HEAD
       queryClient.invalidateQueries({ queryKey: ['products'] })
+=======
+      // Invalidate products query
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+
+>>>>>>> 7704756db6d8889b3ccc6f260bc61f0f0e0ed6c6
       router.push('/products')
       router.refresh()
     } catch (error: any) {

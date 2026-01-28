@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEnquiry, useUpdateEnquiry, useDeleteEnquiry } from "@/lib/react-query/hooks/useEnquiries";
+import { useQueryClient } from "@tanstack/react-query";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -27,6 +28,7 @@ import {
 export default function EditEnquiryForm({ id }: { id: string }) {
     const router = useRouter();
     const { toast } = useToast();
+    const queryClient = useQueryClient();
 
     // Queries & Mutations
     const { data: enquiry, isLoading: isFetching } = useEnquiry(id);
@@ -61,6 +63,9 @@ export default function EditEnquiryForm({ id }: { id: string }) {
             status: status as "new" | "needs_follow_up" | "converted" | "dropped",
         }, {
             onSuccess: () => {
+                // Invalidate enquiries query
+                queryClient.invalidateQueries({ queryKey: ["enquiries"] });
+                
                 toast({ title: "Enquiry Updated", description: "Changes saved successfully." });
                 router.push("/enquiries");
                 router.refresh();
@@ -74,6 +79,9 @@ export default function EditEnquiryForm({ id }: { id: string }) {
     const handleDelete = () => {
         deleteEnquiry(id, {
             onSuccess: () => {
+                // Invalidate enquiries query
+                queryClient.invalidateQueries({ queryKey: ["enquiries"] });
+                
                 toast({ title: "Enquiry Deleted", description: "Enquiry moved to trash." });
                 router.push("/enquiries");
                 router.refresh();
