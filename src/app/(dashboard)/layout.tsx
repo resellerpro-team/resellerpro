@@ -41,8 +41,29 @@ export default async function DashboardLayout({
       .single()
   ])
 
-  const profile = profileResult.data
+  let profile = profileResult.data
   const subscription = subscriptionResult.data
+
+  // SELF-HEALING: If profile is missing, create it now
+  if (!profile && user) {
+    console.log('Profile missing for user, creating now:', user.id)
+    const { data: newProfile, error: createError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        full_name: user.user_metadata?.full_name || 'User',
+        email_verified: false, // Default to false, will be updated by OTP
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' })
+      .select()
+      .single()
+
+    if (createError) {
+      console.error('Error auto-creating profile:', createError)
+    } else {
+      profile = newProfile
+    }
+  }
 
   // Prepare the user data object to pass to client components
   const userData: UserData = {
