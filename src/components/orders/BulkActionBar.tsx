@@ -14,6 +14,9 @@ import { bulkUpdateOrderStatus } from '@/app/(dashboard)/orders/actions'
 import { STATUS_FLOW, STATUS_CONFIG } from '@/config/order-status'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useRouter } from 'next/navigation'
+import { Info } from 'lucide-react'
 
 interface BulkActionBarProps {
     selectedIds: string[]
@@ -31,11 +34,15 @@ export function BulkActionBar({
     const [selectedStatus, setSelectedStatus] = useState<string>('')
     const [isPending, startTransition] = useTransition()
     const { toast } = useToast()
+    const router = useRouter()
 
     if (selectedIds.length === 0) return null
 
     // Filter allowed options based on the current status of selected orders
-    const allowedNextStatuses = currentStatus ? STATUS_FLOW[currentStatus] || [] : []
+    // CRITICAL: Filter out 'shipped' from bulk updates as it requires tracking IDs
+    const allowedNextStatuses = currentStatus
+        ? (STATUS_FLOW[currentStatus] || []).filter(status => status !== 'shipped')
+        : []
     const availableOptions = allowedNextStatuses.map(status => ({
         value: status,
         ...STATUS_CONFIG[status as keyof typeof STATUS_CONFIG]
@@ -58,6 +65,7 @@ export function BulkActionBar({
                     title: 'Success',
                     description: result.message,
                 })
+                router.refresh()
                 onClearSelection()
                 onSuccess?.()
             } else {
@@ -75,6 +83,15 @@ export function BulkActionBar({
             <div className="bg-background/95 backdrop-blur-md border-t sm:border-2 border-primary/20 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] sm:rounded-2xl p-4 pb-8 sm:pb-4 flex flex-col sm:flex-row items-center gap-4">
                 {/* Mobile Handle */}
                 <div className="w-12 h-1.5 bg-muted rounded-full mb-2 sm:hidden self-center opacity-50" />
+
+                {currentStatus === 'processing' && (
+                    <Alert className="md:hidden py-1 px-3 border-amber-500/50 bg-amber-500/10 text-amber-600 rounded-lg animate-in fade-in slide-in-from-top-1 duration-300">
+                        <Info className="h-3 w-3 inline mr-2 align-middle" />
+                        <AlertDescription className="text-[9px] font-bold inline align-middle">
+                            'Shipped' requires individual tracking IDs.
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 {/* Selection Info */}
                 <div className="flex items-center gap-3 flex-1 w-full sm:w-auto px-1 sm:px-0">
