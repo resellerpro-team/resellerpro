@@ -87,7 +87,6 @@ export async function GET(req: NextRequest) {
         }
 
         // Send Email
-        console.log(`Sending enquiry alert to ${email} (Count: ${count})`)
         const sendResult = await MailService.sendEnquiryAlert(email, name, count)
 
         if (sendResult.success) {

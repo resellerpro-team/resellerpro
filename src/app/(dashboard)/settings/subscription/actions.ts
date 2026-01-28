@@ -203,8 +203,6 @@ export async function verifyPaymentAndActivate(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, message: 'Not authenticated' }
 
-  console.log('🔐 Verifying payment for user:', user.id)
-
   const isValid = verifyPaymentSignature(
     razorpayOrderId,
     razorpayPaymentId,
@@ -214,8 +212,6 @@ export async function verifyPaymentAndActivate(
   if (!isValid) {
     return { success: false, message: 'Invalid payment signature' }
   }
-
-  console.log('✅ Payment signature verified')
 
   // Use Admin Client for database updates to bypass RLS
   const { createAdminClient } = await import('@/lib/supabase/admin')
@@ -234,8 +230,6 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Transaction not found' }
   }
 
-  console.log('📄 Transaction found:', transaction.id)
-
   // Update Transaction
   const { error: txUpdateError } = await adminSupabase
     .from('payment_transactions')
@@ -251,8 +245,6 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Failed to update transaction' }
   }
 
-  console.log('✅ Transaction updated')
-
   const planId = (transaction.metadata as any)?.plan_id
   if (!planId) {
     return { success: false, message: 'Plan ID missing in transaction' }
@@ -260,16 +252,12 @@ export async function verifyPaymentAndActivate(
 
   const walletApplied = parseFloat((transaction.metadata as any)?.wallet_applied || '0')
 
-  console.log('💰 Wallet applied:', walletApplied)
-
   const now = new Date()
   const periodEnd = new Date(now)
   periodEnd.setMonth(periodEnd.getMonth() + 1)
 
   // Deduct wallet balance if any was used
   if (walletApplied > 0) {
-    console.log('💸 Deducting wallet:', walletApplied)
-
     const { error: walletError } = await adminSupabase
       .rpc('add_wallet_transaction', {
         p_user_id: user.id,
@@ -281,13 +269,8 @@ export async function verifyPaymentAndActivate(
     if (walletError) {
       console.error('❌ Wallet deduction error:', walletError)
       // Continue anyway, we don't want to fail the subscription
-    } else {
-      console.log('✅ Wallet deducted')
     }
   }
-
-  // Update Subscription
-  console.log('🔄 Updating subscription to plan:', planId)
 
   const { error: subUpdateError } = await adminSupabase
     .from('user_subscriptions')
@@ -305,11 +288,7 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Failed to update subscription' }
   }
 
-  console.log('✅ Subscription updated')
-
   // Process referral rewards (credited ONLY after first successful paid subscription)
-  console.log('🎁 Processing referral rewards...')
-
   try {
     const { data: rewardResult, error: rewardError } = await adminSupabase
       .rpc('process_referral_rewards', {
@@ -319,7 +298,6 @@ export async function verifyPaymentAndActivate(
     if (rewardError) {
       console.error('❌ Referral reward RPC error:', rewardError)
     } else if (rewardResult && rewardResult.length > 0) {
-      console.log('✅ Referral rewards processed for referrer:', rewardResult[0].referrer_id)
 
       // Create notification for the referrer
       const reward = rewardResult[0]
@@ -331,8 +309,6 @@ export async function verifyPaymentAndActivate(
         entityType: 'wallet',
         priority: 'high',
       })
-    } else {
-      console.log('✅ No referral rewards to process')
     }
   } catch (rewardError: any) {
     console.error('❌ Referral reward exception:', rewardError.message)
@@ -342,7 +318,6 @@ export async function verifyPaymentAndActivate(
   // --------------------
   // Send Confirmation Email
   // --------------------
-  console.log('📧 Starting email confirmation flow...')
   try {
     const { data: profile } = await adminSupabase
       .from('profiles')
@@ -350,18 +325,13 @@ export async function verifyPaymentAndActivate(
       .eq('id', user.id)
       .single()
 
-    console.log('👤 Profile fetched for email:', profile ? 'Found' : 'Not Found')
-
     const { data: plan } = await adminSupabase
       .from('subscription_plans')
       .select('display_name, price')
       .eq('id', planId)
       .single()
 
-    console.log('📦 Plan fetched for email:', plan ? plan.display_name : 'Not Found')
-
     if (plan) {
-      console.log('📄 Generating PDF contract...')
       const pdfBuffer = await generateContractPdf({
         userName: profile?.full_name || 'Valued User',
         planName: plan.display_name,
@@ -370,8 +340,6 @@ export async function verifyPaymentAndActivate(
         endDate: format(periodEnd, 'dd MMM yyyy'),
       })
 
-
-      console.log('📨 Sending subscription confirmation email to:', user.email)
       const result = await MailService.sendSubscriptionConfirmation(
         user.email!,
         profile?.full_name || 'User',
@@ -381,10 +349,7 @@ export async function verifyPaymentAndActivate(
       )
 
       if (result.success) {
-        console.log('✅ Confirmation email sent successfully')
       } else {
-        console.error('❌ MailService reported failure:', result.error)
-
         // Notify user in-app that email failed, but subscription is active
         await createNotification({
           userId: user.id,
@@ -416,8 +381,6 @@ export async function verifyPaymentAndActivate(
   revalidatePath('/settings/referrals')
   revalidatePath('/dashboard')
 
-  console.log('🎉 Payment verification completed')
-
   return { success: true }
 }
 
@@ -435,9 +398,6 @@ export async function cancelSubscription() {
     .from('user_subscriptions')
     .update({
       cancel_at_period_end: true,
-      // We do NOT change plan_id or dates yet. 
-      // A background job or check should handle the actual downgrade when current_period_end passes.
-      // If the requirement implies strictly "keep access until end date", this is the correct way.
     })
     .eq('user_id', user.id)
 

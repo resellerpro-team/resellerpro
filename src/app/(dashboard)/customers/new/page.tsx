@@ -93,7 +93,6 @@ export default function NewCustomerPage() {
 
     // If offline, queue the action
     if (!isOnline) {
-      console.log('📌 Offline: Queuing customer creation')
       queueAction('CREATE_CUSTOMER', formData)
       toast({
         title: 'Queued for sync 📌',
@@ -108,7 +107,6 @@ export default function NewCustomerPage() {
     }
 
     // If online, proceed normally (NOT queuing)
-    console.log('🌐 Online: Creating customer directly')
     const formDataObj = new FormData(e.currentTarget)
 
     startTransition(async () => {
