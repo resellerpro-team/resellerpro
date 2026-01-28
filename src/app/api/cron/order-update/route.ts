@@ -84,7 +84,6 @@ export async function GET(req: NextRequest) {
         }
 
         // Send Digest Email
-        console.log(`Sending order alert to ${email} (Count: ${count})`)
         const sendResult = await MailService.sendOrderAlert(email, name, count)
 
         if (sendResult.success) {

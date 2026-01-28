@@ -42,11 +42,6 @@ export class OtpService {
         if (!result.success) {
             // Fallback for Development: Log OTP to console if email fails
             if (process.env.NODE_ENV !== 'production') {
-                console.log('\n==================================================================')
-                console.log(`⚠️  [DEV MODE] Email sending failed or SMTP not configured.`)
-                console.log(`ℹ️  Configure SMTP_* variables in .env to send real emails.`)
-                console.log(`📧  Here is your OTP for ${email}: ${otp}`)
-                console.log('==================================================================\n')
                 return true
             }
 

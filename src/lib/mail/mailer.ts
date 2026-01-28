@@ -7,7 +7,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export class MailService {
     private static async send(options: SendEmailOptions, metadata?: any) {
-        console.log(`[MailService] Sending email to ${options.to} with subject: ${options.subject}`)
         const transporter = getTransporter()
         const { to, subject, html, text, attachments } = options
 
@@ -27,13 +26,11 @@ export class MailService {
 
             // Log success
             await this.logEmail(to, subject, 'sent', undefined, metadata)
-            console.log(`Email sent: ${info.messageId}`)
 
             return { success: true, messageId: info.messageId }
 
         } catch (error: any) {
             // Log failure
-            console.error('Email send failed:', error)
             await this.logEmail(to, subject, 'failed', error.message, metadata)
             return { success: false, error: error.message }
         }

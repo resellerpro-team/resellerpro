@@ -38,6 +38,7 @@ import { parseWhatsAppMessage } from "@/lib/utils/whatsapp-parser";
 import { convertEnquiryToOrder } from "@/app/(dashboard)/enquiries/actions";
 import { useProducts } from "@/lib/react-query/hooks/useProducts";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ConversionModalProps {
     enquiry: Enquiry;
@@ -157,6 +158,7 @@ export function ConversionModal({ enquiry, existingCustomer, isOpen, onClose }: 
 function ConversionFormContent({ enquiry, existingCustomer, onClose }: { enquiry: Enquiry, existingCustomer?: any, onClose: () => void }) {
     const router = useRouter();
     const { toast } = useToast();
+    const queryClient = useQueryClient();
     const [isPending, startTransition] = useTransition();
     const { mutate: updateEnquiry, isPending: isUpdatingStatus } = useUpdateEnquiry();
 
@@ -283,6 +285,11 @@ function ConversionFormContent({ enquiry, existingCustomer, onClose }: { enquiry
             const result = await convertEnquiryToOrder(formData);
 
             if (result.success) {
+                // Invalidate relevant queries
+                queryClient.invalidateQueries({ queryKey: ["enquiries"] });
+                queryClient.invalidateQueries({ queryKey: ["orders"] });
+                queryClient.invalidateQueries({ queryKey: ["customers"] });
+                
                 toast({ title: "Conversion Successful! 🎉", description: `Order #${result.orderNumber} created.` });
                 onClose();
                 router.push("/orders"); // Redirect to orders page

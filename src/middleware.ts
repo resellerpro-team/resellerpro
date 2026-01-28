@@ -57,16 +57,12 @@ export async function middleware(request: NextRequest) {
 
       if (isNetworkError) {
         isOffline = true
-        console.log('[Middleware] Offline mode - allowing access with cached session')
-        // When offline, assume user is logged in if they have session cookies
-        // This prevents redirecting to signin when offline
         user = { id: 'offline-user' } as any // Dummy user object
       }
     } else {
       user = data.user
     }
   } catch (error) {
-    console.log('[Middleware] Network error - allowing access')
     isOffline = true
     // Allow access when offline - assume user is authenticated from previous session
     user = { id: 'offline-user' } as any
