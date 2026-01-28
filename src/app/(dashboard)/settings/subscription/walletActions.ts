@@ -91,7 +91,6 @@ export async function activateWithWallet(planId: string) {
             if (rewardError) {
                 console.error('❌ Referral reward RPC error:', rewardError)
             } else if (rewardData && rewardData.length > 0) {
-                console.log('✅ Referral rewards processed for referrer:', rewardData[0].referrer_id)
 
                 // Create notification for the referrer
                 const reward = rewardData[0]
@@ -112,9 +111,7 @@ export async function activateWithWallet(planId: string) {
         // --------------------
         // Send Confirmation Email
         // --------------------
-        console.log('📧 Starting wallet subscription email flow...')
         try {
-            console.log('📄 Generating contract PDF...')
             const pdfBuffer = await generateContractPdf({
                 userName: profile?.full_name || 'Valued User',
                 planName: plan.display_name,
@@ -124,7 +121,6 @@ export async function activateWithWallet(planId: string) {
             })
 
 
-            console.log('📨 Sending email to:', user.email)
             const result = await MailService.sendSubscriptionConfirmation(
                 user.email!,
                 profile?.full_name || 'User',
@@ -134,9 +130,7 @@ export async function activateWithWallet(planId: string) {
             )
 
             if (result.success) {
-                console.log('✅ Wallet subscription email sent successfully')
             } else {
-                console.error('❌ Wallet email failed:', result.error)
                 // Notify user in-app
                 await createNotification({
                     userId: user.id,
@@ -148,9 +142,6 @@ export async function activateWithWallet(planId: string) {
                 })
             }
         } catch (emailError: any) {
-            console.error('❌ Wallet email sending threw exception:', emailError)
-            console.error('Stack:', emailError.stack)
-
             await createNotification({
                 userId: user.id,
                 type: 'system_alert',
@@ -168,7 +159,6 @@ export async function activateWithWallet(planId: string) {
 
         return { success: true }
     } catch (error: any) {
-        console.error('❌ Wallet activation error:', error)
         return { success: false, message: error.message }
     }
 }

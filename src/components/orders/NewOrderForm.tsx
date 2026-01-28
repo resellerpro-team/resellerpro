@@ -21,6 +21,7 @@ import { SearchableSelect, SearchableSelectOption } from '@/components/ui/search
 import { useToast } from '@/hooks/use-toast'
 import { Plus, Trash2, Save, Loader2, Package, AlertTriangle } from 'lucide-react'
 import { createOrder } from '@/app/(dashboard)/orders/actions'
+import { useQueryClient } from '@tanstack/react-query'
 
 type Customer = {
   id: string
@@ -59,6 +60,7 @@ export function NewOrderForm({
 }) {
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [isPending, startTransition] = useTransition()
 
   const [selectedCustomerId, setSelectedCustomerId] = useState(preSelectedCustomerId || '')
@@ -267,6 +269,9 @@ const shippingValue = parseFloat(shippingCost) || 0;
       const result = await createOrder({ success: false, message: '' }, formData)
 
       if (result.success) {
+        // Invalidate orders query
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+        
         toast({
           title: 'Success',
           description: result.message,
