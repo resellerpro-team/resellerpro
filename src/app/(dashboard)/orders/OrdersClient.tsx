@@ -28,6 +28,7 @@ import {
   ShoppingCart,
   TrendingUp,
   IndianRupee,
+  Lock,
 } from 'lucide-react'
 import Link from 'next/link'
 import { OrdersTable } from '@/components/orders/OrderTable'
@@ -38,11 +39,17 @@ import { OrdersSkeleton } from '@/components/shared/skeletons/OrdersSkeleton'
 import { EmptyState, FilteredEmptyState } from '@/components/shared/EmptyState'
 import { ExportOrders } from '@/components/orders/ExportOrders'
 import { RequireVerification } from '@/components/shared/RequireVerification'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
+import { useToast } from '@/hooks/use-toast'
 
 export function OrdersClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
+  const { toast } = useToast()
+
+  const { canCreateOrder, subscription } = usePlanLimits()
+  const planName = subscription?.plan?.display_name || 'Free Plan'
 
   const searchParam = searchParams.get('search') || ''
   const statusParam = searchParams.get('status') || 'all'
@@ -116,13 +123,30 @@ export function OrdersClient() {
         <div className='flex justify-end gap-2'>
           <ExportOrders orders={orders} />
 
-          <RequireVerification>
-            <Button asChild>
-              <Link href="/orders/new">
-                <Plus className="mr-2 h-4 w-4" /> New Order
-              </Link>
+          {canCreateOrder ? (
+            <RequireVerification>
+              <Button asChild>
+                <Link href="/orders/new">
+                  <Plus className="mr-2 h-4 w-4" /> New Order
+                </Link>
+              </Button>
+            </RequireVerification>
+          ) : (
+            <Button
+              variant="outline"
+              className="gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
+              onClick={() => {
+                toast({
+                  title: "Limit Reached 🔒",
+                  description: `You've reached your order limit on the ${planName}. Upgrade to unlock!`,
+                  variant: "default",
+                  action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
+                })
+              }}
+            >
+              <Lock className="mr-2 h-4 w-4" /> New Order
             </Button>
-          </RequireVerification>
+          )}
         </div>
       </div>
 

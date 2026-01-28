@@ -2,6 +2,7 @@
 
 import { useState, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -127,6 +128,9 @@ export default function NewCustomerPage() {
             description: result.message,
             duration: 3000,
           })
+
+          queryClient.invalidateQueries({ queryKey: ["customers"] })
+
           setTimeout(() => {
             router.push('/customers')
             router.refresh()
