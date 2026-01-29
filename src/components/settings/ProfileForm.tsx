@@ -34,7 +34,8 @@ export default function ProfileForm({ user }: { user: UserData }) {
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let { name, value } = e.target
+    const { name } = e.target
+    let { value } = e.target
 
     // Restrict phone to digits only
     if (name === 'phone') {
