@@ -35,6 +35,9 @@ type Order = {
 }
 
 export function OrdersTable({ orders }: { orders: Order[] }) {
+  // React hooks must be at the top, before any early returns
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
   if (orders.length === 0) {
     return (
       <div className="text-center py-12">
@@ -45,6 +48,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
       </div>
     )
   }
+
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -89,9 +93,8 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
     )
   }
 
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-
   // Selection Logic
+
   const selectedOrders = orders.filter((o) => selectedIds.includes(o.id))
   const activeStatus = selectedOrders[0]?.status
 
