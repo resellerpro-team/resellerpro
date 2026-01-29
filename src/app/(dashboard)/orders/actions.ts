@@ -3,15 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { createNotification } from '@/lib/services/notificationService'
-
-// Define allowed status transitions
-const STATUS_FLOW: Record<string, string[]> = {
-  pending: ['processing', 'cancelled'],
-  processing: ['shipped', 'cancelled'],
-  shipped: ['delivered', 'cancelled'],
-  delivered: [], // Final state
-  cancelled: [], // Final state
-}
+import { STATUS_FLOW } from '@/config/order-status'
 
 // ========================================================
 // HELPER: Check if user can create order
@@ -556,6 +548,59 @@ export async function deleteOrder(orderId: string) {
       success: false,
       message: error.message || 'Failed to delete order',
     }
+  }
+}
+
+// ========================================================
+// SERVER ACTION: BULK UPDATE ORDER STATUS
+// ========================================================
+export async function bulkUpdateOrderStatus(orderIds: string[], newStatus: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, message: 'Authentication required.' }
+  }
+
+  if (!orderIds.length || !newStatus) {
+    return { success: false, message: 'Invalid data provided.' }
+  }
+
+  try {
+    // 1. Update orders in bulk
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .in('id', orderIds)
+      .eq('user_id', user.id)
+
+    if (updateError) throw updateError
+
+    // 2. Insert status history entries for each order
+    const historyEntries = orderIds.map(id => ({
+      order_id: id,
+      status: newStatus,
+      notes: `Bulk updated to ${newStatus}`,
+      changed_by: user.id
+    }))
+
+    const { error: historyError } = await supabase
+      .from('order_status_history')
+      .insert(historyEntries)
+
+    if (historyError) {
+      console.error('⚠️ Bulk update: Failed to insert history:', historyError)
+      // We don't fail the whole operation if history fails
+    }
+
+    revalidatePath('/orders')
+    return { success: true, message: `Successfully updated ${orderIds.length} orders.` }
+  } catch (error: any) {
+    console.error('Bulk status update error:', error)
+    return { success: false, message: error.message || 'Failed to update orders' }
   }
 }
 

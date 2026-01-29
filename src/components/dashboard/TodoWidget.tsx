@@ -476,7 +476,7 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
             </Button>
 
             {showSuggestions && (
-              <ScrollArea className="max-h-[150px]">
+              <ScrollArea className="max-h-[220px] -mr-2 pr-2">
                 <div className="space-y-2 animate-fade-in pr-4">
                   {displaySuggestions.length > 0 ? (
                     displaySuggestions.map((suggestion) => {

@@ -10,6 +10,7 @@ type UserData = {
   name?: string | null;
   email?: string | null;
   avatarUrl?: string | null;
+  businessName?: string | null;
   planName?: string | null;
 } | null
 
@@ -31,7 +32,7 @@ export default async function DashboardLayout({
   const [profileResult, subscriptionResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('full_name, avatar_url, email_verified')
+      .select('full_name, avatar_url, business_name, email_verified')
       .eq('id', user.id)
       .single(),
     supabase
@@ -70,6 +71,7 @@ export default async function DashboardLayout({
     name: profile?.full_name,
     email: user.email,
     avatarUrl: profile?.avatar_url,
+    businessName: profile?.business_name,
     planName: (Array.isArray(subscription?.plan)
       ? subscription?.plan[0]?.display_name
       : (subscription?.plan as any)?.display_name) || 'Free Plan',

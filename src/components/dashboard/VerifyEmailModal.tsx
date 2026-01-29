@@ -130,11 +130,7 @@ export function VerifyEmailModal({ open, onOpenChange, email, onVerified }: Veri
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            {/* ✅ Add onKeyDown to DialogContent */}
-            <DialogContent
-                className="sm:max-w-md"
-                onKeyDown={handleKeyDown}
-            >
+            <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-2xl">
                 <DialogHeader>
                     <DialogTitle>Verify your email</DialogTitle>
                     <DialogDescription>
