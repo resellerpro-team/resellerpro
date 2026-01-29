@@ -63,7 +63,7 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
     if (state.success) {
       // Invalidate customers query
       queryClient.invalidateQueries({ queryKey: ['customers'] })
-      
+
       toast({
         title: 'Customer Updated! ✅',
         description: state.message,
@@ -76,7 +76,7 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
         variant: 'destructive',
       })
     }
-  }, [state, router, toast, customerId])
+  }, [state, router, toast, customerId, queryClient])
 
   return (
     <Card>
