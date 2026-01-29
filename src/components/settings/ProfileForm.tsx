@@ -139,52 +139,62 @@ export default function ProfileForm({ user }: { user: UserData }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Avatar Upload */}
-      <div className="flex items-center gap-6">
-        <Avatar className="h-24 w-24">
-          <AvatarImage src={avatarUrl || undefined} alt={formData.full_name} />
-          <AvatarFallback className="text-2xl">
-            {formData.full_name ? getInitials(formData.full_name) : <User />}
-          </AvatarFallback>
-        </Avatar>
+      {/* Business Logo Section */}
+      <div className="space-y-3">
+        <Label className="text-sm font-semibold flex items-center gap-2">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Logo" className="h-4 w-4 rounded-sm object-cover" />
+          ) : (
+            <Building className="h-4 w-4 text-primary" />
+          )}
+          Business Logo
+        </Label>
+        <div className="flex items-center gap-6 p-4 border rounded-xl bg-muted/30">
+          <Avatar className="h-24 w-24 border-2 border-background shadow-sm">
+            <AvatarImage src={avatarUrl || undefined} alt={user.business_name || formData.full_name} />
+            <AvatarFallback className="text-2xl bg-primary text-primary-foreground font-bold">
+              {user.business_name ? getInitials(user.business_name) : (formData.full_name ? getInitials(formData.full_name) : 'BN')}
+            </AvatarFallback>
+          </Avatar>
 
-        <div className="flex-1">
-          <Label htmlFor="avatar" className="cursor-pointer">
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isUploadingAvatar}
-                asChild
-              >
-                <span>
-                  {isUploadingAvatar ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Change Avatar
-                    </>
-                  )}
-                </span>
-              </Button>
-            </div>
-          </Label>
-          <input
-            id="avatar"
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarUpload}
-            className="hidden"
-            disabled={isUploadingAvatar}
-          />
-          <p className="text-xs text-muted-foreground mt-2">
-            JPG, PNG or GIF. Max size 2MB.
-          </p>
+          <div className="flex-1">
+            <Label htmlFor="avatar" className="cursor-pointer">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isUploadingAvatar}
+                  asChild
+                >
+                  <span>
+                    {isUploadingAvatar ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Change Logo
+                      </>
+                    )}
+                  </span>
+                </Button>
+              </div>
+            </Label>
+            <input
+              id="avatar"
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+              disabled={isUploadingAvatar}
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              JPG, PNG or GIF. Max size 2MB.
+            </p>
+          </div>
         </div>
       </div>
 
