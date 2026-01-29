@@ -152,13 +152,17 @@ export function ProductsClient() {
   return (
     <div className="space-y-6">
       {/* HEADER */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Products</h1>
 
-        <div className="flex gap-2">
-          <ExportProducts products={typedProducts} businessName={businessName} />
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <ExportProducts
+            products={typedProducts}
+            businessName={businessName}
+            className="w-full sm:w-auto"
+          />
           <RequireVerification>
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
               <Link href="/products/new">+ Add Product</Link>
             </Button>
           </RequireVerification>

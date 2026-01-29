@@ -10,7 +10,7 @@ export default function HeroSection() {
   const [showDemo, setShowDemo] = useState(false)
 
   return (
-    <section className="relative pt-18 pb-18 lg:pt-32 lg:pb-24 overflow-hidden bg-background">
+    <section className="relative pt-28 pb-16 lg:pt-32 lg:pb-24 overflow-hidden bg-background">
 
       {/* Custom Styles for Animations */}
       <style jsx>{`

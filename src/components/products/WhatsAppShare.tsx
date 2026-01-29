@@ -295,8 +295,8 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                       key={idx}
                       onClick={() => setSelectedImageIndex(idx)}
                       className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx
-                          ? 'border-blue-600 ring-2 ring-blue-600'
-                          : 'border-gray-200 hover:border-gray-400'
+                        ? 'border-blue-600 ring-2 ring-blue-600'
+                        : 'border-gray-200 hover:border-gray-400'
                         }`}
                     >
                       <Image

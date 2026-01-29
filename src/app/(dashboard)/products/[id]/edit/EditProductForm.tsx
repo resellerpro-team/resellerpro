@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast'
 import { Save, Upload, X, Loader2, Trash2, AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +28,7 @@ import {
 export default function EditProductForm({ product }: { product: any }) {
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const supabase = createClient()
   
   const [isLoading, setIsLoading] = useState(false)
@@ -261,6 +263,9 @@ export default function EditProductForm({ product }: { product: any }) {
         description: `"${name}" has been updated successfully`,
       })
 
+      // Invalidate products query
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+
       router.push(`/products/${product.id}`)
       router.refresh()
     } catch (error: any) {
@@ -322,6 +327,9 @@ export default function EditProductForm({ product }: { product: any }) {
         title: 'Product Deleted',
         description: `"${product.name}" has been permanently deleted`,
       })
+
+      // Invalidate products query
+      queryClient.invalidateQueries({ queryKey: ['products'] })
 
       router.push('/products')
       router.refresh()

@@ -53,6 +53,7 @@ type UserData = {
   name?: string | null
   email?: string | null
   avatarUrl?: string | null
+  businessName?: string | null
   planName?: string | null
 } | null
 
@@ -116,21 +117,15 @@ export default function Sidebar({ user }: { user: UserData }) {
       >
         {/* Header / Logo */}
         <div className="relative flex h-16 items-center gap-2 border-b px-6">
-          <Link href="/dashboard">
-            <div className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-white overflow-hidden border">
-              <NextImage
-                src="/logo.png"
-                alt="ResellerPro Logo"
-                width={32}
-                height={32}
-                className="h-8 w-8 object-contain"
-              />
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <div className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold">ResellerPro</span>
+              <span className="text-xs text-muted-foreground">Make It Professional</span>
             </div>
           </Link>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold">ResellerPro</span>
-            <span className="text-xs text-muted-foreground">Manage with ease</span>
-          </div>
 
           {/* Close (X) button – top-right inside sidebar */}
           <Button

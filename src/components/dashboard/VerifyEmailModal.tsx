@@ -115,9 +115,22 @@ export function VerifyEmailModal({ open, onOpenChange, email, onVerified }: Veri
         }
     }
 
+    // ✅ Handle Enter key press based on current step
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+
+            if (step === 'send' && !resendLoading) {
+                handleSendCode()
+            } else if (step === 'verify' && otp.length === 6 && !isLoading) {
+                handleVerify()
+            }
+        }
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-2xl">
                 <DialogHeader>
                     <DialogTitle>Verify your email</DialogTitle>
                     <DialogDescription>
@@ -154,6 +167,15 @@ export function VerifyEmailModal({ open, onOpenChange, email, onVerified }: Veri
                                 placeholder="000000"
                                 className="text-center text-2xl tracking-[0.5em] font-mono h-14"
                                 autoFocus
+                                // ✅ Also handle Enter on the input directly
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                        if (otp.length === 6 && !isLoading) {
+                                            handleVerify()
+                                        }
+                                    }
+                                }}
                             />
 
                             <div className="flex items-center justify-between text-sm">

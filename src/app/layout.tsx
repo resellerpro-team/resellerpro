@@ -2,12 +2,12 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
-// Update the import path if the file is located elsewhere, for example:
 import { ThemeProvider } from '../components/providers/theme-provider'
-// import { AppLoader } from '@/components/onboarding/PremiumLoader'
 import { Providers } from './providers'
 import { OfflineBanner } from '@/components/shared/OfflineBanner'
-// Or, if using absolute imports, ensure your tsconfig.json has the correct "paths" and "baseUrl" set.
+import { Analytics } from "@vercel/analytics/next"
+import Script from "next/script";
+
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -46,10 +46,30 @@ export const viewport: Viewport = {
   themeColor: '#0f172a',
 }
 
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {GA_ID && (
+          <>
+            <Script
+              strategy="afterInteractive"
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+            />
+            <Script id="ga-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GA_ID}', {
+                  page_path: window.location.pathname,
+                });
+              `}
+            </Script>
+          </>
+        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -89,6 +109,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <OfflineBanner />
             {children}
+            <Analytics />
             <Toaster />
           </ThemeProvider>
         </Providers>

@@ -10,6 +10,7 @@ type UserData = {
   name?: string | null;
   email?: string | null;
   avatarUrl?: string | null;
+  businessName?: string | null;
   planName?: string | null;
 } | null
 
@@ -31,7 +32,7 @@ export default async function DashboardLayout({
   const [profileResult, subscriptionResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('full_name, avatar_url, email_verified')
+      .select('full_name, avatar_url, business_name, email_verified')
       .eq('id', user.id)
       .single(),
     supabase
@@ -41,14 +42,36 @@ export default async function DashboardLayout({
       .single()
   ])
 
-  const profile = profileResult.data
+  let profile = profileResult.data
   const subscription = subscriptionResult.data
+
+  // SELF-HEALING: If profile is missing, create it now
+  if (!profile && user) {
+    console.log('Profile missing for user, creating now:', user.id)
+    const { data: newProfile, error: createError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        full_name: user.user_metadata?.full_name || 'User',
+        email_verified: false, // Default to false, will be updated by OTP
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' })
+      .select()
+      .single()
+
+    if (createError) {
+      console.error('Error auto-creating profile:', createError)
+    } else {
+      profile = newProfile
+    }
+  }
 
   // Prepare the user data object to pass to client components
   const userData: UserData = {
     name: profile?.full_name,
     email: user.email,
     avatarUrl: profile?.avatar_url,
+    businessName: profile?.business_name,
     planName: (Array.isArray(subscription?.plan)
       ? subscription?.plan[0]?.display_name
       : (subscription?.plan as any)?.display_name) || 'Free Plan',

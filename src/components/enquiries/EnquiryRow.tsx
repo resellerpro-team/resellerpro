@@ -30,6 +30,7 @@ interface EnquiryRowProps {
 
 import { useUpdateEnquiry } from "@/lib/react-query/hooks/useEnquiries";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 // ... (keep imports)
 
@@ -42,6 +43,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 export function EnquiryRow({ enquiry }: EnquiryRowProps) {
     const { toast } = useToast();
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { mutate: updateEnquiry } = useUpdateEnquiry();
     const [isConversionSheetOpen, setIsConversionSheetOpen] = useState(false);
     const [isConverting, setIsConverting] = useState(false);
@@ -100,6 +102,8 @@ export function EnquiryRow({ enquiry }: EnquiryRowProps) {
                         title: "Status Updated",
                         description: `Enquiry marked as ${statusLabels[status] || status.replace(/_/g, " ")}.`,
                     });
+                    // Invalidate enquiries query
+                    queryClient.invalidateQueries({ queryKey: ["enquiries"] });
                 },
                 onError: (error) => {
                     toast({

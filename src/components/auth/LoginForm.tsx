@@ -1,13 +1,13 @@
 'use client'
 
 import { useFormStatus, useFormState } from 'react-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import NextImage from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { login, type LoginFormState } from '@/app/(auth)/signin/actions'
 import { sendLoginOtp, verifyLoginOtp } from '@/app/(auth)/signin/otp-actions'
-import { Eye, EyeOff, Loader2, Mail, Lock, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Mail, Lock, Sparkles, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,7 +20,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-
 import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus'
 
 function SubmitButton() {
@@ -55,13 +54,15 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password')
 
+  // Prevent double redirect
+  const isRedirecting = useRef(false)
+
   // OTP State
   const [otpEmail, setOtpEmail] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [otpStep, setOtpStep] = useState<'email' | 'verify'>('email')
   const [otpLoading, setOtpLoading] = useState(false)
 
-  // Password Login State
   const initialState: LoginFormState = {
     success: false,
     message: '',
@@ -69,7 +70,23 @@ export default function LoginForm() {
   }
 
   const [formState, formAction] = useFormState(login, initialState)
-  const state = formState || initialState
+  const isOnline = useOnlineStatus()
+
+  // Simple redirect function
+  const performRedirect = useCallback((url: string) => {
+    if (isRedirecting.current) return
+    isRedirecting.current = true
+
+    toast({
+      title: "Success",
+      description: "Login successful! Redirecting...",
+    })
+
+    // Small delay to ensure session cookie is set
+    setTimeout(() => {
+      window.location.href = url
+    }, 100)
+  }, [toast])
 
   // Check for email verification success
   useEffect(() => {
@@ -81,13 +98,14 @@ export default function LoginForm() {
     }
   }, [searchParams, toast])
 
+  // Handle login errors
   useEffect(() => {
-    if (!state.success && state.message) {
-      const isNetwork = state.message.includes('Network') || state.message.includes('fetch')
+    if (formState && !formState.success && formState.message && !isRedirecting.current) {
+      const isNetwork = formState.message.includes('Network') || formState.message.includes('fetch')
 
       toast({
         title: 'Sign in failed',
-        description: state.message,
+        description: formState.message,
         variant: 'destructive',
         action: isNetwork ? (
           <Button
@@ -101,21 +119,14 @@ export default function LoginForm() {
         ) : undefined
       })
     }
-  }, [state, toast])
+  }, [formState, toast])
 
-  // Handle successful login redirect
+  // Handle successful login
   useEffect(() => {
-    if (state.success && state.redirectUrl) {
-      toast({
-        title: "Success",
-        description: "Login successful! Redirecting...",
-      });
-      // Use window.location.href to ensure a full refresh of the server-side session
-      window.location.href = state.redirectUrl;
+    if (formState?.success && formState?.redirectUrl && !isRedirecting.current) {
+      performRedirect(formState.redirectUrl)
     }
-  }, [state.success, state.redirectUrl, toast])
-
-  const isOnline = useOnlineStatus()
+  }, [formState?.success, formState?.redirectUrl, performRedirect])
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -136,7 +147,7 @@ export default function LoginForm() {
       } else {
         toast({ title: 'Error', description: res.message, variant: 'destructive' })
       }
-    } catch (err) {
+    } catch {
       toast({ title: 'Error', description: 'Something went wrong', variant: 'destructive' })
     } finally {
       setOtpLoading(false)
@@ -149,19 +160,19 @@ export default function LoginForm() {
       toast({ title: 'Offline', description: 'Please check your internet connection', variant: 'destructive' })
       return
     }
-    if (!otpCode) return
+    if (!otpCode || isRedirecting.current) return
+
     setOtpLoading(true)
     try {
       const res = await verifyLoginOtp(otpEmail, otpCode)
       if (res.success && res.redirectUrl) {
-        toast({ title: 'Success', description: 'Login successful! Redirecting...' })
-        window.location.href = res.redirectUrl
+        performRedirect(res.redirectUrl)
       } else {
         toast({ title: 'Error', description: res.message || 'Verification failed', variant: 'destructive' })
+        setOtpLoading(false)
       }
-    } catch (err) {
+    } catch {
       toast({ title: 'Error', description: 'Something went wrong', variant: 'destructive' })
-    } finally {
       setOtpLoading(false)
     }
   }
@@ -196,7 +207,6 @@ export default function LoginForm() {
           {loginMethod === 'password' ? (
             <div className="space-y-4">
               <form action={formAction} className="space-y-4">
-                {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -209,15 +219,14 @@ export default function LoginForm() {
                       className="pl-10"
                       required
                     />
-                    {state.errors?.email && (
+                    {formState?.errors?.email && (
                       <p className="text-sm text-destructive mt-1">
-                        {state.errors.email[0]}
+                        {formState.errors.email[0]}
                       </p>
                     )}
                   </div>
                 </div>
 
-                {/* Password */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
@@ -245,16 +254,12 @@ export default function LoginForm() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
 
-                    {state.errors?.password && (
+                    {formState?.errors?.password && (
                       <p className="text-sm text-destructive mt-1">
-                        {state.errors.password[0]}
+                        {formState.errors.password[0]}
                       </p>
                     )}
                   </div>
@@ -325,7 +330,7 @@ export default function LoginForm() {
                         disabled={otpLoading}
                       />
                     </div>
-                    <p className="text-sm text-muted-foreground">Check your email for the code to sign in.</p>
+                    <p className="text-sm text-muted-foreground">Check your email for the code.</p>
                   </div>
                   <Button type="submit" className="w-full" size="lg" disabled={otpLoading || !isOnline}>
                     {otpLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</> : !isOnline ? 'Offline' : 'Verify & Sign In'}
@@ -348,10 +353,7 @@ export default function LoginForm() {
         <CardFooter className="flex-col space-y-4">
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
-            <Link
-              href="/signup"
-              className="text-primary font-medium hover:underline"
-            >
+            <Link href="/signup" className="text-primary font-medium hover:underline">
               Sign up for free
             </Link>
           </p>

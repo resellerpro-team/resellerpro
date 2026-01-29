@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Save } from 'lucide-react'
 import Link from 'next/link'
 import { updateCustomer } from '@/app/(dashboard)/customers/action'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface Customer {
   id: string
@@ -51,6 +52,7 @@ function SubmitButton({ customerId }: { customerId: string }) {
 export default function EditCustomerForm({ customer, customerId }: EditCustomerFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const [state, formAction] = useFormState(updateCustomer, {
     success: false,
@@ -59,6 +61,9 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
 
   useEffect(() => {
     if (state.success) {
+      // Invalidate customers query
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      
       toast({
         title: 'Customer Updated! ✅',
         description: state.message,

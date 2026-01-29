@@ -203,9 +203,8 @@ export function ProductRow({ product }: { product: Product }) {
       {/* Stock */}
       <div className="hidden lg:flex flex-col items-center gap-1 min-w-[100px]">
         <Badge
-          className={`${
-            stockColors[product.stock_status as keyof typeof stockColors]
-          } text-white border-0`}
+          className={`${stockColors[product.stock_status as keyof typeof stockColors]
+            } text-white border-0`}
         >
           {product.stock_status.replace('_', ' ')}
         </Badge>
