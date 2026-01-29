@@ -67,7 +67,7 @@ export async function getSubscriptionData() {
 
   const { PLAN_LIMITS } = await import('@/config/pricing')
   // Handle array or object for plan
-  // @ts-ignore
+
   const planData = subscription.plan
   const planNameRaw = (Array.isArray(planData) ? planData[0]?.name : planData?.name)?.toLowerCase() || 'free'
   const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS

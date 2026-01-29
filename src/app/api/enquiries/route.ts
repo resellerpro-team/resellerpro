@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: Request) {
     const supabase = await createClient()
 
@@ -79,7 +81,7 @@ export async function POST(req: Request) {
     const { PLAN_LIMITS } = await import('@/config/pricing')
     // Handle potential nested array from Supabase join
     const planData = subscription?.plan;
-    // @ts-ignore
+    // @ts-expect-error - Plan data structure can vary
     const planName = (Array.isArray(planData) ? planData[0]?.name : planData?.name);
     const planNameRaw = planName?.toLowerCase() || 'free';
     const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS

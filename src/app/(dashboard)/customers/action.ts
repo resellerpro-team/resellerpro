@@ -52,7 +52,7 @@ export async function createCustomer(
 
   // Handle potential array return for joined relation
   const planData = subscription?.plan
-  // @ts-ignore
+  // @ts-expect-error - Plan data structure can vary
   const planNameRaw = (Array.isArray(planData) ? planData[0]?.name : planData?.name)?.toLowerCase() || 'free'
 
   const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS
