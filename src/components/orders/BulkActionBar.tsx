@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useRouter } from 'next/navigation'
 import { Info } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface BulkActionBarProps {
     selectedIds: string[]
@@ -35,13 +36,15 @@ export function BulkActionBar({
     const [isPending, startTransition] = useTransition()
     const { toast } = useToast()
     const router = useRouter()
+    const queryClient = useQueryClient()
 
     if (selectedIds.length === 0) return null
 
     // Filter allowed options based on the current status of selected orders
     // CRITICAL: Filter out 'shipped' from bulk updates as it requires tracking IDs
-    const allowedNextStatuses = currentStatus
-        ? (STATUS_FLOW[currentStatus] || []).filter(status => status !== 'shipped')
+    const normalizedStatus = currentStatus?.toLowerCase()
+    const allowedNextStatuses = normalizedStatus
+        ? (STATUS_FLOW[normalizedStatus] || []).filter(status => status !== 'shipped')
         : []
     const availableOptions = allowedNextStatuses.map(status => ({
         value: status,
@@ -65,6 +68,11 @@ export function BulkActionBar({
                     title: 'Success',
                     description: result.message,
                 })
+
+                // Invalidate React Query cache to update UI instantly
+                queryClient.invalidateQueries({ queryKey: ['orders'] })
+                queryClient.invalidateQueries({ queryKey: ['orders-stats'] })
+
                 router.refresh()
                 onClearSelection()
                 onSuccess?.()
@@ -84,15 +92,6 @@ export function BulkActionBar({
                 {/* Mobile Handle */}
                 <div className="w-12 h-1.5 bg-muted rounded-full mb-2 sm:hidden self-center opacity-50" />
 
-                {currentStatus === 'processing' && (
-                    <Alert className="md:hidden py-1 px-3 border-amber-500/50 bg-amber-500/10 text-amber-600 rounded-lg animate-in fade-in slide-in-from-top-1 duration-300">
-                        <Info className="h-3 w-3 inline mr-2 align-middle" />
-                        <AlertDescription className="text-[9px] font-bold inline align-middle">
-                            'Shipped' requires individual tracking IDs.
-                        </AlertDescription>
-                    </Alert>
-                )}
-
                 {/* Selection Info */}
                 <div className="flex items-center gap-3 flex-1 w-full sm:w-auto px-1 sm:px-0">
                     <div className="bg-primary/10 p-2.5 rounded-xl border border-primary/20">
@@ -100,10 +99,10 @@ export function BulkActionBar({
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center gap-2">
-                            <p className="text-sm font-black tracking-tight">
+                            <p className="text-sm font-black">
                                 {selectedIds.length} {selectedIds.length === 1 ? 'order' : 'orders'} selected
                             </p>
-                            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-bold uppercase tracking-tighter bg-primary/10 text-primary border-0">
+                            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-bold uppercase  bg-primary/10 text-primary border-0">
                                 {currentStatus}
                             </Badge>
                         </div>
@@ -119,6 +118,7 @@ export function BulkActionBar({
                     </Button>
                 </div>
 
+
                 {/* Action Controls */}
                 <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
                     {availableOptions.length > 0 ? (
@@ -131,8 +131,18 @@ export function BulkActionBar({
                                     <SelectContent
                                         side="top"
                                         sideOffset={12}
-                                        className="rounded-xl border-primary/10 z-[70]"
+                                        className="rounded-xl border-primary/10 z-[70] p-1"
                                     >
+                                        {normalizedStatus === 'processing' && (
+                                            <div className="px-2 pt-1 pb-2 mb-1 border-b border-amber-500/10">
+                                                <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/5 text-amber-600">
+                                                    <Info className="h-3.5 w-3.5 shrink-0" />
+                                                    <p className="text-[10px] font-bold leading-tight">
+                                                       Status 'Shipped' is not available for bulk action.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
                                         {availableOptions.map((opt) => (
                                             <SelectItem key={opt.value} value={opt.value} className="rounded-lg my-1">
                                                 <div className="flex items-center gap-3">
