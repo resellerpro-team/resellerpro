@@ -96,10 +96,18 @@ Order ID: #${orderNumber}${productList}${amount}
 ━━━━━━━━━━━━━━━━━━━━━
 
 *CURRENT STATUS:* ❌ Cancelled
+${orderDetails?.totalAmount ? `\nIf you've already made a payment of ₹${orderDetails.totalAmount.toFixed(2)}, it will be refunded to your original payment method within 5-7 business days.` : ''}
 
-We apologize for any inconvenience this may have caused. If you have any questions regarding your refund or the reason for cancellation, please don't hesitate to reach out.
+*WE'RE HERE TO HELP*
+• Did you request this cancellation? No action needed.
+• Unexpected cancellation? Please contact us immediately - we'll resolve this right away.
+• Want to place a new order? We'd be delighted to assist you.
 
-Warm regards,
+We truly appreciate your understanding and hope to serve you again soon.
+
+_Questions? Reply to this message anytime._
+
+Sincerely,
 *${shopName}* Team`
     }
 

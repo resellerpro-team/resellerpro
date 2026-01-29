@@ -38,6 +38,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { updateOrderStatus } from '@/app/(dashboard)/orders/actions'
 import { STATUS_FLOW, STATUS_CONFIG } from '@/config/order-status'
 import { generateStatusMessage } from '@/utils/whatsapp-helper'
+import { useQueryClient } from '@tanstack/react-query'
 
 export function OrderStatusUpdate({
   orderId,
@@ -269,7 +270,7 @@ export function OrderStatusUpdate({
             <Button
               type="button"
               variant="outline"
-              className="w-full bg-green-50 hover:bg-green-100 border-green-500 text-green-700"
+              className="w-full bg-green-50 hover:bg-green-600 border-green-500 text-green-700"
               onClick={() => {
                 const message = generateStatusMessage(
                   customerName || 'Customer',
@@ -399,7 +400,7 @@ export function OrderStatusUpdate({
           <Button
             type="button"
             variant="outline"
-            className="w-full bg-green-50 hover:bg-green-100 border-green-500 text-green-700 animate-in fade-in-50 slide-in-from-top-2 duration-300"
+            className="w-full bg-green-50 hover:bg-green-600 border-green-500 text-green-700 animate-in fade-in-50 slide-in-from-top-2 duration-300"
             onClick={handleWhatsAppSend}
           >
             <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
