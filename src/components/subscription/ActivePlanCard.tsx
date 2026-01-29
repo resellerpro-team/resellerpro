@@ -1,3 +1,5 @@
+'use client'
+
 import { Badge } from '@/components/ui/badge'
 import { Check } from 'lucide-react'
 import { SubscriptionMenu } from './SubscriptionMenu'

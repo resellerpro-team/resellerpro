@@ -259,6 +259,7 @@ export default function NewProductPage() {
 
       // Invalidate products query
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['subscription'] })
 
       router.push('/products')
       router.refresh()

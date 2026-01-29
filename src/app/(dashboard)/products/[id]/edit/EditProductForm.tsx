@@ -11,13 +11,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
 import { Save, Upload, X, Loader2, Trash2, AlertTriangle, Lock } from 'lucide-react'
 import Image from 'next/image'
-<<<<<<< HEAD
 import Link from 'next/link'
-=======
-import { useQueryClient } from '@tanstack/react-query'
->>>>>>> 7704756db6d8889b3ccc6f260bc61f0f0e0ed6c6
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,8 +31,10 @@ export default function EditProductForm({ product }: { product: any }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { toast } = useToast()
-  const queryClient = useQueryClient()
   const supabase = createClient()
+  const { subscription } = usePlanLimits()
+  const maxImages = subscription?.plan_details?.productImages || 5
+  const planName = subscription?.plan?.display_name || 'Free Plan'
 
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -69,10 +68,10 @@ export default function EditProductForm({ product }: { product: any }) {
     const files = Array.from(e.target.files || [])
 
     const totalImages = keepExistingImages.length + images.length + files.length
-    if (totalImages > 5) {
+    if (totalImages > maxImages) {
       toast({
         title: 'Too many images',
-        description: `Maximum 5 images allowed. You have ${keepExistingImages.length} existing image(s).`,
+        description: `Maximum ${maxImages} images allowed on ${planName}. You have ${keepExistingImages.length} existing image(s).`,
         variant: 'destructive',
       })
       return
@@ -270,14 +269,13 @@ export default function EditProductForm({ product }: { product: any }) {
         description: `"${name}" has been updated successfully`,
       })
 
-<<<<<<< HEAD
+
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['product', product.id] })
-=======
-      // Invalidate products query
-      queryClient.invalidateQueries({ queryKey: ['products'] })
 
->>>>>>> 7704756db6d8889b3ccc6f260bc61f0f0e0ed6c6
+
+
+
       router.push(`/products/${product.id}`)
       router.refresh()
     } catch (error: any) {
@@ -340,13 +338,12 @@ export default function EditProductForm({ product }: { product: any }) {
         description: `"${product.name}" has been permanently deleted`,
       })
 
-<<<<<<< HEAD
       queryClient.invalidateQueries({ queryKey: ['products'] })
-=======
-      // Invalidate products query
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['subscription'] })
 
->>>>>>> 7704756db6d8889b3ccc6f260bc61f0f0e0ed6c6
+      // Invalidate products query
+
+
       router.push('/products')
       router.refresh()
     } catch (error: any) {
@@ -392,7 +389,7 @@ export default function EditProductForm({ product }: { product: any }) {
                 Product Images <span className="text-destructive">*</span>
               </Label>
               <span className="text-sm text-muted-foreground">
-                {totalImages} / 5 images
+                {totalImages} / {maxImages} images
               </span>
             </div>
 
@@ -461,7 +458,7 @@ export default function EditProductForm({ product }: { product: any }) {
             )}
 
             {/* Add More Images */}
-            {totalImages < 5 ? (
+            {totalImages < maxImages ? (
               <label className="flex items-center justify-center aspect-square border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors p-6 max-w-[200px]">
                 <div className="text-center">
                   <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
@@ -487,7 +484,7 @@ export default function EditProductForm({ product }: { product: any }) {
                 onClick={() => {
                   toast({
                     title: 'Limit Reached 🔒',
-                    description: `You can only add up to 5 images per product. Upgrade to Business plan for more!`,
+                    description: `You can only add up to ${maxImages} images per product on the ${planName}.${planName !== 'Business' ? ' Upgrade to grow your business!' : ''}`,
                     variant: 'default',
                     action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
                   })
@@ -505,7 +502,7 @@ export default function EditProductForm({ product }: { product: any }) {
 
             <p className="text-xs text-muted-foreground flex items-start gap-1.5">
               <span className="text-primary mt-0.5">ℹ</span>
-              <span>First image is the main product image. Supports JPG, PNG, WebP. Max 5 images, 5MB each.</span>
+              <span>First image is the main product image. Supports JPG, PNG, WebP. Max {maxImages} images, 5MB each.</span>
             </p>
           </div>
 

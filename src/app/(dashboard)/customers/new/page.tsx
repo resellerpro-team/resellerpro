@@ -1,8 +1,8 @@
 'use client'
-
 import { useState, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft, Save, Loader2, WifiOff } from 'lucide-react'
 import Link from 'next/link'
-import { useQueryClient } from '@tanstack/react-query'
+
 import { SmartPasteDialog } from '@/components/customers/SmartPasteDialog'
 import type { ParsedCustomerData } from '@/lib/utils/whatsapp-parser'
 import { createCustomer } from '../action'

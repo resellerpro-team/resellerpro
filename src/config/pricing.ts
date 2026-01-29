@@ -1,6 +1,6 @@
 export const PLAN_LIMITS = {
   free: {
-    orders: 15,
+    orders: 10,
     enquiries: 25,
     customers: 50,
     productImages: 2,

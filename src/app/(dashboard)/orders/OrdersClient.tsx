@@ -133,8 +133,8 @@ export function OrdersClient() {
             </RequireVerification>
           ) : (
             <Button
-              variant="outline"
               className="gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
+              variant="outline"
               onClick={() => {
                 toast({
                   title: "Limit Reached 🔒",

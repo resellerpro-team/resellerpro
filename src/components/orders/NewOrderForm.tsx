@@ -262,6 +262,7 @@ export function NewOrderForm({
       if (result.success) {
         // Invalidate orders query
         queryClient.invalidateQueries({ queryKey: ['orders'] })
+        queryClient.invalidateQueries({ queryKey: ['subscription'] })
 
         toast({
           title: 'Success',

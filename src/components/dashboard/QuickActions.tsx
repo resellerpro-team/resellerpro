@@ -7,16 +7,33 @@ import { Plus, ArrowRight, Lock } from 'lucide-react'
 import Link from 'next/link'
 import { RequireVerification } from '../shared/RequireVerification'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
-import { LimitReachedModal } from '@/components/subscription/LimitReachedModal'
 import { useRouter } from 'next/navigation'
+import { useToast } from "@/hooks/use-toast";
 
 export function QuickActions() {
     const router = useRouter()
-    const { checkLimit, limitModalProps, isLoading } = usePlanLimits()
+    const { toast } = useToast()
+    const {
+        canCreateOrder,
+        canCreateEnquiry,
+        canCreateProduct,
+        canCreateCustomer,
+        subscription,
+        isLoading
+    } = usePlanLimits()
 
-    const handleAction = (path: string, feature: 'orders' | 'enquiries' | 'products' | 'customers') => {
-        if (checkLimit(feature)) {
+    const planName = subscription?.plan?.display_name || 'Free Plan'
+
+    const handleAction = (path: string, allowed: boolean, featureName: string) => {
+        if (allowed) {
             router.push(path)
+        } else {
+            toast({
+                title: "Limit Reached 🔒",
+                description: `You've reached your ${featureName} limit on the ${planName}. Upgrade to unlock more!`,
+                variant: "default",
+                action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
+            })
         }
     }
 
@@ -34,7 +51,7 @@ export function QuickActions() {
                             <RequireVerification>
                                 <Button
                                     className="w-full justify-start"
-                                    onClick={() => handleAction('/enquiries/new', 'enquiries')}
+                                    onClick={() => handleAction('/enquiries/new', canCreateEnquiry, 'enquiry')}
                                     disabled={isLoading}
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
@@ -45,7 +62,7 @@ export function QuickActions() {
                                 <Button
                                     variant="outline"
                                     className="w-full justify-start"
-                                    onClick={() => handleAction('/orders/new', 'orders')}
+                                    onClick={() => handleAction('/orders/new', canCreateOrder, 'order')}
                                     disabled={isLoading}
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
@@ -56,7 +73,7 @@ export function QuickActions() {
                                 <Button
                                     variant="outline"
                                     className="w-full justify-start"
-                                    onClick={() => handleAction('/products/new', 'products')}
+                                    onClick={() => handleAction('/products/new', canCreateProduct, 'product')}
                                     disabled={isLoading}
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
@@ -67,7 +84,7 @@ export function QuickActions() {
                                 <Button
                                     variant="outline"
                                     className="w-full justify-start"
-                                    onClick={() => handleAction('/customers/new', 'customers')}
+                                    onClick={() => handleAction('/customers/new', canCreateCustomer, 'customer')}
                                     disabled={isLoading}
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
@@ -87,8 +104,6 @@ export function QuickActions() {
                     </div>
                 </CardContent>
             </Card>
-
-            <LimitReachedModal {...limitModalProps} />
         </>
     )
 }
