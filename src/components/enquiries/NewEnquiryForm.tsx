@@ -87,9 +87,12 @@ export default function NewEnquiryForm() {
                             <Label htmlFor="phone">Phone Number *</Label>
                             <Input
                                 id="phone"
+                                type="tel"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                placeholder="+91 98765 43210"
+                                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                                placeholder="10-digit mobile number"
                                 required
                                 disabled={isLoading}
                             />

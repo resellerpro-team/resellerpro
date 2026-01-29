@@ -34,7 +34,14 @@ export default function ProfileForm({ user }: { user: UserData }) {
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
+    const { name } = e.target
+    let { value } = e.target
+
+    // Restrict phone to digits only
+    if (name === 'phone') {
+      value = value.replace(/\D/g, '')
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
@@ -249,6 +256,8 @@ export default function ProfileForm({ user }: { user: UserData }) {
           id="phone"
           name="phone"
           type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
           value={formData.phone}
           onChange={handleInputChange}
           placeholder="Enter your phone number"
