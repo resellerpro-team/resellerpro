@@ -18,7 +18,7 @@ import { useSubscription } from '@/lib/hooks/useSubscription'
 import { ProBadge } from '@/components/shared/ProBadge'
 import { useRouter } from 'next/navigation'
 
-export function ExportProducts({ products, businessName = 'ResellerPro' }: { products: Product[], businessName?: string }) {
+export function ExportProducts({ products, businessName = 'ResellerPro', className }: { products: Product[], businessName?: string, className?: string }) {
   const [isExporting, setIsExporting] = useState(false)
   const router = useRouter()
   const { isPremium, isLoading: isCheckingSubscription } = useSubscription()
@@ -32,14 +32,14 @@ export function ExportProducts({ products, businessName = 'ResellerPro' }: { pro
     setIsExporting(true)
     // Simulate a small delay for better UX
     await new Promise(resolve => setTimeout(resolve, 500))
-    
+
     try {
       const exportData = products.map(p => {
-          const profit = p.selling_price - p.cost_price
-          const margin = p.selling_price > 0 ? ((profit / p.selling_price) * 100).toFixed(2) : '0.00'
-          const stockValue = (p.stock_quantity || 0) * p.cost_price
+        const profit = p.selling_price - p.cost_price
+        const margin = p.selling_price > 0 ? ((profit / p.selling_price) * 100).toFixed(2) : '0.00'
+        const stockValue = (p.stock_quantity || 0) * p.cost_price
 
-          return {
+        return {
           'Product Name': p.name,
           'Category': p.category || 'Uncategorized',
           'SKU': p.sku || '-',
@@ -50,14 +50,14 @@ export function ExportProducts({ products, businessName = 'ResellerPro' }: { pro
           'Profit': formatCurrency(profit),
           'Margin %': `${margin}%`,
           'Total Stock Value': formatCurrency(stockValue)
-          }
+        }
       })
 
       exportToCSV(exportData, 'Products_Inventory', {
-          company: businessName,
-          reportType: 'Inventory Report',
-          generatedOn: new Date().toLocaleString('en-IN'),
-          totalRecords: products.length
+        company: businessName,
+        reportType: 'Inventory Report',
+        generatedOn: new Date().toLocaleString('en-IN'),
+        totalRecords: products.length
       })
       toast.success('✅ Inventory report exported successfully!')
     } catch (error) {
@@ -76,32 +76,32 @@ export function ExportProducts({ products, businessName = 'ResellerPro' }: { pro
 
     setIsExporting(true)
     try {
-        const totalStockValue = products.reduce((sum, p) => sum + ((p.stock_quantity || 0) * p.cost_price), 0)
-        const totalItems = products.reduce((sum, p) => sum + (p.stock_quantity || 0), 0)
-        
-        const summaryData = {
-            totalProducts: products.length,
-            totalStockValue,
-            totalItems,
-            products: products.slice(0, 20), // Top 20 for summary
-            generatedAt: new Date().toLocaleString('en-IN'),
-            businessName
-        }
+      const totalStockValue = products.reduce((sum, p) => sum + ((p.stock_quantity || 0) * p.cost_price), 0)
+      const totalItems = products.reduce((sum, p) => sum + (p.stock_quantity || 0), 0)
 
-        exportToPDF(summaryData, 'Products_Summary_PDF')
-        toast.success('✅ Product summary PDF exported successfully!')
+      const summaryData = {
+        totalProducts: products.length,
+        totalStockValue,
+        totalItems,
+        products: products.slice(0, 20), // Top 20 for summary
+        generatedAt: new Date().toLocaleString('en-IN'),
+        businessName
+      }
+
+      exportToPDF(summaryData, 'Products_Summary_PDF')
+      toast.success('✅ Product summary PDF exported successfully!')
     } catch (error) {
-        console.error('PDF Export error:', error)
-        toast.error('Failed to export product summary')
+      console.error('PDF Export error:', error)
+      toast.error('Failed to export product summary')
     } finally {
-        setIsExporting(false)
+      setIsExporting(false)
     }
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isExporting || isCheckingSubscription}>
+        <Button variant="outline" className={className} disabled={isExporting || isCheckingSubscription}>
           {isExporting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

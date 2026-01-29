@@ -23,6 +23,8 @@ import { OrderStatusUpdate } from '@/components/orders/OrderStatusUpdate'
 import { PaymentStatusUpdate } from '@/components/orders/PaymentStatusUpdate'
 import { CollapsibleSection } from '@/components/orders/CollapsibleSection'
 import { WhatsAppOrderMessages } from '@/components/orders/WhatsAppOrderMessages'
+import { InvoiceActions } from '@/components/orders/InvoiceActions'
+import { InvoiceLayout } from '@/components/orders/InvoiceLayout'
 
 //  FIXED: params is now a Promise
 export default async function OrderDetailsPage({
@@ -37,10 +39,10 @@ export default async function OrderDetailsPage({
   //  Get authenticated user to fetch business name
   const { data: { user } } = await supabase.auth.getUser()
 
-  //  Fetch user profile with business name
+  //  Fetch user profile with business details
   const { data: profile } = await supabase
     .from('profiles')
-    .select('business_name')
+    .select('business_name, business_email, full_name, avatar_url')
     .eq('id', user?.id)
     .single()
 
@@ -76,7 +78,7 @@ export default async function OrderDetailsPage({
 
   // Sort status history by date (oldest to newest)
   const statusHistory = (order.order_status_history || []).sort(
-    (a: any, b: any) => 
+    (a: any, b: any) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   )
 
@@ -118,12 +120,38 @@ export default async function OrderDetailsPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link href={`/orders/${order.id}/invoice`}>
-              <Printer className="mr-2 h-4 w-4" />
-              Print Invoice
-            </Link>
-          </Button>
+          <div className="hidden print:block print-container">
+            <InvoiceLayout
+              order={order}
+              profile={profile}
+              businessEmail={profile?.business_email || user?.email || ''}
+              displayName={profile?.business_name || profile?.full_name || 'Your Business'}
+            />
+          </div>
+
+          <div className="print:hidden">
+            <style dangerouslySetInnerHTML={{
+              __html: `
+              @media print {
+                body > *:not(.print-container) { display: none !important; }
+                .print-container { display: block !important; width: 100% !important; margin: 0 !important; }
+              }
+            `}} />
+            <InvoiceActions
+              orderNumber={order.order_number}
+              contentId="hidden-invoice-capture"
+            />
+          </div>
+
+          {/* Hidden capture target for PDF/Print */}
+          <div id="hidden-invoice-capture" className="fixed -left-[9999px] top-0 pointer-events-none w-[1200px]">
+            <InvoiceLayout
+              order={order}
+              profile={profile}
+              businessEmail={profile?.business_email || user?.email || ''}
+              displayName={profile?.business_name || profile?.full_name || 'Your Business'}
+            />
+          </div>
         </div>
       </div>
 
@@ -207,7 +235,7 @@ export default async function OrderDetailsPage({
                 <div className="relative pl-8">
                   {/* Vertical connecting line */}
                   <div className="absolute left-[1.125rem] top-0 bottom-0 w-0.5 bg-border"></div>
-                  
+
                   {statusHistory.map((historyItem: any, index: number) => {
                     const config = statusConfig[historyItem.status] || {
                       label: historyItem.status,
@@ -218,15 +246,15 @@ export default async function OrderDetailsPage({
                     const isFirst = index === 0
 
                     return (
-                      <div 
-                        key={historyItem.id} 
+                      <div
+                        key={historyItem.id}
                         className="flex items-start gap-4 mb-8 last:mb-0"
                       >
                         {/* Timeline dot/icon */}
                         <div className={`
                           relative z-10 h-9 w-9 rounded-full flex items-center justify-center 
-                          ${isLatest 
-                            ? `${config.color} ring-4 ring-primary/20 text-white` 
+                          ${isLatest
+                            ? `${config.color} ring-4 ring-primary/20 text-white`
                             : 'bg-primary/10 border-2 border-primary'
                           }
                           transition-all duration-300
@@ -237,7 +265,7 @@ export default async function OrderDetailsPage({
                             <CheckCircle2 className="h-4 w-4 text-primary" />
                           )}
                         </div>
-                        
+
                         {/* Timeline content */}
                         <div className="flex-1 pb-6">
                           <div className="flex items-center gap-2 mb-1">
@@ -250,7 +278,7 @@ export default async function OrderDetailsPage({
                               </Badge>
                             )}
                           </div>
-                          
+
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
                             <Clock className="h-3 w-3" />
                             {new Date(historyItem.created_at).toLocaleString('en-IN', {
@@ -358,10 +386,10 @@ export default async function OrderDetailsPage({
                     itemsText={
                       order.order_items && order.order_items.length > 0
                         ? order.order_items
-                            .map((item: any, idx: number) => 
-                              `${idx + 1}. ${item.product_name} - ₹${parseFloat(item.unit_selling_price).toFixed(0)} x ${item.quantity} = ₹${parseFloat(item.subtotal).toFixed(0)}`
-                            )
-                            .join('\n')
+                          .map((item: any, idx: number) =>
+                            `${idx + 1}. ${item.product_name} - ₹${parseFloat(item.unit_selling_price).toFixed(0)} x ${item.quantity} = ₹${parseFloat(item.subtotal).toFixed(0)}`
+                          )
+                          .join('\n')
                         : 'Order items'
                     }
                     trackingNumber={order.tracking_number}
@@ -382,9 +410,8 @@ export default async function OrderDetailsPage({
                 <div className="flex justify-between items-center gap-2">
                   <span className="text-sm">Payment Status</span>
                   <span
-                    className={`font-semibold text-sm ${
-                      paymentConfig[order.payment_status]?.color || 'text-gray-600'
-                    }`}
+                    className={`font-semibold text-sm ${paymentConfig[order.payment_status]?.color || 'text-gray-600'
+                      }`}
                   >
                     {paymentConfig[order.payment_status]?.label || order.payment_status}
                   </span>
@@ -400,7 +427,7 @@ export default async function OrderDetailsPage({
                 )}
 
                 <Separator />
-                
+
                 <PaymentStatusUpdate
                   orderId={order.id}
                   currentPaymentStatus={order.payment_status}
@@ -459,9 +486,9 @@ export default async function OrderDetailsPage({
                 )}
 
                 <Separator />
-                
-                <OrderStatusUpdate 
-                  orderId={order.id} 
+
+                <OrderStatusUpdate
+                  orderId={order.id}
                   currentStatus={order.status}
                   orderNumber={order.order_number}
                   customerName={order.customers?.name}

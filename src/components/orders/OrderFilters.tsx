@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { STATUS_OPTIONS } from '@/config/order-status'
 
 export function OrdersFilter() {
   const router = useRouter()
@@ -16,17 +17,17 @@ export function OrdersFilter() {
 
   const handleStatusChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString())
-    
+
     if (value === 'all') {
       params.delete('status')
     } else {
       params.set('status', value)
     }
-    
-    const newUrl = params.toString() 
-      ? `/orders?${params.toString()}` 
+
+    const newUrl = params.toString()
+      ? `/orders?${params.toString()}`
       : '/orders'
-    
+
     router.push(newUrl)
   }
 
@@ -37,11 +38,11 @@ export function OrdersFilter() {
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">All Orders</SelectItem>
-        <SelectItem value="pending">Pending</SelectItem>
-        <SelectItem value="processing">Processing</SelectItem>
-        <SelectItem value="shipped">Shipped</SelectItem>
-        <SelectItem value="delivered">Delivered</SelectItem>
-        <SelectItem value="cancelled">Cancelled</SelectItem>
+        {STATUS_OPTIONS.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value}>
+            {opt.label}
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   )
