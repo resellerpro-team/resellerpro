@@ -21,6 +21,15 @@ const nextConfig = withPWA({
     },
   },
   reactStrictMode: true,
+  webpack: (config) => {
+    // Suppress Webpack cache warnings about serializing big strings
+    // This often happens with Next.js plugins and doesn't indicate a critical issue
+    config.infrastructureLogging = {
+      ...config.infrastructureLogging,
+      level: 'error',
+    };
+    return config;
+  },
 
 
 });

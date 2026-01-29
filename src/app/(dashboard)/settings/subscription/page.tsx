@@ -15,6 +15,33 @@ export const metadata = {
   title: 'Subscription - ResellerPro',
 }
 
+function MetricBar({ label, metric, icon }: { label: string, metric: any, icon: React.ReactNode }) {
+  if (!metric) return null
+  const isUnlimited = metric.limit === Infinity
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between text-sm">
+        <span className="font-medium flex items-center gap-2">
+          {icon} {label}
+        </span>
+        <span className="font-semibold text-muted-foreground">
+          {isUnlimited ? 'Unlimited' : `${metric.used} / ${metric.limit}`}
+        </span>
+      </div>
+      {!isUnlimited && (
+        <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
+          <div
+            className={`h-2.5 rounded-full transition-all duration-500 ${metric.isReached ? 'bg-destructive' : metric.percentage > 80 ? 'bg-yellow-500' : 'bg-primary'
+              }`}
+            style={{ width: `${metric.percentage}%` }}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default async function SubscriptionPage() {
   const subscription = await getSubscriptionData()
   const plans = await getAvailablePlans()
@@ -61,7 +88,7 @@ export default async function SubscriptionPage() {
     <>
       {/* Client-side scroll handler for hash anchors */}
       <ClientScrollHandler />
-      
+
       {/* Razorpay Checkout Script */}
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
@@ -84,7 +111,18 @@ export default async function SubscriptionPage() {
             status={subscription.status}
             currentPeriodEnd={subscription.current_period_end}
             isBusiness={isBusiness}
-          />
+            description={subscription.plan_details?.display_name ? `Enjoy your ${subscription.plan_details.display_name}` : 'Thank you for being a premium member!'}
+          >
+            <div className="space-y-4 pt-2">
+              <h4 className="text-sm font-semibold uppercase tracking-wider opacity-70">Plan Usage</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <MetricBar label="Orders" metric={subscription.metrics.orders} icon={<Package className="h-4 w-4" />} />
+                <MetricBar label="Enquiries" metric={subscription.metrics.enquiries} icon={<AlertCircle className="h-4 w-4" />} />
+                <MetricBar label="Customers" metric={subscription.metrics.customers} icon={<Check className="h-4 w-4" />} />
+                <MetricBar label="Products" metric={subscription.metrics.products} icon={<Zap className="h-4 w-4" />} />
+              </div>
+            </div>
+          </ActivePlanCard>
         ) : (
           <Card>
             <CardHeader>
@@ -113,53 +151,46 @@ export default async function SubscriptionPage() {
                   </Badge>
                 </div>
 
-                {/* Usage Bar (Only for free plan) */}
-                {hasOrderLimit && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">Orders this month</span>
-                      <span className="font-semibold">
-                        {subscription.orders_this_month} / {subscription.plan?.order_limit}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className={`h-2.5 rounded-full transition-all duration-500 ${subscription.is_limit_reached
-                          ? 'bg-red-500'
-                          : isLimitWarning
-                            ? 'bg-yellow-500'
-                            : 'bg-primary'
-                          }`}
-                        style={{
-                          width: `${Math.min(subscription.usage_percentage, 100)}%`
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {subscription.is_limit_reached ? (
-                        <span className="text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          Limit reached! Upgrade to create more orders.
-                        </span>
-                      ) : isLimitWarning ? (
-                        <span className="text-yellow-600 dark:text-yellow-400 font-medium">
-                          ⚠️ You've used {subscription.usage_percentage}% of your monthly orders
-                        </span>
-                      ) : (
-                        `You've used ${subscription.usage_percentage}% of your free orders`
-                      )}
-                    </p>
-                  </div>
-                )}
+                {/* Usage Bar (All Metrics) */}
+                <div className="space-y-5 pt-2">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Plan Usage</h4>
+
+                  {/* Orders */}
+                  <MetricBar
+                    label="Orders (Monthly)"
+                    metric={subscription.metrics.orders}
+                    icon={<Package className="h-4 w-4" />}
+                  />
+
+                  {/* Enquiries */}
+                  <MetricBar
+                    label="Enquiries (Monthly)"
+                    metric={subscription.metrics.enquiries}
+                    icon={<AlertCircle className="h-4 w-4" />}
+                  />
+
+                  {/* Customers */}
+                  <MetricBar
+                    label="Customers (Total)"
+                    metric={subscription.metrics.customers}
+                    icon={<Check className="h-4 w-4" />}
+                  />
+
+                  {/* Products */}
+                  <MetricBar
+                    label="Products (Total)"
+                    metric={subscription.metrics.products}
+                    icon={<Zap className="h-4 w-4" />}
+                  />
+                </div>
               </div>
 
-              {/* Limit Reached Alert */}
-              {subscription.is_limit_reached && (
+              {/* Limit Reached Alert (Generic) */}
+              {(subscription.metrics.orders.isReached || subscription.metrics.enquiries.isReached || subscription.metrics.products.isReached || subscription.metrics.customers.isReached) && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    You've reached your monthly limit of {subscription.plan?.order_limit} orders.
-                    Upgrade to Professional for unlimited orders and advanced features.
+                    You've reached the limit for some features. Upgrade your plan to continue growing!
                   </AlertDescription>
                 </Alert>
               )}

@@ -46,6 +46,9 @@ async function ensureSubscriptionExists(userId: string) {
 // --------------------
 // Get current subscription
 // --------------------
+// --------------------
+// Get current subscription
+// --------------------
 export async function getSubscriptionData() {
   const supabase = await createClient()
 
@@ -62,24 +65,79 @@ export async function getSubscriptionData() {
 
   if (!subscription) return null
 
+  const { PLAN_LIMITS } = await import('@/config/pricing')
+  // Handle array or object for plan
+
+  const planData = subscription.plan
+  const planNameRaw = (Array.isArray(planData) ? planData[0]?.name : planData?.name)?.toLowerCase() || 'free'
+  const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS
+  const limits = PLAN_LIMITS[planKey]
+
+  // --- FETCH USAGE ---
   const periodStart = new Date()
   periodStart.setDate(1)
   periodStart.setHours(0, 0, 0, 0)
 
-  const { count } = await supabase
+  // 1. Orders (This Month)
+  const { count: ordersCount } = await supabase
     .from('orders')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .gte('created_at', periodStart.toISOString())
 
-  const orderCount = count || 0
-  const orderLimit = subscription.plan?.order_limit || 0
+  // 2. Enquiries (This Month)
+  const { count: enquiriesCount } = await supabase
+    .from('enquiries')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', periodStart.toISOString())
 
+  // 3. Products (Total)
+  const { count: productsCount } = await supabase
+    .from('products')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+
+  // 4. Customers (Total active)
+  const { count: customersCount } = await supabase
+    .from('customers')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('is_deleted', false)
+
+  const usage = {
+    orders: ordersCount || 0,
+    enquiries: enquiriesCount || 0,
+    products: productsCount || 0,
+    customers: customersCount || 0,
+  }
+
+  const checkLimit = (used: number, limit: number) => {
+    return {
+      used,
+      limit,
+      percentage: limit === Infinity ? 0 : Math.min(Math.round((used / limit) * 100), 100),
+      isReached: limit !== Infinity && used >= limit
+    }
+  }
+
+  // Calculate percentages
+  const metrics = {
+    orders: checkLimit(usage.orders, limits.orders),
+    enquiries: checkLimit(usage.enquiries, limits.enquiries),
+    products: checkLimit(usage.products, limits.products),
+    customers: checkLimit(usage.customers, limits.customers),
+  }
+
+  // Legacy return fields for backward compatibility with existing UI (shows order limit mainly)
   return {
     ...subscription,
-    orders_this_month: orderCount,
-    usage_percentage: orderLimit > 0 ? Math.round((orderCount / orderLimit) * 100) : 0,
-    is_limit_reached: orderLimit > 0 && orderCount >= orderLimit,
+    orders_this_month: usage.orders,
+    usage_percentage: metrics.orders.percentage,
+    is_limit_reached: metrics.orders.isReached,
+    // Add new metrics field
+    metrics,
+    plan_details: limits
   }
 }
 
@@ -89,14 +147,43 @@ export async function getSubscriptionData() {
 export async function getAvailablePlans() {
   const supabase = await createClient()
 
-  const { data } = await supabase
+  const { data: dbPlans } = await supabase
     .from('subscription_plans')
     .select('*')
     .eq('is_active', true)
     .order('price', { ascending: true })
 
-  return data || []
+  if (!dbPlans) return []
+
+  const { pricingPlans } = await import('@/config/pricing')
+
+  // Merge DB plans with Config features/details to ensure limits match code
+  return dbPlans.map(dbPlan => {
+    // Find matching config plan by name (normalized)
+    const configPlan = pricingPlans.find(p =>
+      p.id === dbPlan.name.toLowerCase() ||
+      p.id === dbPlan.id ||
+      p.name.toLowerCase() === dbPlan.name.toLowerCase()
+    )
+
+    if (configPlan) {
+      return {
+        ...dbPlan,
+        features: configPlan.features, // Use features from config (contains dynamic limits)
+        description: configPlan.description,
+        display_name: configPlan.display_name || dbPlan.display_name, // Prefer config display name if exists
+        // We keep DB ID and Price (for checkout) mostly, unless we want to override price visual too.
+        // But for checkout integrity, DB price should be used. 
+        // Although the user said "199/month", if DB says otherwise, we might have a mismatch.
+        // Let's assume DB price is correct or user will update DB.
+        // Actually, let's allow config to override display price for the UI cards if needed, but the checkout action uses DB price.
+        // To avoid confusion, let's keep DB price.
+      }
+    }
+    return dbPlan
+  })
 }
+
 
 // --------------------
 // Create Razorpay Order

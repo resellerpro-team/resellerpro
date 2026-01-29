@@ -12,6 +12,7 @@ import { PaymentMethodDialog } from './PaymentMethodDialog'
 import { ComingSoonDialog } from './ComingSoonDialog'
 import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 
 type Plan = {
   id: string
@@ -32,6 +33,7 @@ type PricingCardsProps = {
 
 export function PricingCards({ plans, currentPlanName, walletBalance }: PricingCardsProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
@@ -63,6 +65,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
             title: 'Subscription Activated! 🎉',
             description: `You're now on the ${selectedPlan.display_name} plan.`,
           })
+          queryClient.invalidateQueries({ queryKey: ['subscription'] })
           router.refresh()
         } else {
           toast({
@@ -94,6 +97,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
               title: 'Subscription Activated! 🎉',
               description: `You're now on the ${selectedPlan.display_name} plan.`,
             })
+            queryClient.invalidateQueries({ queryKey: ['subscription'] })
             router.refresh()
           }
           setIsLoading(false)
@@ -128,6 +132,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                 title: 'Payment Successful! 🎉',
                 description: `You're now on the ${selectedPlan.display_name} plan.`,
               })
+              queryClient.invalidateQueries({ queryKey: ['subscription'] })
               router.refresh()
             } else {
               toast({
