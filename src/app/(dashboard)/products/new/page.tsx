@@ -10,20 +10,27 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeft, Save, Upload, X, Loader2, WifiOff } from 'lucide-react'
+import { ArrowLeft, Save, Upload, X, Loader2, WifiOff, Lock } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
+import { LimitReachedModal } from '@/components/subscription/LimitReachedModal'
 import { useOfflineQueue } from '@/lib/hooks/useOfflineQueue'
-import { RequireVerification } from '@/components/shared/RequireVerification'
 import { useQueryClient } from '@tanstack/react-query'
-
+import { createProduct } from '../actions'
+import { RequireVerification } from '@/components/shared/RequireVerification'
 
 export default function NewProductPage() {
   const router = useRouter()
-  const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { toast } = useToast()
   const supabase = createClient()
   const { queueAction, isOnline } = useOfflineQueue()
+
+  // --- LIMITS ---
+  const { subscription, limitModalProps } = usePlanLimits()
+  const imageLimit = subscription?.plan_details?.productImages || 5 // Default to 5 if loading (safe fallback, but backend enforces stricter)
+  const planName = subscription?.plan?.display_name || 'Free Plan'
 
   const [isLoading, setIsLoading] = useState(false)
   const [images, setImages] = useState<File[]>([])
@@ -60,11 +67,12 @@ export default function NewProductPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
 
-    if (images.length + files.length > 5) {
+    if (images.length + files.length > imageLimit) {
       toast({
-        title: 'Too many images',
-        description: 'You can upload maximum 5 images',
-        variant: 'destructive',
+        title: 'Limit Reached ⚠️',
+        description: `Your ${planName} allows maximum ${imageLimit} images per product. Upgrade to add more!`,
+        variant: 'destructive', // or default with a distinct style if desired
+        action: <Link href="/settings/subscription" className="underline font-bold ml-2">Upgrade</Link>
       })
       return
     }
@@ -207,42 +215,37 @@ export default function NewProductPage() {
         return
       }
 
-      // Upload images
-      const imageUrls = images.length > 0 ? await uploadImages(user.id) : []
+      // Construct FormData for Server Action
+      const formData = new FormData()
+      formData.append('name', name)
+      if (description) formData.append('description', description)
+      if (category) formData.append('category', category)
+      if (sku) formData.append('sku', sku)
+      formData.append('cost_price', costPrice)
+      formData.append('selling_price', sellingPrice)
+      formData.append('stock_quantity', stockQuantity)
+      formData.append('stock_status', stockStatus)
 
-      // Create product in database
-      const { data: product, error } = await supabase
-        .from('products')
-        .insert({
-          user_id: user.id,
-          name,
-          description: description || null,
-          category: category || null,
-          sku: sku || null,
-          cost_price: parseFloat(costPrice),
-          selling_price: parseFloat(sellingPrice),
-          stock_quantity: parseInt(stockQuantity),
-          stock_status: stockStatus,
-          image_url: imageUrls[0] || null,
-          images: imageUrls.length > 0 ? imageUrls : null,
-        })
-        .select()
-        .single()
+      // Append images
+      images.forEach((file, index) => {
+        formData.append(`image_${index}`, file)
+      })
 
-      if (error) {
-        console.error('Database error:', error)
+      // Call Server Action
+      const result = await createProduct({ success: false, message: '' }, formData)
 
-        // Cleanup uploaded images
-        for (const url of imageUrls) {
-          const path = url.split('/product-images/')[1]
-          if (path) {
-            await supabase.storage.from('product-images').remove([path])
-          }
+      if (!result.success) {
+        console.error('Create product failed:', result.message)
+
+        // Check if it's a limit error (contains "limit")
+        if (result.message.toLowerCase().includes('limit')) {
+          // We could trigger the limit modal here if we want, or just show the toast
+          // For now, consistent toast
         }
 
         toast({
           title: 'Error',
-          description: 'Failed to create product: ' + error.message,
+          description: result.message,
           variant: 'destructive',
         })
         setIsLoading(false)
@@ -251,11 +254,12 @@ export default function NewProductPage() {
 
       toast({
         title: 'Success',
-        description: `Product "${product.name}" created successfully!`,
+        description: `Product "${name}" created successfully!`,
       })
 
       // Invalidate products query
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['subscription'] })
 
       router.push('/products')
       router.refresh()
@@ -320,7 +324,7 @@ export default function NewProductPage() {
 
               {/* Images Upload */}
               <div className="space-y-2">
-                <Label>Product Images (up to 5, max 5MB each)</Label>
+                <Label>Product Images (up to {imageLimit}, max 5MB each)</Label>
                 <div className="grid grid-cols-5 gap-4">
                   {imagePreviews.map((preview, index) => (
                     <div key={index} className="relative aspect-square group">
@@ -346,7 +350,7 @@ export default function NewProductPage() {
                     </div>
                   ))}
 
-                  {images.length < 5 && (
+                  {images.length < imageLimit ? (
                     <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted transition-colors">
                       <Upload className="h-6 w-6 text-muted-foreground mb-1" />
                       <span className="text-xs text-muted-foreground">Add Image</span>
@@ -359,10 +363,26 @@ export default function NewProductPage() {
                         disabled={isLoading}
                       />
                     </label>
+                  ) : (
+                    <div
+                      className="aspect-square border-2 border-dashed border-muted-foreground/25 bg-muted/30 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        toast({
+                          title: 'Limit Reached 🔒',
+                          description: `You've reached the limit of ${imageLimit} images on the ${planName}. Upgrade to add more!`,
+                          variant: 'default',
+                          action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
+                        })
+                      }}
+                    >
+                      <Lock className="h-6 w-6 text-muted-foreground/60 mb-1" />
+                      <span className="text-xs text-muted-foreground/60">Limit Reached</span>
+                      <span className="text-[10px] text-primary font-medium mt-1">Upgrade Plan</span>
+                    </div>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  First image will be the main product image. Max 5 images, 5MB each.
+                  First image will be the main product image. Max {imageLimit} images, 5MB each.
                 </p>
               </div>
 
@@ -494,6 +514,7 @@ export default function NewProductPage() {
             </CardContent>
           </Card>
         </form>
+        <LimitReachedModal {...limitModalProps} />
       </div>
     </RequireVerification>
   )

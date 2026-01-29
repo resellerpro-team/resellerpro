@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TrendingUp, IndianRupee, ShoppingCart, Package, Users, BarChart3, Sparkles } from 'lucide-react'
+import NextImage from 'next/image'
 
 export function FirstVisitLoader() {
   const [isFirstVisit, setIsFirstVisit] = useState(false)
@@ -122,12 +123,19 @@ export function FirstVisitLoader() {
                 />
 
                 {/* Icon Circle */}
-                <div className="relative bg-white rounded-full p-6 shadow-2xl">
+                <div className="relative bg-white rounded-full p-6 shadow-2xl overflow-hidden flex items-center justify-center">
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                    className="flex items-center justify-center"
                   >
-                    <TrendingUp className="w-16 h-16 text-purple-600" />
+                    <NextImage
+                      src="/logo.png"
+                      alt="ResellerPro Logo"
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 object-contain"
+                    />
                   </motion.div>
                 </div>
 

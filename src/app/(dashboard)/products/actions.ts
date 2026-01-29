@@ -21,10 +21,42 @@ export type FormState = {
 };
 
 // ⛳ CREATE PRODUCT
+// ⛳ CREATE PRODUCT
 export async function createProduct(prev: FormState, formData: FormData): Promise<FormState> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, message: "Not authenticated" };
+
+  // --- CHECK LIMITS ---
+  const { data: subscription } = await supabase
+    .from('user_subscriptions')
+    .select('plan:subscription_plans(name)')
+    .eq('user_id', user.id)
+    .single();
+
+  const { PLAN_LIMITS } = await import('@/config/pricing');
+  // Handle potential nested array from Supabase join
+  const planData = subscription?.plan;
+  // @ts-expect-error - Plan data structure can vary
+  const planName = (Array.isArray(planData) ? planData[0]?.name : planData?.name);
+  const planNameRaw = planName?.toLowerCase() || 'free';
+  const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS;
+  const limits = PLAN_LIMITS[planKey];
+
+  // 1. Check Product Count Limit
+  if (limits.products !== Infinity) {
+    const { count } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    if ((count || 0) >= limits.products) {
+      return {
+        success: false,
+        message: `You've reached your limit of ${limits.products} products on the ${planKey} plan. Upgrade to add more!`,
+      };
+    }
+  }
 
   const valid = ProductSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!valid.success) {
@@ -39,8 +71,17 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
 
   // ---- upload images ----
   const imageUrls: string[] = [];
+  const maxImages = limits.productImages; // Limit based on plan
 
-  for (let i = 0; i < 5; i++) {
+  // Iterate up to a reasonable max number of potential file inputs (e.g. 10)
+  // But ONLY process up to maxImages valid files.
+  let uploadedCount = 0;
+
+  // We'll check indices 0 to 9 (assuming frontend sends image_0, image_1...)
+  // But strictly stop once we have `maxImages` successful uploads.
+  for (let i = 0; i < 10; i++) {
+    if (uploadedCount >= maxImages) break;
+
     const file = formData.get(`image_${i}`) as File | null;
     if (!file || file.size === 0) continue;
 
@@ -54,6 +95,7 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
     if (!error) {
       const { data } = supabase.storage.from("product-images").getPublicUrl(name);
       imageUrls.push(data.publicUrl);
+      uploadedCount++;
     }
   }
 

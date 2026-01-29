@@ -8,6 +8,9 @@ import { STATUS_FLOW } from '@/config/order-status'
 // ========================================================
 // HELPER: Check if user can create order
 // ========================================================
+// ========================================================
+// HELPER: Check if user can create order
+// ========================================================
 async function canCreateOrder() {
   const supabase = await createClient()
 
@@ -16,7 +19,7 @@ async function canCreateOrder() {
     return { allowed: false, reason: 'Not authenticated' }
   }
 
-  // Get user's subscription WITHOUT filtering by status first (to check expiration)
+  // Get user's subscription
   const { data: subscription } = await supabase
     .from('user_subscriptions')
     .select(`
@@ -26,24 +29,22 @@ async function canCreateOrder() {
     .eq('user_id', user.id)
     .single()
 
-  // STRICT CHECK: Determine if user has valid premium subscription
-  const isActive = subscription?.status === 'active'
-  const isPaidPlan = subscription?.plan?.name && subscription.plan.name !== 'free'
-  const isNotExpired = subscription?.current_period_end
-    ? new Date(subscription.current_period_end) > new Date()
-    : false
+  const { PLAN_LIMITS } = await import('@/config/pricing') // Dynamic import to avoid cycles if any
 
-  // All three conditions must be true for premium (unlimited orders)
-  const isPremium = isActive && isPaidPlan && isNotExpired
+  // Determine plan name (normalize to lowercase keys in PLAN_LIMITS)
+  const planNameRaw = subscription?.plan?.name?.toLowerCase() || 'free'
+  // TS safety: check if it's a valid key, else default to 'free'
+  const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS
 
-  if (isPremium) {
-    return { allowed: true }  // Premium users: unlimited orders
+  const limits = PLAN_LIMITS[planKey]
+  const orderLimit = limits.orders
+
+  // Check if unlimited
+  if (orderLimit === Infinity) {
+    return { allowed: true }
   }
 
-  // Free tier users: check order limit
-  const orderLimit = subscription?.plan?.order_limit || 10  // Default to 10
-
-  // Check current month's order count
+  // Check usage for current month
   const periodStart = new Date()
   periodStart.setDate(1)
   periodStart.setHours(0, 0, 0, 0)
@@ -59,7 +60,7 @@ async function canCreateOrder() {
   if (currentCount >= orderLimit) {
     return {
       allowed: false,
-      reason: `You've reached your monthly limit of ${orderLimit} orders. Upgrade to Professional for unlimited orders!`,
+      reason: `You've reached your monthly limit of ${orderLimit} orders on the ${planKey} plan. Upgrade to increase your limit!`,
       currentCount,
       limit: orderLimit,
     }
@@ -208,15 +209,44 @@ export async function createOrder(
       for (const item of items) {
         if (!item.productId) continue
 
-        const { data: newQuantity, error: stockError } = await supabase
+        let newQuantity: number | null = null
+
+        const { data: q, error: stockError } = await supabase
           .rpc('deduct_product_stock', {
             p_product_id: item.productId,
             p_quantity: item.quantity,
           })
 
         if (stockError) {
-          console.error(`⚠️ Failed to deduct stock for product ${item.productId}:`, stockError)
-          continue
+          console.error(`⚠️ RPC failed for ${item.productId}, trying manual update:`, stockError)
+
+          // Fallback: Manual Update
+          const { data: product } = await supabase
+            .from('products')
+            .select('stock_quantity')
+            .eq('id', item.productId)
+            .single()
+
+          if (product) {
+            const current = product.stock_quantity
+            const next = Math.max(0, current - item.quantity)
+            const status = next === 0 ? 'out_of_stock' : (next <= 5 ? 'low_stock' : 'in_stock')
+
+            const { error: updateError } = await supabase
+              .from('products')
+              .update({
+                stock_quantity: next,
+                stock_status: status,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', item.productId)
+
+            if (!updateError) {
+              newQuantity = next
+            }
+          }
+        } else {
+          newQuantity = q
         }
 
         // Trigger LOW_STOCK notification if quantity <= 5
@@ -239,6 +269,8 @@ export async function createOrder(
 
     // Revalidate pages
     revalidatePath('/orders')
+    revalidatePath('/orders/new')
+    revalidatePath('/products')
     revalidatePath('/dashboard')
     revalidatePath('/settings/subscription')
 

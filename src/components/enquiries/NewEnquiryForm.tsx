@@ -14,11 +14,17 @@ import Link from "next/link";
 import { useCreateEnquiry } from "@/lib/react-query/hooks/useEnquiries";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+
 export default function NewEnquiryForm() {
     const router = useRouter();
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const { mutate: createEnquiry, isPending: isLoading } = useCreateEnquiry();
+
+    // Check limits
+    const { canCreateEnquiry, subscription } = usePlanLimits();
+    const planName = subscription?.plan?.display_name || 'Free Plan';
 
     const [phone, setPhone] = useState("");
     const [name, setName] = useState("");
@@ -26,6 +32,24 @@ export default function NewEnquiryForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // 🛑 Limit Check Before Submit
+        if (!canCreateEnquiry) {
+            toast({
+                title: "Limit Reached 🔒",
+                description: `You've reached your enquiry limit on the ${planName}. Upgrade to continue!`,
+                variant: "default",
+                action: (
+                    <Link
+                        href="/settings/subscription"
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3"
+                    >
+                        Upgrade
+                    </Link>
+                ),
+            });
+            return;
+        }
 
         // Speed Logic: Auto-generate name if empty
         let finalName = name;
@@ -52,11 +76,20 @@ export default function NewEnquiryForm() {
                 router.refresh();
             },
             onError: (error) => {
-                toast({
-                    title: "❌ Failed to Save",
-                    description: error.message,
-                    variant: "destructive",
-                });
+                // Fallback catch if server rejects
+                if (error.message.toLowerCase().includes('limit')) {
+                    toast({
+                        title: "Limit Reached 🔒",
+                        description: `You've reached your limits. Upgrade to add more!`,
+                        action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
+                    });
+                } else {
+                    toast({
+                        title: "❌ Failed to Save",
+                        description: error.message,
+                        variant: "destructive",
+                    });
+                }
             }
         });
     };
@@ -87,9 +120,12 @@ export default function NewEnquiryForm() {
                             <Label htmlFor="phone">Phone Number *</Label>
                             <Input
                                 id="phone"
+                                type="tel"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                placeholder="+91 98765 43210"
+                                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                                placeholder="10-digit mobile number"
                                 required
                                 disabled={isLoading}
                             />
