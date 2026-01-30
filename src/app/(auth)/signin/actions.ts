@@ -6,9 +6,30 @@ import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 
+// TEACHING NOTE: Login validation is different from signup validation
+// Why? SECURITY - we don't want to reveal which field is wrong
+// - Never tell the user "email doesn't exist" or "wrong password"
+// - This prevents "username enumeration" attacks where hackers probe which emails have accounts
+// - Always return generic "Invalid credentials" error
+
 const LoginSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  // EMAIL VALIDATION
+  // Same rules as signup for consistency, but GENERIC error messages
+  // Note: We use "Invalid credentials" for all email errors (don't reveal it's the email)
+  email: z.string()
+    .trim()
+    .toLowerCase()
+    .min(5, 'Invalid credentials.') // Generic error - don't reveal it's too short
+    .max(254, 'Invalid credentials.') // Generic error - don't reveal it's too long
+    .email({ message: 'Invalid credentials.' }), // Generic error - don't reveal format is wrong
+
+  // PASSWORD VALIDATION
+  // Only validate LENGTH bounds, not format/complexity
+  // Why? We're just checking if the password could possibly be valid
+  // The actual password check happens via Supabase auth (bcrypt comparison)
+  password: z.string()
+    .min(8, 'Invalid credentials.') // Generic error
+    .max(72, 'Invalid credentials.'), // Generic error - bcrypt limit
 })
 
 export type LoginFormState = {
@@ -89,16 +110,12 @@ export async function login(
     })
 
     if (error) {
-      if (error.message === 'Invalid login credentials') {
-        return {
-          success: false,
-          message: 'Incorrect email or password.',
-        }
-      }
-
+      // SECURITY: Always return the same generic error message
+      // Don't reveal whether the email exists or if the password is wrong
+      // This prevents username enumeration attacks
       return {
         success: false,
-        message: `Login error: ${error.message}`,
+        message: 'Invalid credentials.',
       }
     }
 
