@@ -117,10 +117,14 @@ export default function Sidebar({ user }: { user: UserData }) {
       >
         {/* Header / Logo */}
         <div className="relative flex h-16 items-center gap-2 border-b px-6">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="h-6 w-6" />
-            </div>
+          <Link href="/dashboard" className="flex items-center gap-1">
+            <NextImage
+              src="/resellerpro-logo-removebg-preview.png"
+              alt="ResellerPro Logo"
+              width={60}
+              height={60}
+              className="shrink-0 cursor-pointer"
+            />
             <div className="flex flex-col">
               <span className="text-lg font-bold">ResellerPro</span>
               <span className="text-xs text-muted-foreground">Make It Professional</span>
