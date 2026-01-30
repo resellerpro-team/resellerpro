@@ -9,24 +9,19 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div
-            className="flex items-center space-x-3 cursor-pointer group"
+            className="flex items-center gap-1 cursor-pointer group"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
-            <div className="relative">
-              {/* Subtle glow effect on hover */}
-              <div className="absolute -inset-1.5 bg-gradient-to-r from-blue-600 to-indigo-500 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
-
-              <div className="relative flex items-center justify-center bg-white rounded-xl p-1.5 border border-gray-100 shadow-sm transition-all duration-300 group-hover:shadow-md group-hover:border-blue-100 group-hover:-translate-y-0.5">
-                <NextImage
-                  src="/logo.png"
-                  alt="ResellerPro Logo"
-                  width={40}
-                  height={40}
-                  className="h-9 w-9 object-contain"
-                />
-              </div>
+            <div className="relative -m-2">
+              <NextImage
+                src="/logo.png"
+                alt="ResellerPro Logo"
+                width={80}
+                height={80}
+                className="h-20 w-20 object-contain"
+              />
             </div>
-            <span className="text-xl font-bold text-gray-900 tracking-tight group-hover:text-blue-600 transition-colors">
+            <span className="text-2xl font-bold text-gray-900 tracking-tight group-hover:text-blue-600 transition-colors">
               ResellerPro
             </span>
           </div>
