@@ -162,6 +162,7 @@ export default async function DashboardPage() {
       {/* Top Products */}
       <TopProductsCard topProducts={topProducts} />
     </div>
+
   )
 }
 
