@@ -159,19 +159,17 @@ export function ProductRow({ product }: { product: Product }) {
         </div>
       </Link>
 
-      {/* Name & Category */}
+      {/* Name & Pricing Stack */}
       <div className="flex-1 min-w-0">
         <Link href={`/products/${product.id}`}>
-          <h3 className="font-semibold hover:text-primary transition-colors truncate">
+          <h3 className="font-semibold text-base sm:text-lg hover:text-primary transition-colors truncate">
             {product.name}
           </h3>
+          <div className="text-sm font-bold text-primary sm:hidden mt-0.5">
+            ₹{product.selling_price.toFixed(2)}
+          </div>
         </Link>
-        <div className="flex items-center gap-2 mt-1">
-          {product.category && (
-            <Badge variant="outline" className="text-xs">
-              {product.category}
-            </Badge>
-          )}
+        <div className="flex flex-col gap-1 mt-1">
           {product.sku && (
             <span className="text-xs text-muted-foreground font-mono">
               SKU: {product.sku}
@@ -180,9 +178,9 @@ export function ProductRow({ product }: { product: Product }) {
         </div>
       </div>
 
-      {/* Pricing */}
-      <div className="flex flex-col items-end gap-1 min-w-[80px] sm:min-w-[120px]">
-        <div className="text-sm text-muted-foreground hidden sm:block">
+      {/* Pricing - Desktop Only */}
+      <div className="hidden sm:flex flex-col items-end gap-1 min-w-[120px]">
+        <div className="text-sm text-muted-foreground text-xs opacity-70">
           Cost: ₹{product.cost_price.toFixed(2)}
         </div>
         <div className="text-lg font-semibold text-primary">
@@ -217,7 +215,7 @@ export function ProductRow({ product }: { product: Product }) {
 
       {/* WhatsApp Share Button */}
       <div className="flex-shrink-0">
-        <WhatsAppShare product={product} variant="outline" size="sm" />
+        <WhatsAppShare product={product} iconOnly={true} />
       </div>
 
       {/* Actions */}
