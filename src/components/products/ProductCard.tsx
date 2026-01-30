@@ -297,13 +297,8 @@ export function ProductCard({ product }: { product: Product }) {
         <CardContent className="p-4">
           <Link href={`/products/${product.id}`}>
             <div className="space-y-3">
-              {/* Category & SKU */}
+              {/* SKU */}
               <div className="flex items-center justify-between">
-                {product.category && (
-                  <Badge variant="outline" className="text-xs">
-                    {product.category}
-                  </Badge>
-                )}
                 {product.sku && (
                   <span className="text-xs text-muted-foreground font-mono">{product.sku}</span>
                 )}
