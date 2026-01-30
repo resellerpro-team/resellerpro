@@ -22,13 +22,14 @@ import { useRouter } from 'next/navigation'
 interface ExportCustomersProps {
   customers: Customer[]
   businessName?: string
+  className?: string
 }
 
-export function ExportCustomers({ customers, businessName = 'ResellerPro' }: ExportCustomersProps) {
+export function ExportCustomers({ customers, businessName = 'ResellerPro', className }: ExportCustomersProps) {
   const [isExporting, setIsExporting] = useState(false)
   const router = useRouter()
   const { isPremium, isLoading: isCheckingSubscription } = useSubscription()
-  
+
   const handleExportCSV = async () => {
     if (!isPremium) {
       router.push('/settings/subscription#pricing')
@@ -102,7 +103,12 @@ export function ExportCustomers({ customers, businessName = 'ResellerPro' }: Exp
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isExporting || isCheckingSubscription}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isExporting || isCheckingSubscription}
+          className={className}
+        >
           {isExporting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
