@@ -17,6 +17,8 @@ export const getMailConfig = (): MailConfig => {
     }
 }
 
+export const DAILY_LIMIT = parseInt(process.env.SMTP_DAILY_LIMIT || '500')
+
 // Singleton transporter
 let transporter: nodemailer.Transporter | null = null
 
