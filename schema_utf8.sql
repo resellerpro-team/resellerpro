@@ -1,4 +1,4 @@
-create extension if not exists "pg_cron" with schema "pg_catalog";
+﻿create extension if not exists "pg_cron" with schema "pg_catalog";
 
 drop extension if exists "pg_net";
 
@@ -712,7 +712,7 @@ DECLARE
   current_usage INTEGER;
   period_start_date DATE;
 BEGIN
-  -- ✅ ONLY CHANGE: subscriptions → user_subscriptions
+  -- âœ… ONLY CHANGE: subscriptions â†’ user_subscriptions
   SELECT sp.order_limit INTO user_plan_limit
   FROM user_subscriptions us  -- Changed from "subscriptions"
   JOIN subscription_plans sp ON us.plan_id = sp.id
@@ -843,7 +843,7 @@ BEGIN
     ON CONFLICT (referee_id) DO NOTHING
     RETURNING TRUE INTO v_referral_inserted;
     
-    -- If referral was successfully inserted, credit ₹50 to referee immediately
+    -- If referral was successfully inserted, credit â‚¹50 to referee immediately
     IF v_referral_inserted THEN
       PERFORM add_wallet_transaction(
         p_referee_id,
@@ -952,7 +952,7 @@ AS $function$BEGIN
       'referral_reward',
       'high',
       'Referral reward credited',
-      NEW.description || ' - ₹' || NEW.amount || ' added to your wallet',
+      NEW.description || ' - â‚¹' || NEW.amount || ' added to your wallet',
       'wallet',
       NEW.id
     );
