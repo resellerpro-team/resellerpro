@@ -1,9 +1,8 @@
-// components/products/WhatsAppShare.tsx
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
-import { MessageCircle, Download, Copy, Check } from 'lucide-react'
-import { useState, useRef } from 'react'
+import { Button } from "@/components/ui/button";
+import { Download, Copy, Check, MessageCircle } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,259 +10,285 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/use-toast'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { SearchableSelect, SearchableSelectOption } from '@/components/ui/searchable-select'
-import { createClient } from '@/lib/supabase/client'
-import Image from 'next/image'
-import { useEffect } from 'react'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SearchableSelect, SearchableSelectOption } from "@/components/ui/searchable-select";
+import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 
 type Product = {
-  id: string
-  name: string
-  description?: string
-  image_url: string | null
-  images?: string[]
-  cost_price: number
-  selling_price: number
-  stock_quantity?: number
-  stock_status: 'in_stock' | 'low_stock' | 'out_of_stock'
-  category?: string
-  sku?: string
-}
+  id: string;
+  name: string;
+  description?: string;
+  image_url: string | null;
+  images?: string[];
+  cost_price: number;
+  selling_price: number;
+  stock_quantity?: number;
+  stock_status: "in_stock" | "low_stock" | "out_of_stock";
+  category?: string;
+  sku?: string;
+};
 
 interface WhatsAppShareProps {
-  product: Product
-  variant?: 'default' | 'outline' | 'ghost'
-  size?: 'default' | 'sm' | 'lg' | 'icon'
+  product: Product;
+  variant?: "default" | "outline" | "ghost";
+  size?: "default" | "sm" | "lg" | "icon";
+  iconOnly?: boolean;
 }
 
-export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: WhatsAppShareProps) {
-  const [phoneNumber, setPhoneNumber] = useState('')
-  const [selectedCustomer, setSelectedCustomer] = useState('')
-  const [customers, setCustomers] = useState<Array<{ id: string; name: string; phone: string }>>([])
-  const [loadingCustomers, setLoadingCustomers] = useState(false)
-  const [open, setOpen] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [downloading, setDownloading] = useState(false)
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const cardRef = useRef<HTMLDivElement>(null)
-  const { toast } = useToast()
-  const supabase = createClient()
+const WhatsAppIcon = ({ className, fill = "#25D366" }: { className?: string; fill?: string }) => (
+  <svg className={className} fill={fill} viewBox="0 0 24 24">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+  </svg>
+);
+
+export function WhatsAppShare({
+  product,
+  variant = "outline",
+  size = "sm",
+  iconOnly = false,
+}: WhatsAppShareProps) {
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [customers, setCustomers] = useState<
+    Array<{ id: string; name: string; phone: string }>
+  >([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const supabase = createClient();
 
   // Fetch customers when dialog opens
   useEffect(() => {
     if (open) {
-      fetchCustomers()
+      fetchCustomers();
     }
-  }, [open])
+  }, [open]);
 
   const fetchCustomers = async () => {
-    setLoadingCustomers(true)
+    setLoadingCustomers(true);
     try {
       const { data, error } = await supabase
-        .from('customers')
-        .select('id, name, phone')
-        .not('phone', 'is', null)
-        .order('name')
-        .limit(100)
+        .from("customers")
+        .select("id, name, phone")
+        .not("phone", "is", null)
+        .order("name")
+        .limit(100);
 
-      if (error) throw error
-      setCustomers(data || [])
+      if (error) throw error;
+      setCustomers(data || []);
     } catch (error) {
-      console.error('Failed to fetch customers:', error)
+      console.error("Failed to fetch customers:", error);
     } finally {
-      setLoadingCustomers(false)
+      setLoadingCustomers(false);
     }
-  }
+  };
 
   const handleCustomerSelect = (customerId: string) => {
-    setSelectedCustomer(customerId)
-    const customer = customers.find(c => c.id === customerId)
+    setSelectedCustomer(customerId);
+    const customer = customers.find((c) => c.id === customerId);
     if (customer) {
-      setPhoneNumber(customer.phone)
+      setPhoneNumber(customer.phone);
     }
-  }
+  };
 
   // Get all available images
-  const allImages = product.images && product.images.length > 0
-    ? product.images
-    : product.image_url
-      ? [product.image_url]
-      : []
+  const allImages =
+    product.images && product.images.length > 0
+      ? product.images
+      : product.image_url
+        ? [product.image_url]
+        : [];
 
   const formatProductMessage = () => {
-    const stockStatus = product.stock_status === 'in_stock'
-      ? 'In Stock'
-      : product.stock_status === 'low_stock'
-        ? 'Low Stock'
-        : 'Out of Stock'
+    const stockStatus =
+      product.stock_status === "in_stock"
+        ? "In Stock"
+        : product.stock_status === "low_stock"
+          ? "Low Stock"
+          : "Out of Stock";
 
-    let message = `*${product.name}*\n`
-    message += `━━━━━━━━━━━━━━━━━━━\n\n`
+    let message = `*${product.name}*\n`;
+    message += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
     if (product.description) {
-      message += `${product.description}\n\n`
+      message += `${product.description}\n\n`;
     }
 
-    message += `*Price:* ₹${product.selling_price.toLocaleString()}\n`
-    message += `*Availability:* ${stockStatus}\n`
+    message += `*Price:* ₹${product.selling_price.toLocaleString()}\n`;
+    message += `*Availability:* ${stockStatus}\n`;
 
     if (product.category) {
-      message += `*Category:* ${product.category}\n`
+      message += `*Category:* ${product.category}\n`;
     }
 
     // Add images
     if (product.images && product.images.length > 0) {
-      message += `\n *Product Images:*\n`
+      message += `\n *Product Images:*\n`;
       product.images.forEach((img, idx) => {
-        message += `${idx + 1}. ${img}\n`
-      })
+        message += `${idx + 1}. ${img}\n`;
+      });
     } else if (product.image_url) {
-      message += `\n *Product Image:*\n${product.image_url}\n`
+      message += `\n *Product Image:*\n${product.image_url}\n`;
     }
 
-    message += `\n━━━━━━━━━━━━━━━━━━━\n`
-    message += ` *Interested? Contact us to order!*`
+    message += `\n━━━━━━━━━━━━━━━━━━━\n`;
+    message += ` *Interested? Contact us to order!*`;
 
-    return message
-  }
+    return message;
+  };
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(formatProductMessage())
-      setCopied(true)
+      await navigator.clipboard.writeText(formatProductMessage());
+      setCopied(true);
       toast({
-        title: 'Copied!',
-        description: 'Message copied to clipboard',
-      })
-      setTimeout(() => setCopied(false), 2000)
+        title: "Copied!",
+        description: "Message copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast({
-        title: 'Error',
-        description: 'Failed to copy message',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: "Failed to copy message",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const downloadProductCard = async () => {
-    setDownloading(true)
+    setDownloading(true);
     try {
       // Get the current image URL
-      const imageUrl = allImages[selectedImageIndex]
+      const imageUrl = allImages[selectedImageIndex];
 
       if (!imageUrl) {
         toast({
-          title: 'No Image',
-          description: 'No image available to download',
-          variant: 'destructive',
-        })
-        setDownloading(false)
-        return
+          title: "No Image",
+          description: "No image available to download",
+          variant: "destructive",
+        });
+        setDownloading(false);
+        return;
       }
 
       // Fetch the image
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
 
       // Create download link
-      const link = document.createElement('a')
-      const imageName = allImages.length > 1
-        ? `${product.name.replace(/[^a-z0-9]/gi, '_')}_image_${selectedImageIndex + 1}.png`
-        : `${product.name.replace(/[^a-z0-9]/gi, '_')}.png`
+      const link = document.createElement("a");
+      const imageName =
+        allImages.length > 1
+          ? `${product.name.replace(/[^a-z0-9]/gi, "_")}_image_${selectedImageIndex + 1
+          }.png`
+          : `${product.name.replace(/[^a-z0-9]/gi, "_")}.png`;
 
-      link.download = imageName
-      link.href = URL.createObjectURL(blob)
-      link.click()
+      link.download = imageName;
+      link.href = URL.createObjectURL(blob);
+      link.click();
 
       // Clean up
-      URL.revokeObjectURL(link.href)
+      URL.revokeObjectURL(link.href);
 
       toast({
-        title: 'Downloaded!',
-        description: `Product image ${allImages.length > 1 ? `${selectedImageIndex + 1}` : ''} saved successfully.`,
-      })
+        title: "Downloaded!",
+        description: `Product image ${allImages.length > 1 ? `${selectedImageIndex + 1}` : ""
+          } saved successfully.`,
+      });
     } catch (error) {
       toast({
-        title: 'Download Failed',
-        description: 'Could not download image. Please try again.',
-        variant: 'destructive',
-      })
+        title: "Download Failed",
+        description: "Could not download image. Please try again.",
+        variant: "destructive",
+      });
     } finally {
-      setDownloading(false)
+      setDownloading(false);
     }
-  }
+  };
 
   const shareToWhatsApp = () => {
     if (!phoneNumber) {
       toast({
-        title: 'Phone Number Required',
-        description: 'Please enter a phone number to continue',
-        variant: 'destructive',
-      })
-      return
+        title: "Phone Number Required",
+        description: "Please enter a phone number to continue",
+        variant: "destructive",
+      });
+      return;
     }
 
-    const cleanNumber = phoneNumber.replace(/[^\d+]/g, '')
+    const cleanNumber = phoneNumber.replace(/[^\d+]/g, "");
 
-    if (cleanNumber.replace('+', '').length < 10) {
+    if (cleanNumber.replace("+", "").length < 10) {
       toast({
-        title: 'Invalid Phone Number',
-        description: 'Please enter a valid phone number with country code',
-        variant: 'destructive',
-      })
-      return
+        title: "Invalid Phone Number",
+        description: "Please enter a valid phone number with country code",
+        variant: "destructive",
+      });
+      return;
     }
 
-    const message = formatProductMessage()
-    const encodedMessage = encodeURIComponent(message)
-    const whatsappUrl = `https://wa.me/${cleanNumber.replace('+', '')}?text=${encodedMessage}`
+    const message = formatProductMessage();
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${cleanNumber.replace(
+      "+",
+      ""
+    )}?text=${encodedMessage}`;
 
-    window.open(whatsappUrl, '_blank')
+    window.open(whatsappUrl, "_blank");
 
     toast({
-      title: 'Opening WhatsApp...',
-      description: 'Message will be sent with product details and images.',
-    })
+      title: "Opening WhatsApp...",
+      description: "Message will be sent with product details and images.",
+    });
 
-    setPhoneNumber('')
-  }
+    setPhoneNumber("");
+  };
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    const cleaned = value.replace(/[^\d+\-\s()]/g, '')
-    setPhoneNumber(cleaned)
-  }
-
-  const getStockBadge = () => {
-    switch (product.stock_status) {
-      case 'in_stock':
-        return <Badge className="bg-green-500 text-white">In Stock</Badge>
-      case 'low_stock':
-        return <Badge className="bg-yellow-500 text-white">Low Stock</Badge>
-      case 'out_of_stock':
-        return <Badge className="bg-red-500 text-white">Out of Stock</Badge>
-    }
-  }
+    const value = e.target.value;
+    const cleaned = value.replace(/[^\d+\-\s()]/g, "");
+    setPhoneNumber(cleaned);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant} size={size} className="w-full">
-          <MessageCircle className="h-4 w-4 mr-2" />
-          Share on WhatsApp
-        </Button>
+        {iconOnly ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 flex-shrink-0 transition-transform active:scale-95"
+          >
+            <WhatsAppIcon className="h-6 w-6" />
+          </Button>
+        ) : (
+          <Button
+            variant={variant}
+            size={size}
+            className={`w-full ${variant === "default"
+              ? "bg-[#25D366] hover:bg-[#22c35e] text-white border-0"
+              : ""
+              }`}
+          >
+            <WhatsAppIcon className="h-4 w-4 mr-2" fill={variant === "default" ? "#ffffff" : "#25D366"} />
+            Share on WhatsApp
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <MessageCircle className="h-5 w-5 text-green-600" />
+            <WhatsAppIcon className="h-5 w-5 text-[#25D366]" />
             Share Product on WhatsApp
           </DialogTitle>
           <DialogDescription>
@@ -288,15 +313,17 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
             {/* Image Selector for Multiple Images */}
             {allImages.length > 1 && (
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Select Image to Download</Label>
+                <Label className="text-sm font-semibold">
+                  Select Image to Download
+                </Label>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {allImages.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImageIndex(idx)}
                       className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx
-                        ? 'border-blue-600 ring-2 ring-blue-600'
-                        : 'border-gray-200 hover:border-gray-400'
+                        ? "border-blue-600 ring-2 ring-blue-600"
+                        : "border-gray-200 hover:border-gray-400"
                         }`}
                     >
                       <Image
@@ -321,7 +348,9 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
             )}
 
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Product Card Preview</Label>
+              <Label className="text-base font-semibold">
+                Product Card Preview
+              </Label>
 
               {/* Downloadable Product Card */}
               <div
@@ -330,9 +359,13 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
               >
                 {/* Header */}
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-bold text-gray-900">{product.name}</h3>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {product.name}
+                  </h3>
                   {product.description && (
-                    <p className="text-sm text-gray-600 line-clamp-3">{product.description}</p>
+                    <p className="text-sm text-gray-600 line-clamp-3">
+                      {product.description}
+                    </p>
                   )}
                 </div>
 
@@ -352,24 +385,30 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                 {/* Price & Status */}
                 <div className="space-y-3 py-4 border-t border-b">
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500 uppercase tracking-wide">Price</p>
-                    <p className="text-3xl font-bold text-blue-600">₹{product.selling_price.toLocaleString()}</p>
+                    <p className="text-sm text-gray-500 uppercase tracking-wide">
+                      Price
+                    </p>
+                    <p className="text-3xl font-bold text-blue-600">
+                      ₹{product.selling_price.toLocaleString()}
+                    </p>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-500 uppercase">Availability</p>
-                      {product.stock_status === 'in_stock' && (
+                      <p className="text-xs text-gray-500 uppercase">
+                        Availability
+                      </p>
+                      {product.stock_status === "in_stock" && (
                         <span className="inline-block mt-1 px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-full">
                           ✓ In Stock
                         </span>
                       )}
-                      {product.stock_status === 'low_stock' && (
+                      {product.stock_status === "low_stock" && (
                         <span className="inline-block mt-1 px-3 py-1 bg-yellow-500 text-white text-sm font-semibold rounded-full">
                           ⚠ Limited Stock
                         </span>
                       )}
-                      {product.stock_status === 'out_of_stock' && (
+                      {product.stock_status === "out_of_stock" && (
                         <span className="inline-block mt-1 px-3 py-1 bg-red-500 text-white text-sm font-semibold rounded-full">
                           ✗ Out of Stock
                         </span>
@@ -381,7 +420,9 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                 {/* Footer Info */}
                 {product.category && (
                   <div className="text-sm text-gray-600">
-                    <span className="font-medium">📦 Category: {product.category}</span>
+                    <span className="font-medium">
+                      📦 Category: {product.category}
+                    </span>
                   </div>
                 )}
 
@@ -409,7 +450,10 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                 ) : (
                   <>
                     <Download className="h-4 w-4 mr-2" />
-                    Download {allImages.length > 1 ? `Image ${selectedImageIndex + 1}` : 'Image'}
+                    Download{" "}
+                    {allImages.length > 1
+                      ? `Image ${selectedImageIndex + 1}`
+                      : "Image"}
                   </>
                 )}
               </Button>
@@ -417,8 +461,7 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
               <p className="text-xs text-center text-muted-foreground">
                 {allImages.length > 1
                   ? `💡 Downloads clean product image without text overlays`
-                  : `💡 Downloads the product image only, without title or price`
-                }
+                  : `💡 Downloads the product image only, without title or price`}
               </p>
             </div>
           </TabsContent>
@@ -433,7 +476,9 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                   Select Customer (Optional)
                 </Label>
                 {customers.length === 0 && !loadingCustomers ? (
-                  <p className="text-xs text-muted-foreground p-4 border rounded-md text-center">No customers found with phone numbers.</p>
+                  <p className="text-xs text-muted-foreground p-4 border rounded-md text-center">
+                    No customers found with phone numbers.
+                  </p>
                 ) : (
                   <SearchableSelect
                     options={customers.map((c): SearchableSelectOption => ({
@@ -443,7 +488,11 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                     }))}
                     value={selectedCustomer}
                     onValueChange={handleCustomerSelect}
-                    placeholder={loadingCustomers ? "Loading customers..." : "Choose from your customers"}
+                    placeholder={
+                      loadingCustomers
+                        ? "Loading customers..."
+                        : "Choose from your customers"
+                    }
                     searchPlaceholder="Search customers..."
                     emptyMessage="No customers found."
                     disabled={loadingCustomers}
@@ -457,7 +506,9 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">or enter manually</span>
+                  <span className="bg-background px-2 text-muted-foreground">
+                    or enter manually
+                  </span>
                 </div>
               </div>
 
@@ -472,8 +523,8 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
                   value={phoneNumber}
                   onChange={handlePhoneNumberChange}
                   onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      shareToWhatsApp()
+                    if (e.key === "Enter") {
+                      shareToWhatsApp();
                     }
                   }}
                   className="text-base h-12"
@@ -487,7 +538,9 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
             {/* Message Preview */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Message Preview</Label>
+                <Label className="text-base font-semibold">
+                  Message Preview
+                </Label>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -519,12 +572,12 @@ export function WhatsAppShare({ product, variant = 'outline', size = 'sm' }: Wha
               className="w-full bg-green-600 hover:bg-green-700"
               size="lg"
             >
-              <MessageCircle className="h-4 w-4 mr-2" />
+              <WhatsAppIcon className="h-4 w-4 mr-2" fill="#ffffff" />
               Send to Customer
             </Button>
           </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
