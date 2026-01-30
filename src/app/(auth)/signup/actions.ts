@@ -11,13 +11,61 @@ import { OtpService } from '@/lib/auth/otp'
 // -------------------------------
 // Validation schema
 // -------------------------------
+// TEACHING NOTE: Why validate on the backend even if frontend validates?
+// - Frontend can be bypassed (browser dev tools, direct API calls)
+// - Backend is the security boundary - NEVER trust client input
+// - This is "defense in depth" - multiple layers of security
+
 const SignupSchema = z.object({
-  fullName: z.string().min(3, 'Full name must be at least 3 characters.'),
-  businessName: z.string().optional(),
-  email: z.string().email('Invalid email address.'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
-  referralCode: z.string().optional(),
+  // EMAIL VALIDATION
+  // Why these rules?
+  // - min 5: Shortest valid email is "a@b.c" (5 characters)
+  // - max 254: RFC 5321 standard for email length
+  // - trim(): Remove accidental whitespace from copy-paste
+  // - toLowerCase(): Emails are case-insensitive, prevents duplicate accounts (User@example.com vs user@example.com)
+  email: z.string()
+    .trim()
+    .toLowerCase()
+    .min(5, 'Email must be at least 5 characters.')
+    .max(254, 'Email must not exceed 254 characters.')
+    .email('Invalid email address.'),
+
+  // PASSWORD VALIDATION
+  // Why these rules?
+  // - min 8: NIST SP 800-63B and OWASP recommend minimum 8 characters
+  // - max 72: bcrypt (our password hashing algorithm) truncates passwords beyond 72 bytes
+  // - NO complexity rules: Research shows passphrases are stronger than complex passwords
+  //   Example: "correct horse battery staple" > "P@ssw0rd1"
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters.')
+    .max(72, 'Password must not exceed 72 characters.'),
+
+  // FULL NAME VALIDATION
+  // Why these rules?
+  // - min 2: Allow short names like "Li", "Xi", "Ed"
+  // - max 50: Reasonable UI/database constraint
+  // - trim(): Clean up whitespace
+  fullName: z.string()
+    .trim()
+    .min(2, 'Name must be at least 2 characters.')
+    .max(50, 'Name must not exceed 50 characters.'),
+
+  // BUSINESS NAME VALIDATION
+  // Optional field, but if provided, apply same constraints as fullName
+  businessName: z.string()
+    .trim()
+    .max(50, 'Business name must not exceed 50 characters.')
+    .optional()
+    .or(z.literal('')), // Allow empty string
+
+  // PHONE VALIDATION
+  // Made optional as per requirements
+  // If you need phone validation, add .regex() or custom validation
+  phone: z.string().optional().or(z.literal('')),
+
+  // REFERRAL CODE
+  // Optional field, no specific validation needed
+  referralCode: z.string().optional().or(z.literal('')),
 })
 
 export type SignupFormState = {
@@ -25,6 +73,7 @@ export type SignupFormState = {
   message: string
   referralCredited?: boolean
   referralAmount?: number
+  redirectUrl?: string
   errors?: Record<string, string[]>
 }
 
@@ -204,10 +253,27 @@ export async function signup(
 
   revalidatePath('/')
 
+  // Get user profile to check if first login
+  const { data: { user } } = await supabase.auth.getUser()
+  let redirectUrl = '/dashboard'
+
+  if (user?.id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('welcome_shown, referral_bonus_amount')
+      .eq('id', user.id)
+      .single()
+
+    if (profile && profile.welcome_shown === false) {
+      redirectUrl = `/dashboard?welcome=true&bonus=${profile.referral_bonus_amount || 0}`
+    }
+  }
+
   return {
     success: true,
     message: 'Signup successful!',
     referralCredited: referralResult?.credited || false,
     referralAmount: referralResult?.amount || 0,
+    redirectUrl
   }
 }

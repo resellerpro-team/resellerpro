@@ -52,3 +52,4 @@ export async function verifyOtp(email: string, code: string) {
         return { success: false, message: error.message || 'Verification failed.' }
     }
 }
+

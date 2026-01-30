@@ -181,10 +181,10 @@ export default function FAQSection() {
               Email Us
             </a>
             <a
-              href="tel:+917025302327"
+              href="tel:+917736767759"
               className="px-8 py-4 bg-transparent text-white rounded-xl hover:bg-white/10 transition-all font-semibold border-2 border-white/30 backdrop-blur-sm"
             >
-              Call +91 7025302327
+              Call +91 7736767759
             </a>
           </div>
         </div>

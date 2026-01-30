@@ -43,8 +43,6 @@ export async function verifyLoginOtp(email: string, code: string) {
         // Generate a session link to log the user in
         const supabase = await createAdminClient()
 
-        // Ensure user exists first (optional, but generateLink might just work or error)
-        // We'll try to generate the link directly.
         const { data, error } = await supabase.auth.admin.generateLink({
             type: 'magiclink',
             email: email,
@@ -54,7 +52,6 @@ export async function verifyLoginOtp(email: string, code: string) {
         })
 
         if (error) {
-            // Handle case where user might not exist?
             if (error.message.includes('User not found')) {
                 return { success: false, message: 'No account found with this email.' }
             }
@@ -73,3 +70,4 @@ export async function verifyLoginOtp(email: string, code: string) {
         return { success: false, message: error.message || 'Verification failed.' }
     }
 }
+
