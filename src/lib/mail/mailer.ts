@@ -11,6 +11,9 @@ export class MailService {
         const { to, subject, html, text, attachments } = options
 
         try {
+            // Check daily limit
+            await this.checkDailyLimit()
+
             const info = await transporter.sendMail({
                 from: process.env.SMTP_FROM, // Ensure default from is used if not provided
                 to,
@@ -60,6 +63,30 @@ export class MailService {
             })
         } catch (err) {
             console.warn('Failed to log email:', err)
+        }
+    }
+
+    private static async checkDailyLimit() {
+        const { DAILY_LIMIT } = await import('./config')
+        const supabase = await createAdminClient()
+
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+        const { count, error } = await supabase
+            .from('email_logs')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'sent')
+            .gte('created_at', oneDayAgo)
+
+        if (error) {
+            console.error('Failed to check email limit:', error)
+            // Fail open? or fail closed? Let's fail open but log it, unless strict.
+            // For now, if we can't check, we proceed to avoid blocking critical emails on DB error.
+            return
+        }
+
+        if (count !== null && count >= DAILY_LIMIT) {
+            throw new Error(`Daily email limit of ${DAILY_LIMIT} reached. Try again later.`)
         }
     }
 

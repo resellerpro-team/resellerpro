@@ -136,6 +136,7 @@ export function ProductCard({ product }: { product: Product }) {
       })
 
       setShowDeleteDialog(false)
+      queryClient.invalidateQueries({ queryKey: ['products'] })
       router.refresh() // Refresh the page to show updated list
     } catch (error: any) {
       console.error('Unexpected error:', error)
@@ -211,8 +212,8 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <>
       <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group">
-        <Link href={`/products/${product.id}`}>
-          <div className="relative aspect-square bg-muted">
+        <div className="relative aspect-square bg-muted">
+          <Link href={`/products/${product.id}`} className="block w-full h-full">
             {product.image_url ? (
               <Image
                 src={product.image_url}
@@ -228,83 +229,76 @@ export function ProductCard({ product }: { product: Product }) {
 
             {/* Stock Badge */}
             <Badge
-              className={`absolute top-3 left-3 ${
-                stockColors[product.stock_status as keyof typeof stockColors]
-              } text-white border-0`}
+              className={`absolute top-3 left-3 ${stockColors[product.stock_status as keyof typeof stockColors]
+                } text-white border-0 z-10`}
             >
               {product.stock_status.replace('_', ' ')}
             </Badge>
 
-            {/* Quick Actions Menu */}
-            <div
-              className="absolute top-3 right-3 lg:opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => e.preventDefault()}
-            >
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="icon" variant="secondary" className="h-8 w-8 shadow-md">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link href={`/products/${product.id}`}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View Details
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`/products/${product.id}/edit`}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit Product
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleDuplicate}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    Duplicate
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {/* DELETE BUTTON WITH HANDLER */}
-                  <DropdownMenuItem
-                    className="text-red-600 focus:text-red-600"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      setShowDeleteDialog(true)
-                    }}
-                  >
-                    <Trash className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
             {/* Low Stock Warning */}
             {product.stock_status === 'low_stock' && (
-              <div className="absolute bottom-3 left-3 right-3 bg-yellow-500/90 text-white text-xs font-medium px-2 py-1.5 rounded backdrop-blur-sm">
+              <div className="absolute bottom-3 left-3 right-3 bg-yellow-500/90 text-white text-xs font-medium px-2 py-1.5 rounded backdrop-blur-sm z-10">
                 Only {product.stock_quantity} left in stock!
               </div>
             )}
 
             {/* Out of Stock Overlay */}
             {product.stock_status === 'out_of_stock' && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
                 <Badge className="bg-red-500 text-white text-sm">Out of Stock</Badge>
               </div>
             )}
+          </Link>
+
+          {/* Quick Actions Menu - NOW OUTSIDE LINK */}
+          <div
+            className="absolute top-3 right-3 lg:opacity-0 group-hover:opacity-100 transition-opacity z-20"
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="secondary" className="h-8 w-8 shadow-md">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={`/products/${product.id}`}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Details
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={`/products/${product.id}/edit`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Product
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDuplicate}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {/* DELETE BUTTON WITH HANDLER */}
+                <DropdownMenuItem
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setShowDeleteDialog(true)
+                  }}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </Link>
+        </div>
 
         <CardContent className="p-4">
           <Link href={`/products/${product.id}`}>
             <div className="space-y-3">
-              {/* Category & SKU */}
+              {/* SKU */}
               <div className="flex items-center justify-between">
-                {product.category && (
-                  <Badge variant="outline" className="text-xs">
-                    {product.category}
-                  </Badge>
-                )}
                 {product.sku && (
                   <span className="text-xs text-muted-foreground font-mono">{product.sku}</span>
                 )}

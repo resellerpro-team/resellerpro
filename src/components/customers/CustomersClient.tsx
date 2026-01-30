@@ -7,8 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-import { Plus, Search, Filter, Users, TrendingUp, IndianRupee } from "lucide-react";
+import { Plus, Search, Filter, Users, TrendingUp, IndianRupee, Lock } from "lucide-react";
 
 import Link from "next/link";
 import CustomerCard from "@/components/customers/CustomerCard";
@@ -22,6 +29,8 @@ import { StatsCard } from "@/components/shared/StatsCard";
 import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
 import { createClient } from "@/lib/supabase/client";
 import { RequireVerification } from "../shared/RequireVerification";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { useToast } from "@/hooks/use-toast";
 
 // -----------------------------------------
 
@@ -29,8 +38,22 @@ export function CustomersClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [page, setPage] = useState(1);
+  const { toast } = useToast();
+
+  const { canCreateCustomer, subscription } = usePlanLimits();
+  const planName = subscription?.plan?.display_name || 'Free Plan';
+
   const [businessName, setBusinessName] = useState<string>('ResellerPro');
+
+  // Sync page from URL
+  const pageParam = searchParams.get("page");
+  const [page, setPage] = useState(pageParam ? parseInt(pageParam) : 1);
+
+  useEffect(() => {
+    if (pageParam) {
+      setPage(parseInt(pageParam));
+    }
+  }, [pageParam]);
 
   // Fetch business name from user profile
   useEffect(() => {
@@ -59,7 +82,9 @@ export function CustomersClient() {
   const sort = searchParams.get("sort") || "-created_at";
 
   // Build querystring
-  const params = new URLSearchParams(searchParams.toString());
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (sort) params.set('sort', sort);
   params.set('page', page.toString());
   params.set('limit', '20');
   const qs = params.toString();
@@ -85,13 +110,18 @@ export function CustomersClient() {
 
   // ---------- Update URL ----------
   const updateURL = (updates: Record<string, string>) => {
-    setPage(1);
     const params = new URLSearchParams(searchParams.toString());
 
     Object.entries(updates).forEach(([k, v]) => {
       if (!v) params.delete(k);
       else params.set(k, v);
     });
+
+    // Reset page on search or sort change
+    if (updates.search !== undefined || updates.sort !== undefined) {
+      params.set('page', '1');
+      setPage(1);
+    }
 
     startTransition(() => {
       router.push(`/customers?${params.toString()}`);
@@ -105,22 +135,43 @@ export function CustomersClient() {
 
     <div className="space-y-6">
       {/* HEADER */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
           <p className="text-muted-foreground">Manage your customer relationships</p>
         </div>
 
-        <div className="flex gap-2">
-          <ExportCustomers customers={customers} businessName={businessName} />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <ExportCustomers
+            customers={customers}
+            businessName={businessName}
+            className="flex-1 sm:flex-none"
+          />
 
-          <RequireVerification>
-            <Button asChild>
-              <Link href="/customers/new">
-                <Plus className="mr-2 h-4 w-4" /> Add Customer
-              </Link>
+          {canCreateCustomer ? (
+            <RequireVerification>
+              <Button asChild className="flex-1 sm:flex-none">
+                <Link href="/customers/new">
+                  <Plus className="mr-2 h-4 w-4" /> Add Customer
+                </Link>
+              </Button>
+            </RequireVerification>
+          ) : (
+            <Button
+              variant="outline"
+              className="flex-1 sm:flex-none gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
+              onClick={() => {
+                toast({
+                  title: "Limit Reached 🔒",
+                  description: `You've reached your customer limit on the ${planName}. Upgrade to grow your business!`,
+                  variant: "default",
+                  action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
+                })
+              }}
+            >
+              <Lock className="mr-2 h-4 w-4" /> Add Customer
             </Button>
-          </RequireVerification>
+          )}
         </div>
       </div>
 
@@ -167,9 +218,19 @@ export function CustomersClient() {
             </div>
 
             {/* Sort dropdown */}
-            <Button variant="outline" onClick={() => updateURL({ sort: sort === "-created_at" ? "created_at" : "-created_at" })}>
-              Sort
-            </Button>
+            <Select
+              value={sort}
+              onValueChange={(value) => updateURL({ sort: value })}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="-created_at">Newest</SelectItem>
+                <SelectItem value="created_at">Oldest</SelectItem>
+                <SelectItem value="-total_orders">Most Ordered</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -216,7 +277,9 @@ export function CustomersClient() {
               currentPage={page}
               totalPages={totalPages}
               onPageChange={(p) => {
-                setPage(p);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('page', p.toString());
+                router.push(`/customers?${params.toString()}`);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />

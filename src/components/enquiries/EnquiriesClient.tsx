@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEnquiries } from "@/lib/react-query/hooks/useEnquiries";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { useToast } from "@/hooks/use-toast";
 import { useEnquiriesStats } from "@/lib/react-query/hooks/stats-hooks";
 import { Pagination } from "@/components/shared/Pagination";
 import { EnquiriesSkeleton } from "@/components/shared/skeletons/EnquiriesSkeleton";
@@ -20,13 +22,15 @@ import {
     Clock,
     CheckCircle2,
     XCircle,
-    Inbox
+    Inbox,
+    Lock
 } from "lucide-react";
 import { ExportEnquiries } from '@/components/enquiries/ExportEnquiries';
 import { StatsCard } from "@/components/shared/StatsCard"
 import { Enquiry } from "@/types"
 import { createClient } from '@/lib/supabase/client';
 import { RequireVerification } from "../shared/RequireVerification";
+import Link from "next/link";
 
 export function EnquiriesClient() {
     const router = useRouter();
@@ -37,6 +41,10 @@ export function EnquiriesClient() {
     const statusFilter = searchParams.get("status") || "all";
     const [page, setPage] = useState(1);
     const [businessName, setBusinessName] = useState<string>('ResellerPro');
+    const { toast } = useToast();
+
+    const { canCreateEnquiry, subscription } = usePlanLimits();
+    const planName = subscription?.plan?.display_name || 'Free Plan';
 
     // Fetch business name from user profile
     useEffect(() => {
@@ -107,11 +115,28 @@ export function EnquiriesClient() {
                 </div>
                 <div className="flex items-center gap-2">
                     <ExportEnquiries enquiries={enquiries} businessName={businessName} />
-                    <RequireVerification>
-                        <Button onClick={() => router.push('/enquiries/new')}>
-                            <MessageSquare className="mr-2 h-4 w-4" /> Add Enquiry
+                    {canCreateEnquiry ? (
+                        <RequireVerification>
+                            <Button onClick={() => router.push('/enquiries/new')}>
+                                <MessageSquare className="mr-2 h-4 w-4" /> Add Enquiry
+                            </Button>
+                        </RequireVerification>
+                    ) : (
+                        <Button
+                            variant="outline"
+                            className="gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
+                            onClick={() => {
+                                toast({
+                                    title: "Limit Reached 🔒",
+                                    description: `You've reached your enquiry limit on the ${planName}. Upgrade to unlock more!`,
+                                    variant: "default",
+                                    action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
+                                })
+                            }}
+                        >
+                            <Lock className="mr-2 h-4 w-4" /> Add Enquiry
                         </Button>
-                    </RequireVerification>
+                    )}
                 </div>
             </div>
 

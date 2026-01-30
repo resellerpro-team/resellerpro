@@ -35,6 +35,7 @@ import {
   AlertTriangle,
   ArrowUpDown,
   Loader2,
+  Lock,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -46,6 +47,8 @@ import ProductsLoading from "./loading";
 import { ProductsSkeleton } from "@/components/shared/skeletons/ProductsSkeleton";
 import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
 import { RequireVerification } from "@/components/shared/RequireVerification";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { useToast } from "@/hooks/use-toast";
 
 // ---------------- TYPES ----------------
 export type Product = {
@@ -71,6 +74,10 @@ export function ProductsClient() {
   const [isPending, startTransition] = useTransition();
   const [page, setPage] = useState(1);
   const [businessName, setBusinessName] = useState<string>('ResellerPro');
+  const { toast } = useToast();
+
+  const { canCreateProduct, subscription } = usePlanLimits();
+  const planName = subscription?.plan?.display_name || 'Free Plan';
 
   // Fetch business name from user profile
   useEffect(() => {
@@ -161,17 +168,34 @@ export function ProductsClient() {
             businessName={businessName}
             className="w-full sm:w-auto"
           />
-          <RequireVerification>
-            <Button asChild className="w-full sm:w-auto">
-              <Link href="/products/new">+ Add Product</Link>
+          {canCreateProduct ? (
+            <RequireVerification>
+              <Button asChild className="w-full sm:w-auto">
+                <Link href="/products/new">+ Add Product</Link>
+              </Button>
+            </RequireVerification>
+          ) : (
+            <Button
+              className="w-full sm:w-auto gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
+              variant="outline"
+              onClick={() => {
+                toast({
+                  title: "Limit Reached 🔒",
+                  description: `You've reached your product limit on the ${planName}. Upgrade to grow your business!`,
+                  variant: "default",
+                  action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
+                })
+              }}
+            >
+              <Lock className="mr-2 h-4 w-4" /> Add Product
             </Button>
-          </RequireVerification>
+          )}
         </div>
       </div>
 
       {/* STATS */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <StatsCard title="Total" value={stats.total} icon={Package} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard title="Total Products" value={stats.total} icon={Package} />
         <StatsCard
           title="Inventory Value"
           value={`₹${stats.totalValue.toLocaleString()}`}
@@ -192,76 +216,77 @@ export function ProductsClient() {
       {/* SEARCH + FILTERS */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
 
             {/* Search */}
-            <Input
-              defaultValue={search}
-              className="flex-1"
-              placeholder="Search..."
-              onChange={(e) => updateURL({ search: e.target.value })}
-            />
+            <div className="flex-1 w-full">
+              <Input
+                defaultValue={search}
+                className="w-full"
+                placeholder="Search products by name or SKU..."
+                onChange={(e) => updateURL({ search: e.target.value })}
+              />
+            </div>
 
-            {/* Category */}
-            <Select
-              value={category || "all"}
-              onValueChange={(v) => updateURL({ category: v })}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="low_stock">Low Stock</SelectItem>
-                <SelectItem value="out_of_stock">Out Of Stock</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Filters Group */}
+            <div className="flex flex-wrap items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0">
+              {/* Category */}
+              <Select
+                value={category || "all"}
+                onValueChange={(v) => updateURL({ category: v })}
+              >
+                <SelectTrigger className="w-[130px] sm:w-[150px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="low_stock">Low Stock</SelectItem>
+                  <SelectItem value="out_of_stock">Out Of Stock</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {/* Sort */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <ArrowUpDown className="h-4 w-4 mr-2" />
-                  Sort
+              {/* Sort */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <ArrowUpDown className="h-4 w-4" />
+                    <span className="hidden sm:inline">Sort</span>
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => updateURL({ sort: "-created_at" })}>
+                    Newest First
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateURL({ sort: "created_at" })}>
+                    Oldest First
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateURL({ sort: "name" })}>
+                    Name (A-Z)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* View Switch */}
+              <div className="flex border rounded-lg p-1">
+                <Button
+                  variant={view === "grid" ? "secondary" : "ghost"}
+                  size="sm"
+                  className="px-2"
+                  onClick={() => updateURL({ view: "grid" })}
+                >
+                  <Grid3x3 className="h-4 w-4" />
                 </Button>
-              </DropdownMenuTrigger>
 
-              <DropdownMenuContent>
-                <DropdownMenuItem
-                  onClick={() => updateURL({ sort: "-created_at" })}
+                <Button
+                  variant={view === "list" ? "secondary" : "ghost"}
+                  size="sm"
+                  className="px-2"
+                  onClick={() => updateURL({ view: "list" })}
                 >
-                  Newest First
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => updateURL({ sort: "created_at" })}
-                >
-                  Oldest First
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => updateURL({ sort: "name" })}
-                >
-                  Name (A-Z)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* View Switch */}
-            <div className="flex border rounded-lg p-1">
-              <Button
-                variant={view === "grid" ? "secondary" : "ghost"}
-                onClick={() => updateURL({ view: "grid" })}
-              >
-                <Grid3x3 className="h-4 w-4" />
-              </Button>
-
-              <Button
-                variant={view === "list" ? "secondary" : "ghost"}
-                onClick={() => updateURL({ view: "list" })}
-              >
-                <List className="h-4 w-4" />
-              </Button>
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
