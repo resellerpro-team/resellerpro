@@ -9,6 +9,26 @@ export class OtpService {
      * Generates a 6-digit OTP, stores it, and sends via email.
      */
     static async sendOtp(email: string) {
+        const supabase = await createAdminClient()
+
+        // 1. Rate Limit Check: 5 minutes cooldown
+        // Check if there is a recently created OTP that hasn't expired (or just check creation time)
+        // We'll check for any OTP created in the last 5 minutes
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+
+        const { data: recentOtp } = await supabase
+            .from('auth_otps')
+            .select('created_at')
+            .eq('email', email)
+            .gte('created_at', fiveMinutesAgo)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+        if (recentOtp) {
+            throw new Error('Please wait 5 minutes before requesting a new OTP.')
+        }
+
         const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
         // Hash OTP for security (simple SHA256)
@@ -17,7 +37,6 @@ export class OtpService {
         // Wait, if we send it, we need the plain text. We send plain, store hash.
         const hash = crypto.createHash('sha256').update(otp).digest('hex')
 
-        const supabase = await createAdminClient()
         const expiresAt = addMinutes(new Date(), 5).toISOString()
 
         // Store in DB
