@@ -42,7 +42,27 @@ export default function SignupForm() {
     if (refCode) {
       setFormData(prev => ({ ...prev, referralCode: refCode }))
     }
-  }, [searchParams])
+
+    // Global Enter key handler
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        // Only trigger if not already handled by an element (e.g. focused button)
+        // and if not currently loading
+        if (!isLoading) {
+          // Find the form and submit it
+          const form = document.querySelector('form')
+          if (form) {
+            // We can't easily call handleSubmit directly with the correct Event type
+            // but we can trigger a submit event on the form
+            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
+          }
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [searchParams, isLoading])
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -55,7 +75,19 @@ export default function SignupForm() {
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value })
+    const { id, value } = e.target
+
+    // Special handling for phone number - only allow digits
+    if (id === 'phone') {
+      // Remove all non-digit characters
+      const digitsOnly = value.replace(/\D/g, '')
+      // Limit to 10 digits
+      const limitedValue = digitsOnly.slice(0, 10)
+      setFormData({ ...formData, [id]: limitedValue })
+      return
+    }
+
+    setFormData({ ...formData, [id]: value })
   }
 
   const handleBlur = (fieldId: string) => {
@@ -63,45 +95,143 @@ export default function SignupForm() {
     setTouchedFields(prev => new Set(prev).add(fieldId))
   }
 
+  // TEACHING NOTE: Frontend validation for UX (instant feedback)
+  // This matches our backend validation rules but provides immediate user feedback
+  // Remember: This is NOT for security - users can bypass this easily
+  // The REAL validation happens on the backend
   const isFieldValid = (fieldId: string): boolean => {
     if (!touchedFields.has(fieldId)) return true
 
     switch (fieldId) {
       case 'email':
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
+        // Basic email format check
+        // Length checks: min 5 ("a@b.c") max 254 (RFC 5321)
+        const email = formData.email.trim()
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        return email.length >= 5 && email.length <= 254 && emailRegex.test(email)
+
       case 'fullName':
-        return formData.fullName.trim().length >= 2
+        // Allow short names like "Li", "Xi"
+        // Max 50 for database/UI constraints
+        const name = formData.fullName.trim()
+        return name.length >= 2 && name.length <= 50
+
+      case 'businessName':
+        // Optional field, but if filled check max length
+        if (!formData.businessName) return true
+        return formData.businessName.trim().length <= 50
+
       case 'phone':
-        return formData.phone.trim().length >= 10
+        // Phone validation: 10 digits, first digit 1-9
+        if (!formData.phone) return true // Optional field
+        const phoneDigits = formData.phone.replace(/\D/g, '')
+        if (phoneDigits.length !== 10) return false
+        if (phoneDigits[0] === '0') return false // First digit cannot be 0
+        return true
+
       case 'password':
-        return formData.password.length >= 6
+        // Min 8 chars (NIST/OWASP standard)
+        // Max 72 chars (bcrypt limit) - but we don't show this to users
+        return formData.password.length >= 8 && formData.password.length <= 72
+
       default:
         return true
     }
   }
 
+  // TEACHING NOTE: Validate ALL fields before submitting
+  // This prevents invalid data from reaching the backend
+  // Even though backend validates too, we catch errors early for better UX
+  const validateAllFields = (): boolean => {
+    const errors: string[] = []
+
+    // 1. Validate full name (Matched to UI order)
+    const name = formData.fullName.trim()
+    if (!name) {
+      errors.push('Full name is required')
+    } else if (name.length < 2) {
+      errors.push('Name must be at least 2 characters')
+    } else if (name.length > 50) {
+      errors.push('Name must not exceed 50 characters')
+    }
+
+    // 2. Validate email
+    const email = formData.email.trim()
+    if (!email) {
+      errors.push('Email is required')
+    } else if (email.length < 5) {
+      errors.push('Email must be at least 5 characters')
+    } else if (email.length > 254) {
+      errors.push('Email must not exceed 254 characters')
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.push('Please enter a valid email address')
+    }
+
+    // 3. Validate business name (optional, but check max if provided)
+    if (formData.businessName && formData.businessName.trim().length > 50) {
+      errors.push('Business name must not exceed 50 characters')
+    }
+
+    // 4. Validate phone number
+    const phoneDigits = formData.phone.replace(/\D/g, '')
+    if (!phoneDigits) {
+      errors.push('Phone number is required')
+    } else if (phoneDigits.length !== 10) {
+      errors.push('Phone number must be exactly 10 digits')
+    } else if (phoneDigits[0] === '0') {
+      errors.push('Please enter a valid mobile number (cannot start with 0)')
+    }
+
+    // Validate password
+    if (!formData.password) {
+      errors.push('Password is required')
+    } else if (formData.password.length < 8) {
+      errors.push('Password must be at least 8 characters')
+    } else if (formData.password.length > 72) {
+      errors.push('Password must not exceed 72 characters')
+    }
+
+    // Validate terms checkbox
+    if (!formData.agreeToTerms) {
+      errors.push('Please accept the terms and conditions')
+    }
+
+    // Show errors if any
+    if (errors.length > 0) {
+      toast({
+        title: 'Validation Error',
+        description: errors[0], // Show first error
+        variant: 'destructive'
+      })
+      return false
+    }
+
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.agreeToTerms) {
-      toast({
-        title: 'Terms Required',
-        description: 'Please accept the terms and conditions.',
-        variant: 'destructive'
-      })
-      return
+    // Validate ALL fields (including terms) before proceeding
+    if (!validateAllFields()) {
+      return // Stop here if validation fails
     }
 
+    // All validation passed - now submit
     setIsLoading(true)
 
     try {
+      // TEACHING NOTE: Normalize data before sending to backend
+      // - Trim whitespace (users often copy-paste with extra spaces)
+      // - Lowercase email (emails are case-insensitive)
+      // This ensures data consistency and prevents duplicate accounts
       const fd = new FormData()
-      fd.append('fullName', formData.fullName)
-      fd.append('businessName', formData.businessName)
-      fd.append('email', formData.email)
-      fd.append('phone', formData.phone)
-      fd.append('password', formData.password)
-      fd.append('referralCode', formData.referralCode)
+      fd.append('fullName', formData.fullName.trim())
+      fd.append('businessName', formData.businessName.trim())
+      fd.append('email', formData.email.trim().toLowerCase())
+      fd.append('phone', formData.phone.trim())
+      fd.append('password', formData.password) // Don't trim passwords - spaces might be intentional
+      fd.append('referralCode', formData.referralCode.trim().toUpperCase())
 
       const result = await signup({ success: false, message: '' }, fd)
 
@@ -115,8 +245,25 @@ export default function SignupForm() {
         return
       }
 
+      // Success! Show toast and redirect
+      toast({
+        title: 'Success!',
+        description: result.message,
+      })
+
       setIsLoading(false)
-      router.push('/dashboard')
+
+      // Use window.location.href for proper session redirect
+      if (result.redirectUrl) {
+        setTimeout(() => {
+          window.location.href = result.redirectUrl!
+        }, 100)
+      } else {
+        // Fallback to /dashboard if no redirectUrl provided
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 100)
+      }
 
     } catch (error: any) {
       console.error('Signup error:', error)
@@ -262,6 +409,7 @@ export default function SignupForm() {
                         onBlur={() => handleBlur('fullName')}
                         required
                         disabled={isLoading}
+                        maxLength={50}
                       />
                       {touchedFields.has('fullName') && isFieldValid('fullName') && formData.fullName && (
                         <Check className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
@@ -289,6 +437,7 @@ export default function SignupForm() {
                         onFocus={() => setFocusedField('businessName')}
                         onBlur={() => handleBlur('businessName')}
                         disabled={isLoading}
+                        maxLength={50}
                       />
                     </div>
                   </div>
@@ -316,6 +465,7 @@ export default function SignupForm() {
                           onBlur={() => handleBlur('email')}
                           required
                           disabled={isLoading}
+                          maxLength={254}
                         />
                         {touchedFields.has('email') && isFieldValid('email') && formData.email && (
                           <Check className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
@@ -333,7 +483,8 @@ export default function SignupForm() {
                         <Input
                           id="phone"
                           type="tel"
-                          placeholder="+91 00000 00000"
+                          inputMode="numeric"
+                          placeholder="9876543210"
                           className={`pl-11 h-12 bg-white/50 border-slate-200 transition-all ${focusedField === 'phone'
                             ? 'border-blue-600 ring-4 ring-blue-600/10'
                             : 'hover:border-slate-300'
@@ -344,6 +495,8 @@ export default function SignupForm() {
                           onBlur={() => handleBlur('phone')}
                           required
                           disabled={isLoading}
+                          pattern="[1-9][0-9]{9}"
+                          maxLength={10}
                         />
                         {touchedFields.has('phone') && isFieldValid('phone') && formData.phone && (
                           <Check className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
@@ -363,7 +516,7 @@ export default function SignupForm() {
                       <Input
                         id="password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Min 6 characters"
+                        placeholder="Minimum 8 characters"
                         className={`pl-11 pr-11 h-12 bg-white/50 border-slate-200 transition-all ${focusedField === 'password'
                           ? 'border-blue-600 ring-4 ring-blue-600/10'
                           : 'hover:border-slate-300'
@@ -374,6 +527,8 @@ export default function SignupForm() {
                         onBlur={() => handleBlur('password')}
                         required
                         disabled={isLoading}
+                        minLength={8}
+                        maxLength={72}
                       />
                       <button
                         type="button"
