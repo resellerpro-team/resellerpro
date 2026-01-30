@@ -66,6 +66,7 @@ export async function GET(req: Request) {
   const sortAsc = !sort.startsWith("-");
   const sortField = sort.replace("-", "");
 
+  // Handle specific sort cases if needed, but Supabase handles standard fields
   query = query.order(sortField, { ascending: sortAsc });
 
   query = query.range(offset, offset + limit - 1)
