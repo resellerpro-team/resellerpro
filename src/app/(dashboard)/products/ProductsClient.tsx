@@ -271,7 +271,7 @@ export function ProductsClient() {
                   variant={view === "grid" ? "secondary" : "ghost"}
                   size="sm"
                   className="h-8 flex-1 sm:flex-initial"
-                  onClick={() => setView("grid")}
+                  onClick={() => updateURL({ view: "grid" })}
                 >
                   <Grid3x3 className="h-4 w-4" />
                 </Button>
@@ -279,7 +279,7 @@ export function ProductsClient() {
                   variant={view === "list" ? "secondary" : "ghost"}
                   size="sm"
                   className="h-8 flex-1 sm:flex-initial"
-                  onClick={() => setView("list")}
+                  onClick={() => updateURL({ view: "list" })}
                 >
                   <List className="h-4 w-4" />
                 </Button>
