@@ -34,6 +34,7 @@ import {
   List,
   AlertTriangle,
   ArrowUpDown,
+  Filter,
   Loader2,
   Lock,
   Plus,
@@ -141,6 +142,9 @@ export function ProductsClient() {
     avgMargin: statsData?.avgMargin || 0,
   };
 
+  // Derive categories from products
+  const categories = Array.from(new Set(typedProducts.map(p => p.category).filter(Boolean))) as string[];
+
   // -------------------- URL UPDATE --------------------
   const updateURL = (params: Record<string, string>) => {
     setPage(1);
@@ -244,59 +248,38 @@ export function ProductsClient() {
 
             {/* Filters Group */}
             <div className="flex flex-wrap items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0">
-              {/* Category */}
               <Select
                 value={category || "all"}
-                onValueChange={(v) => updateURL({ category: v })}
+                onValueChange={(val) => updateURL({ category: val })}
               >
-                <SelectTrigger className="w-[130px] sm:w-[150px]">
-                  <SelectValue placeholder="Status" />
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="low_stock">Low Stock</SelectItem>
-                  <SelectItem value="out_of_stock">Out Of Stock</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
-              {/* Sort */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <ArrowUpDown className="h-4 w-4" />
-                    <span className="hidden sm:inline">Sort</span>
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => updateURL({ sort: "-created_at" })}>
-                    Newest First
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => updateURL({ sort: "created_at" })}>
-                    Oldest First
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => updateURL({ sort: "name" })}>
-                    Name (A-Z)
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* View Switch */}
-              <div className="flex border rounded-lg p-1">
+              <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/50 w-full sm:w-auto justify-center">
                 <Button
                   variant={view === "grid" ? "secondary" : "ghost"}
                   size="sm"
-                  className="px-2"
-                  onClick={() => updateURL({ view: "grid" })}
+                  className="h-8 flex-1 sm:flex-initial"
+                  onClick={() => setView("grid")}
                 >
                   <Grid3x3 className="h-4 w-4" />
                 </Button>
-
                 <Button
                   variant={view === "list" ? "secondary" : "ghost"}
                   size="sm"
-                  className="px-2"
-                  onClick={() => updateURL({ view: "list" })}
+                  className="h-8 flex-1 sm:flex-initial"
+                  onClick={() => setView("list")}
                 >
                   <List className="h-4 w-4" />
                 </Button>

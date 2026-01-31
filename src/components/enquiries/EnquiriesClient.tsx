@@ -174,7 +174,7 @@ export function EnquiriesClient() {
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search by name, message..."
+                            placeholder="Search enquiries..."
                             className="pl-9"
                             defaultValue={search}
                             onChange={(e) => updateURL({ search: e.target.value })}

@@ -15,7 +15,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { Plus, Search, Filter, Users, TrendingUp, IndianRupee, Lock } from "lucide-react";
+import {
+  Search,
+  Plus,
+  TrendingUp,
+  IndianRupee,
+  Users,
+  Download,
+  Lock,
+  Filter,
+  ArrowUpDown,
+} from "lucide-react";
 
 import Link from "next/link";
 import CustomerCard from "@/components/customers/CustomerCard";
@@ -203,36 +213,33 @@ export function CustomersClient() {
 
       {/* SEARCH & FILTER */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex gap-4">
-
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
-              <Input
-                defaultValue={search}
-                className="pl-10"
-                placeholder="Search by name, phone, email..."
-                onChange={(e) => updateURL({ search: e.target.value })}
-              />
-            </div>
-
-            {/* Sort dropdown */}
-            <Select
-              value={sort}
-              onValueChange={(value) => updateURL({ sort: value })}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="-created_at">Newest</SelectItem>
-                <SelectItem value="created_at">Oldest</SelectItem>
-                <SelectItem value="-total_orders">Most Ordered</SelectItem>
-              </SelectContent>
-            </Select>
+        <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search customers..."
+              className="pl-9"
+              defaultValue={search}
+              onChange={(e) => updateURL({ search: e.target.value })}
+            />
           </div>
+
+          <Select
+            value={sort}
+            onValueChange={(value) => updateURL({ sort: value })}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <ArrowUpDown className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="-created_at">Newest</SelectItem>
+              <SelectItem value="created_at">Oldest</SelectItem>
+              <SelectItem value="name">Name (A-Z)</SelectItem>
+              <SelectItem value="-total_orders">Most Orders</SelectItem>
+              <SelectItem value="-total_spent">High Spender</SelectItem>
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 

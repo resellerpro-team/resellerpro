@@ -24,12 +24,18 @@ import {
   ArrowUpDown,
   Loader2,
   Plus,
-  Package,
   ShoppingCart,
-  TrendingUp,
-  IndianRupee,
+  Zap,
+  Clock,
+  CheckCircle2,
+  XCircle,
   Lock,
-} from 'lucide-react'
+  Download,
+  Filter,
+  IndianRupee,
+  TrendingUp,
+  Package,
+} from 'lucide-react';
 import Link from 'next/link'
 import { OrdersTable } from '@/components/orders/OrderTable'
 import { Pagination } from '@/components/shared/Pagination'
@@ -185,8 +191,8 @@ export function OrdersClient() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, #order, or phone..."
-              className="pl-10 pr-10"
+              placeholder="Search orders..."
+              className="pl-9 pr-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               disabled={isPending}
@@ -205,6 +211,7 @@ export function OrdersClient() {
           {/* Status Filter */}
           <Select value={statusParam} onValueChange={handleStatusChange} disabled={isPending}>
             <SelectTrigger className="w-full sm:w-[180px]">
+              <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -220,6 +227,7 @@ export function OrdersClient() {
           {/* Payment Filter */}
           <Select value={paymentParam} onValueChange={handlePaymentChange} disabled={isPending}>
             <SelectTrigger className="w-full sm:w-[180px]">
+              <IndianRupee className="w-4 h-4 mr-2 text-muted-foreground" />
               <SelectValue placeholder="All Payments" />
             </SelectTrigger>
             <SelectContent>
