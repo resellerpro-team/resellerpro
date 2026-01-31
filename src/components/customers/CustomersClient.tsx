@@ -177,7 +177,7 @@ export function CustomersClient() {
 
       {/* STATS */}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatsCard
           title="Total Customers"
           value={stats.total}
@@ -197,6 +197,7 @@ export function CustomersClient() {
           value={`₹${stats.avgValue}`}
           icon={IndianRupee}
           description="Lifetime value"
+          className="col-span-2 md:col-span-1"
         />
       </div>
 

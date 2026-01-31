@@ -39,6 +39,8 @@ import {
   Plus,
 } from "lucide-react";
 
+import { StatsCard } from "@/components/shared/StatsCard";
+
 import Link from "next/link";
 import { ProductCard } from "@/components/products/ProductCard";
 import { ProductRow } from "@/components/products/ProductRow";
@@ -198,22 +200,30 @@ export function ProductsClient() {
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard title="Total Products" value={stats.total} icon={Package} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          title="Total Products"
+          value={stats.total}
+          icon={Package}
+          description="Active in inventory"
+        />
         <StatsCard
           title="Inventory Value"
           value={`₹${stats.totalValue.toLocaleString()}`}
           icon={IndianRupee}
+          description="Total cost value"
         />
         <StatsCard
           title="Total Profit"
           value={`₹${stats.totalProfit.toLocaleString()}`}
           icon={TrendingUp}
+          description="Potential earnings"
         />
         <StatsCard
           title="Stock Alerts"
           value={stats.lowStock + stats.outOfStock}
           icon={AlertTriangle}
+          description="Low/Out of stock"
         />
       </div>
 
@@ -347,28 +357,5 @@ export function ProductsClient() {
         </div>
       )}
     </div>
-  );
-}
-
-// ---------------- STATS CARD ----------------
-function StatsCard({
-  title,
-  icon: Icon,
-  value,
-}: {
-  title: string;
-  icon: any;
-  value: string | number;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4 flex flex-col gap-2">
-        <div className="flex justify-between">
-          <p className="text-sm">{title}</p>
-          <Icon className="h-4 w-4 text-muted-foreground" />
-        </div>
-        <p className="text-xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
   );
 }
