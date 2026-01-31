@@ -120,12 +120,12 @@ export function OrdersClient() {
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
           <p className="text-muted-foreground text-nowrap">Manage and track your orders</p>
         </div>
-        <div className='flex justify-end gap-2'>
-          <ExportOrders orders={orders} />
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <ExportOrders orders={orders} className="w-full sm:w-auto" />
 
           {canCreateOrder ? (
             <RequireVerification>
-              <Button asChild>
+              <Button asChild className="w-full sm:w-auto">
                 <Link href="/orders/new">
                   <Plus className="mr-2 h-4 w-4" /> New Order
                 </Link>
@@ -133,7 +133,7 @@ export function OrdersClient() {
             </RequireVerification>
           ) : (
             <Button
-              className="gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
+              className="w-full sm:w-auto gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
               variant="outline"
               onClick={() => {
                 toast({

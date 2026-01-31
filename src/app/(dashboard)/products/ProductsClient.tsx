@@ -36,6 +36,7 @@ import {
   ArrowUpDown,
   Loader2,
   Lock,
+  Plus,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -160,7 +161,10 @@ export function ProductsClient() {
     <div className="space-y-6">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold">Products</h1>
+        <div className="flex flex-col">
+          <h1 className="text-3xl font-bold">Products</h1>
+          <p className="text-muted-foreground">Manage your products and inventory</p>
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <ExportProducts

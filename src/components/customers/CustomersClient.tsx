@@ -141,16 +141,16 @@ export function CustomersClient() {
           <p className="text-muted-foreground">Manage your customer relationships</p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <ExportCustomers
             customers={customers}
             businessName={businessName}
-            className="flex-1 sm:flex-none"
+            className="w-full sm:w-auto"
           />
 
           {canCreateCustomer ? (
             <RequireVerification>
-              <Button asChild className="flex-1 sm:flex-none">
+              <Button asChild className="w-full sm:w-auto">
                 <Link href="/customers/new">
                   <Plus className="mr-2 h-4 w-4" /> Add Customer
                 </Link>
@@ -159,7 +159,7 @@ export function CustomersClient() {
           ) : (
             <Button
               variant="outline"
-              className="flex-1 sm:flex-none gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
+              className="w-full sm:w-auto gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
               onClick={() => {
                 toast({
                   title: "Limit Reached 🔒",
