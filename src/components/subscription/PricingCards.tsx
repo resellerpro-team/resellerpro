@@ -178,6 +178,20 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
           const isCurrentPlan = plan.name === currentPlanName
           const isPopular = plan.name === 'professional'
 
+          // Determine if this plan should be disabled based on current plan
+          const shouldDisable = () => {
+            // If beginner is current plan, disable free
+            if (currentPlanName === 'beginner' && plan.name === 'free') return true
+            // If professional is current plan, disable free and beginner
+            if (currentPlanName === 'professional' && (plan.name === 'free' || plan.name === 'beginner')) return true
+            return false
+          }
+
+          const isDisabled = shouldDisable()
+
+          // Debug logging
+          console.log(`Plan: ${plan.name}, Current: ${currentPlanName}, IsDisabled: ${isDisabled}, IsCurrentPlan: ${isCurrentPlan}`)
+
           return (
             <Card
               key={plan.id}
@@ -231,9 +245,9 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                   <Button className="w-full mb-4 " disabled>
                     Current Plan
                   </Button>
-                ) : plan.name === 'free' ? (
-                  <Button className="w-full mb-4 text-primary " variant="secondary" disabled>
-                    Starts at end of current plan
+                ) : isDisabled ? (
+                  <Button className="w-full mb-4" variant="secondary" disabled>
+                    Cannot Downgrade
                   </Button>
                 ) : (
                   <Button
@@ -247,7 +261,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                         Processing...
                       </>
                     ) : (
-                      plan.name === 'business' ? 'Notify Me' : 'Upgrade Now'
+                      plan.name === 'business' ? 'Notify Me' : 'hello'
                     )}
                   </Button>
                 )}
