@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Upload, User, Mail, Phone, Building } from 'lucide-react'
 import { updateProfile, uploadAvatar } from '@/app/(dashboard)/settings/actions'
+import { ImageCropper } from '../shared/ImageCropper'
 
 type UserData = {
   id: string
@@ -25,6 +26,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [cropImage, setCropImage] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     full_name: user.full_name,
@@ -45,7 +47,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -69,9 +71,21 @@ export default function ProfileForm({ user }: { user: UserData }) {
       return
     }
 
+    // Read file as data URL for cropper
+    const reader = new FileReader()
+    reader.addEventListener('load', () => {
+      setCropImage(reader.result?.toString() || null)
+    })
+    reader.readAsDataURL(file)
+    // Clear input value so same file can be selected again
+    e.target.value = ''
+  }
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
     setIsUploadingAvatar(true)
 
     try {
+      const file = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' })
       const formData = new FormData()
       formData.append('file', file)
       formData.append('userId', user.id)
@@ -79,7 +93,10 @@ export default function ProfileForm({ user }: { user: UserData }) {
       const result = await uploadAvatar(formData)
 
       if (result.success && result.avatarUrl) {
-        setAvatarUrl(result.avatarUrl)
+        // Append timestamp to force cache refresh
+        const newAvatarUrl = `${result.avatarUrl}?t=${new Date().getTime()}`
+        setAvatarUrl(newAvatarUrl)
+        setCropImage(null) // Close cropper
         toast({
           title: 'Success',
           description: 'Profile picture updated successfully',
@@ -194,7 +211,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
               id="avatar"
               type="file"
               accept="image/*"
-              onChange={handleAvatarUpload}
+              onChange={handleFileSelect}
               className="hidden"
               disabled={isUploadingAvatar}
             />
@@ -204,6 +221,16 @@ export default function ProfileForm({ user }: { user: UserData }) {
           </div>
         </div>
       </div>
+
+      {cropImage && (
+        <ImageCropper
+          image={cropImage}
+          open={!!cropImage}
+          onClose={() => setCropImage(null)}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+        />
+      )}
 
       {/* Full Name */}
       <div className="space-y-2">

@@ -9,6 +9,7 @@ import { RequireVerification } from '../shared/RequireVerification'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
 import { useRouter } from 'next/navigation'
 import { useToast } from "@/hooks/use-toast";
+import { ResellerProBanner } from './ResellerProBanner'
 
 export function QuickActions() {
     const router = useRouter()
@@ -93,6 +94,12 @@ export function QuickActions() {
                             </RequireVerification>
                         </div>
                     </ScrollArea>
+                    <ResellerProBanner
+                        className="mt-4"
+                        title="Unlock Unlimited Actions"
+                        description="Create unlimited orders, products, and customers with Premium."
+                        variant="blue"
+                    />
 
                     <div className="mt-4 pt-4 border-t">
                         <Button variant="ghost" size="sm" className="w-full justify-start text-xs" asChild>
