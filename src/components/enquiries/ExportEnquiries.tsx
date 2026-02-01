@@ -17,13 +17,13 @@ import { toast } from 'sonner'
 import { useSubscription } from '@/lib/hooks/useSubscription'
 import { ProBadge } from '@/components/shared/ProBadge'
 import { useRouter } from 'next/navigation'
-
 interface ExportEnquiriesProps {
   enquiries: Enquiry[]
   businessName?: string
+  className?: string
 }
 
-export function ExportEnquiries({ enquiries, businessName = 'ResellerPro' }: ExportEnquiriesProps) {
+export function ExportEnquiries({ enquiries, businessName = 'ResellerPro', className }: ExportEnquiriesProps) {
   const [isExporting, setIsExporting] = useState(false)
   const router = useRouter()
   const { isPremium, isLoading: isCheckingSubscription } = useSubscription()
@@ -95,7 +95,7 @@ export function ExportEnquiries({ enquiries, businessName = 'ResellerPro' }: Exp
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isExporting || isCheckingSubscription}>
+        <Button variant="outline" className={className} disabled={isExporting || isCheckingSubscription}>
           {isExporting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

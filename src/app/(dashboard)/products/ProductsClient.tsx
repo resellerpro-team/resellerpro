@@ -34,9 +34,13 @@ import {
   List,
   AlertTriangle,
   ArrowUpDown,
+  Filter,
   Loader2,
   Lock,
+  Plus,
 } from "lucide-react";
+
+import { StatsCard } from "@/components/shared/StatsCard";
 
 import Link from "next/link";
 import { ProductCard } from "@/components/products/ProductCard";
@@ -138,6 +142,9 @@ export function ProductsClient() {
     avgMargin: statsData?.avgMargin || 0,
   };
 
+  // Derive categories from products
+  const categories = Array.from(new Set(typedProducts.map(p => p.category).filter(Boolean))) as string[];
+
   // -------------------- URL UPDATE --------------------
   const updateURL = (params: Record<string, string>) => {
     setPage(1);
@@ -160,7 +167,10 @@ export function ProductsClient() {
     <div className="space-y-6">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold">Products</h1>
+        <div className="flex flex-col">
+          <h1 className="text-3xl font-bold">Products</h1>
+          <p className="text-muted-foreground">Manage your products and inventory</p>
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <ExportProducts
@@ -194,22 +204,30 @@ export function ProductsClient() {
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard title="Total Products" value={stats.total} icon={Package} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          title="Total Products"
+          value={stats.total}
+          icon={Package}
+          description="Active in inventory"
+        />
         <StatsCard
           title="Inventory Value"
           value={`₹${stats.totalValue.toLocaleString()}`}
           icon={IndianRupee}
+          description="Total cost value"
         />
         <StatsCard
           title="Total Profit"
           value={`₹${stats.totalProfit.toLocaleString()}`}
           icon={TrendingUp}
+          description="Potential earnings"
         />
         <StatsCard
           title="Stock Alerts"
           value={stats.lowStock + stats.outOfStock}
           icon={AlertTriangle}
+          description="Low/Out of stock"
         />
       </div>
 
@@ -230,58 +248,37 @@ export function ProductsClient() {
 
             {/* Filters Group */}
             <div className="flex flex-wrap items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0">
-              {/* Category */}
               <Select
                 value={category || "all"}
-                onValueChange={(v) => updateURL({ category: v })}
+                onValueChange={(val) => updateURL({ category: val })}
               >
-                <SelectTrigger className="w-[130px] sm:w-[150px]">
-                  <SelectValue placeholder="Status" />
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="low_stock">Low Stock</SelectItem>
-                  <SelectItem value="out_of_stock">Out Of Stock</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
-              {/* Sort */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <ArrowUpDown className="h-4 w-4" />
-                    <span className="hidden sm:inline">Sort</span>
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => updateURL({ sort: "-created_at" })}>
-                    Newest First
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => updateURL({ sort: "created_at" })}>
-                    Oldest First
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => updateURL({ sort: "name" })}>
-                    Name (A-Z)
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* View Switch */}
-              <div className="flex border rounded-lg p-1">
+              <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/50 w-full sm:w-auto justify-center">
                 <Button
                   variant={view === "grid" ? "secondary" : "ghost"}
                   size="sm"
-                  className="px-2"
+                  className="h-8 flex-1 sm:flex-initial"
                   onClick={() => updateURL({ view: "grid" })}
                 >
                   <Grid3x3 className="h-4 w-4" />
                 </Button>
-
                 <Button
                   variant={view === "list" ? "secondary" : "ghost"}
                   size="sm"
-                  className="px-2"
+                  className="h-8 flex-1 sm:flex-initial"
                   onClick={() => updateURL({ view: "list" })}
                 >
                   <List className="h-4 w-4" />
@@ -343,28 +340,5 @@ export function ProductsClient() {
         </div>
       )}
     </div>
-  );
-}
-
-// ---------------- STATS CARD ----------------
-function StatsCard({
-  title,
-  icon: Icon,
-  value,
-}: {
-  title: string;
-  icon: any;
-  value: string | number;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4 flex flex-col gap-2">
-        <div className="flex justify-between">
-          <p className="text-sm">{title}</p>
-          <Icon className="h-4 w-4 text-muted-foreground" />
-        </div>
-        <p className="text-xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
   );
 }
