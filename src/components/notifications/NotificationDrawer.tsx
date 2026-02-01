@@ -1,13 +1,27 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, CheckCheck, X, AlertCircle, Wallet, Package as PackageIcon, MessageSquare, Info } from 'lucide-react'
+import {
+    Bell,
+    CheckCheck,
+    X,
+    AlertCircle,
+    Wallet,
+    Package as PackageIcon,
+    MessageSquare,
+    Info,
+    ShoppingBag,
+    Sparkles,
+    UserPlus,
+    BellOff,
+    ArrowRight,
+    Clock
+} from 'lucide-react'
 import {
     Sheet,
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetTrigger,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -100,59 +114,74 @@ export function NotificationDrawer() {
                 if (open) fetchNotifications()
             }}>
                 <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="relative">
-                        <Bell className="h-5 w-5" />
+                    <Button variant="ghost" size="icon" className="relative hover:bg-muted/50 transition-colors">
+                        <Bell className={cn("h-5 w-5", unreadCount > 0 && "text-primary animate-ring")} />
                         {unreadCount > 0 && (
-                            <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center animate-pulse">
-                                {unreadCount}
-                            </Badge>
+                            <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+                            </span>
                         )}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[380px] p-0 flex flex-col shadow-xl border-primary/10 overflow-hidden" align="end">
-                    <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-sm">Quick View</h3>
+                <PopoverContent className="w-[380px] p-0 flex flex-col shadow-2xl border-primary/5 rounded-2xl overflow-hidden backdrop-blur-xl bg-background/95" align="end">
+                    <div className="p-4 border-b bg-muted/20 flex items-center justify-between">
+                        <div>
+                            <h3 className="font-bold text-base flex items-center gap-2">
+                                Notifications
+                                {unreadCount > 0 && (
+                                    <Badge variant="default" className="h-5 px-1.5 text-[10px] bg-primary">
+                                        {unreadCount}
+                                    </Badge>
+                                )}
+                            </h3>
                         </div>
                         <div className="flex items-center gap-1">
                             {unreadCount > 0 && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-7 text-[10px] uppercase font-bold text-primary"
+                                    className="h-8 text-xs font-semibold text-primary hover:bg-primary/5"
                                     onClick={markAllAsRead}
                                 >
-                                    Mark all as read
+                                    Mark all read
                                 </Button>
                             )}
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-8 w-8 rounded-full"
                                 onClick={() => setIsPopoverOpen(false)}
                             >
                                 <X className="h-4 w-4" />
-                                <span className="sr-only">Close</span>
                             </Button>
                         </div>
                     </div>
 
                     <Tabs defaultValue="unread" className="flex flex-col">
-                        <div className="px-4 py-2 border-b bg-card">
-                            <TabsList className="grid w-full grid-cols-2 h-8 p-0.5 bg-muted">
-                                <TabsTrigger value="unread" className="text-[10px] font-bold uppercase">
-                                    Action Needed
-                                </TabsTrigger>
-                                <TabsTrigger value="history" className="text-[10px] font-bold uppercase">
-                                    Recent History
-                                </TabsTrigger>
-                            </TabsList>
-                        </div>
+                        <TabsList className="flex w-full rounded-none border-b bg-background/50 h-10 p-1">
+                            <TabsTrigger
+                                value="unread"
+                                className="flex-1 text-xs font-bold data-[state=active]:bg-muted/50 data-[state=active]:shadow-none"
+                            >
+                                Unread
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="history"
+                                className="flex-1 text-xs font-bold data-[state=active]:bg-muted/50 data-[state=active]:shadow-none"
+                            >
+                                History
+                            </TabsTrigger>
+                        </TabsList>
 
-                        <ScrollArea className="max-h-[400px]">
-                            <TabsContent value="unread" className="m-0 p-2 space-y-1">
+                        <ScrollArea className="max-h-[420px]">
+                            <TabsContent value="unread" className="m-0 p-3 space-y-3 outline-none">
                                 {unreadNotifications.length === 0 ? (
-                                    <EmptyState message="No new actions." />
+                                    <EmptyState
+                                        icon={Sparkles}
+                                        title="All caught up!"
+                                        message="You have no unread notifications at the moment."
+                                    />
                                 ) : (
                                     unreadNotifications.map(notification => (
                                         <NotificationCard
@@ -164,9 +193,13 @@ export function NotificationDrawer() {
                                     ))
                                 )}
                             </TabsContent>
-                            <TabsContent value="history" className="m-0 p-2 space-y-1">
+                            <TabsContent value="history" className="m-0 p-3 space-y-3 outline-none">
                                 {recentReadNotifications.length === 0 ? (
-                                    <EmptyState message="No recent history." />
+                                    <EmptyState
+                                        icon={BellOff}
+                                        title="Empty History"
+                                        message="Recent notifications will appear here."
+                                    />
                                 ) : (
                                     recentReadNotifications.map(notification => (
                                         <NotificationCard
@@ -180,72 +213,86 @@ export function NotificationDrawer() {
                         </ScrollArea>
                     </Tabs>
 
-                    <div className="p-2 border-t bg-muted/30">
+                    <div className="p-3 border-t bg-muted/20">
                         <Button
-                            variant="ghost"
-                            className="w-full h-9 text-xs font-bold text-primary hover:bg-primary/5 shadow-none"
+                            variant="default"
+                            className="w-full h-10 text-xs font-bold group rounded-xl shadow-lg shadow-primary/20"
                             onClick={() => {
                                 setIsPopoverOpen(false)
                                 setIsDrawerOpen(true)
                             }}
                         >
-                            View all notifications
+                            View all activity
+                            <ArrowRight className="ml-2 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                         </Button>
                     </div>
                 </PopoverContent>
             </Popover>
 
             <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                <SheetContent className="w-full sm:max-w-md p-0 flex flex-col h-full bg-background border-l shadow-2xl">
-                    <SheetHeader className="p-4 border-b bg-card flex flex-row items-center justify-between space-y-0 sticky top-0 z-10">
-                        <div className="flex items-center gap-2">
-                            <SheetTitle className="text-xl font-bold">All Notifications</SheetTitle>
-                            {unreadCount > 0 && (
-                                <Badge variant="secondary" className="rounded-full">
-                                    {unreadCount} New
-                                </Badge>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                            {unreadCount > 0 && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-xs text-primary"
-                                    onClick={markAllAsRead}
-                                >
-                                    <CheckCheck className="h-4 w-4 mr-1" />
-                                    Mark all as read
-                                </Button>
-                            )}
+                <SheetContent className="w-full sm:max-w-md p-0 flex flex-col h-full bg-background border-l shadow-2xl rounded-l-[2rem] overflow-hidden">
+                    <SheetHeader className="p-6 border-b bg-card/50 backdrop-blur-md sticky top-0 z-10">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <SheetTitle className="text-2xl font-black tracking-tight">Activity Log</SheetTitle>
+                                <p className="text-xs text-muted-foreground font-medium">
+                                    Keep track of everything happening in your business
+                                </p>
+                            </div>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8"
+                                className="h-10 w-10 rounded-full bg-muted/50"
                                 onClick={() => setIsDrawerOpen(false)}
                             >
                                 <X className="h-5 w-5" />
-                                <span className="sr-only">Close</span>
                             </Button>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 mt-2">
+                            <Badge variant="outline" className="px-3 py-1 font-bold text-xs bg-muted/30">
+                                {unreadCount} {unreadCount === 1 ? 'New Action' : 'New Actions'}
+                            </Badge>
+                            {unreadCount > 0 && (
+                                <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="text-xs font-bold text-primary h-auto p-0"
+                                    onClick={markAllAsRead}
+                                >
+                                    <CheckCheck className="h-3.5 w-3.5 mr-1" />
+                                    Mark all read
+                                </Button>
+                            )}
                         </div>
                     </SheetHeader>
 
                     <Tabs defaultValue="action" className="flex-1 flex flex-col">
-                        <div className="px-4 py-2 border-b bg-muted/30">
-                            <TabsList className="grid w-full grid-cols-2 h-10 p-1 bg-background/50 backdrop-blur">
-                                <TabsTrigger value="action" className="text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                                    Action Needed
+                        <div className="px-6 py-4 bg-muted/10">
+                            <TabsList className="grid w-full grid-cols-2 h-11 p-1 bg-background/50 border shadow-sm rounded-xl">
+                                <TabsTrigger
+                                    value="action"
+                                    className="text-xs font-bold rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+                                >
+                                    Needs Attention
                                 </TabsTrigger>
-                                <TabsTrigger value="history" className="text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                                    History
+                                <TabsTrigger
+                                    value="history"
+                                    className="text-xs font-bold rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+                                >
+                                    Full History
                                 </TabsTrigger>
                             </TabsList>
                         </div>
 
                         <ScrollArea className="flex-1">
-                            <TabsContent value="action" className="m-0 p-2 space-y-2">
+                            <TabsContent value="action" className="m-0 p-4 space-y-4 outline-none pb-12">
                                 {unreadNotifications.length === 0 ? (
-                                    <EmptyState message="All caught up!" />
+                                    <EmptyState
+                                        icon={Sparkles}
+                                        title="No pending tasks"
+                                        message="You're all caught up! Take a moment to celebrate."
+                                    />
                                 ) : (
                                     unreadNotifications.map(notification => (
                                         <NotificationCard
@@ -257,9 +304,13 @@ export function NotificationDrawer() {
                                 )}
                             </TabsContent>
 
-                            <TabsContent value="history" className="m-0 p-2 space-y-2">
+                            <TabsContent value="history" className="m-0 p-4 space-y-4 outline-none pb-12">
                                 {readNotifications.length === 0 ? (
-                                    <EmptyState message="History is empty." />
+                                    <EmptyState
+                                        icon={BellOff}
+                                        title="History is empty"
+                                        message="A log of your previous activity will appear here."
+                                    />
                                 ) : (
                                     readNotifications.map(notification => (
                                         <NotificationCard
@@ -286,38 +337,49 @@ function NotificationCard({
     onMarkRead?: (() => void) | (() => Promise<void>) | (() => Promise<any>)
     compact?: boolean
 }) {
-    const getIcon = (type: string) => {
+    const getIconConfig = (type: string) => {
         switch (type) {
-            case 'enquiry_followup_due': return <MessageSquare className="h-4 w-4" />
-            case 'wallet_credited': return <Wallet className="h-4 w-4" />
-            case 'subscription_expiring_soon': return <AlertCircle className="h-4 w-4" />
-            case 'low_stock': return <PackageIcon className="h-4 w-4" />
-            case 'system_alert': return <Info className="h-4 w-4" />
-            default: return <Bell className="h-4 w-4" />
+            case 'enquiry_followup_due':
+                return { icon: MessageSquare, color: "bg-blue-500/10 text-blue-500 border-blue-500/20" }
+            case 'wallet_credited':
+                return { icon: Wallet, color: "bg-green-500/10 text-green-500 border-green-500/20" }
+            case 'subscription_expiring_soon':
+                return { icon: AlertCircle, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" }
+            case 'low_stock':
+                return { icon: PackageIcon, color: "bg-red-500/10 text-red-500 border-red-500/20" }
+            case 'new_order':
+                return { icon: ShoppingBag, color: "bg-primary/10 text-primary border-primary/20" }
+            case 'new_customer':
+                return { icon: UserPlus, color: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20" }
+            default:
+                return { icon: Bell, color: "bg-muted text-muted-foreground border-border" }
         }
     }
 
     const { priority, is_read, title, message, created_at } = notification
+    const { icon: Icon, color } = getIconConfig(notification.type)
 
     return (
         <div className={cn(
-            "group relative flex gap-4 rounded-xl border transition-all duration-200",
-            compact ? "p-3 gap-3" : "p-4 gap-4",
-            !is_read ? "bg-card border-primary/20 shadow-sm" : "bg-muted/20 border-border opacity-70",
-            priority === 'high' && !is_read && "ring-1 ring-destructive/30"
+            "group relative flex gap-4 rounded-2xl border transition-all duration-300",
+            compact ? "p-3.5 gap-3" : "p-5 gap-4",
+            !is_read
+                ? "bg-card border-primary/15 shadow-[0_4px_12px_-4px_rgba(var(--primary),0.05)] hover:shadow-md hover:border-primary/30"
+                : "bg-muted/30 border-border/50 opacity-80 hover:opacity-100",
+            priority === 'high' && !is_read && "ring-1 ring-destructive/20 bg-destructive/[0.02]"
         )}>
             <div className={cn(
-                "flex shrink-0 items-center justify-center rounded-full border shadow-sm",
-                compact ? "h-8 w-8" : "h-10 w-10",
-                !is_read ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground"
+                "flex shrink-0 items-center justify-center rounded-2xl border shadow-sm transition-transform duration-300 group-hover:scale-105",
+                compact ? "h-10 w-10 p-2" : "h-12 w-12 p-2.5",
+                !is_read ? color : "bg-muted/50 text-muted-foreground border-muted"
             )}>
-                {getIcon(notification.type)}
+                <Icon className="w-full h-full" />
             </div>
 
             <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-start justify-between gap-2 mb-1">
                     <h4 className={cn(
-                        "font-semibold truncate",
+                        "font-bold leading-tight tracking-tight",
                         compact ? "text-xs" : "text-sm",
                         !is_read ? "text-foreground" : "text-muted-foreground"
                     )}>
@@ -325,33 +387,36 @@ function NotificationCard({
                     </h4>
                     {!is_read && (
                         <div className={cn(
-                            "h-2 w-2 rounded-full shrink-0",
-                            priority === 'high' ? "bg-destructive animate-pulse" : "bg-primary"
+                            "h-2 w-2 rounded-full mt-1 shrink-0 shadow-[0_0_8px_rgba(var(--primary),0.5)]",
+                            priority === 'high' ? "bg-destructive" : "bg-primary"
                         )} />
                     )}
                 </div>
                 <p className={cn(
-                    "text-xs leading-relaxed mb-2",
-                    compact ? "line-clamp-2" : "line-clamp-3",
-                    !is_read ? "text-muted-foreground font-medium" : "text-muted-foreground/80"
+                    "leading-relaxed mb-3",
+                    compact ? "text-[11px] line-clamp-2" : "text-xs line-clamp-3",
+                    !is_read ? "text-muted-foreground/90 font-medium" : "text-muted-foreground/70"
                 )}>
                     {message}
                 </p>
-                <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                        {formatDistanceToNow(new Date(created_at), { addSuffix: true })}
-                    </span>
+                <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground flex items-center font-bold tracking-tight bg-muted/50 px-2 py-0.5 rounded-md uppercase">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {formatDistanceToNow(new Date(created_at), { addSuffix: true })}
+                        </span>
+                    </div>
                     {!is_read && onMarkRead && (
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2 text-[10px] uppercase font-bold text-primary hover:text-primary hover:bg-primary/10"
+                            className="h-7 px-3 text-[10px] font-black uppercase text-primary hover:bg-primary/10 rounded-lg active:scale-95 transition-all"
                             onClick={(e) => {
                                 e.stopPropagation()
                                 onMarkRead()
                             }}
                         >
-                            Mark as read
+                            Mark read
                         </Button>
                     )}
                 </div>
@@ -360,13 +425,20 @@ function NotificationCard({
     )
 }
 
-function EmptyState({ message }: { message: string }) {
+function EmptyState({ icon: Icon, title, message }: { icon: any, title: string, message: string }) {
     return (
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center space-y-3 opacity-50">
-            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                <Bell className="h-6 w-6 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center py-16 px-6 text-center space-y-4">
+            <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 animate-pulse"></div>
+                <div className="relative h-20 w-20 rounded-3xl bg-primary/5 flex items-center justify-center border-2 border-primary/10 shadow-inner overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-50"></div>
+                    <Icon className="h-10 w-10 text-primary animate-bounce-subtle" />
+                </div>
             </div>
-            <p className="text-sm font-medium text-muted-foreground">{message}</p>
+            <div className="space-y-1 relative">
+                <h4 className="font-black text-lg tracking-tight text-foreground">{title}</h4>
+                <p className="text-sm font-medium text-muted-foreground/80 max-w-[200px] leading-relaxed">{message}</p>
+            </div>
         </div>
     )
 }

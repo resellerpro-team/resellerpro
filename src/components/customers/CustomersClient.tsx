@@ -15,7 +15,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { Plus, Search, Filter, Users, TrendingUp, IndianRupee, Lock } from "lucide-react";
+import {
+  Search,
+  Plus,
+  TrendingUp,
+  IndianRupee,
+  Users,
+  Download,
+  Lock,
+  Filter,
+  ArrowUpDown,
+} from "lucide-react";
 
 import Link from "next/link";
 import CustomerCard from "@/components/customers/CustomerCard";
@@ -141,16 +151,16 @@ export function CustomersClient() {
           <p className="text-muted-foreground">Manage your customer relationships</p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <ExportCustomers
             customers={customers}
             businessName={businessName}
-            className="flex-1 sm:flex-none"
+            className="w-full sm:w-auto"
           />
 
           {canCreateCustomer ? (
             <RequireVerification>
-              <Button asChild className="flex-1 sm:flex-none">
+              <Button asChild className="w-full sm:w-auto">
                 <Link href="/customers/new">
                   <Plus className="mr-2 h-4 w-4" /> Add Customer
                 </Link>
@@ -159,7 +169,7 @@ export function CustomersClient() {
           ) : (
             <Button
               variant="outline"
-              className="flex-1 sm:flex-none gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
+              className="w-full sm:w-auto gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
               onClick={() => {
                 toast({
                   title: "Limit Reached 🔒",
@@ -177,7 +187,7 @@ export function CustomersClient() {
 
       {/* STATS */}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatsCard
           title="Total Customers"
           value={stats.total}
@@ -197,41 +207,39 @@ export function CustomersClient() {
           value={`₹${stats.avgValue}`}
           icon={IndianRupee}
           description="Lifetime value"
+          className="col-span-2 md:col-span-1"
         />
       </div>
 
       {/* SEARCH & FILTER */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex gap-4">
-
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
-              <Input
-                defaultValue={search}
-                className="pl-10"
-                placeholder="Search by name, phone, email..."
-                onChange={(e) => updateURL({ search: e.target.value })}
-              />
-            </div>
-
-            {/* Sort dropdown */}
-            <Select
-              value={sort}
-              onValueChange={(value) => updateURL({ sort: value })}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="-created_at">Newest</SelectItem>
-                <SelectItem value="created_at">Oldest</SelectItem>
-                <SelectItem value="-total_orders">Most Ordered</SelectItem>
-              </SelectContent>
-            </Select>
+        <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search customers..."
+              className="pl-9"
+              defaultValue={search}
+              onChange={(e) => updateURL({ search: e.target.value })}
+            />
           </div>
+
+          <Select
+            value={sort}
+            onValueChange={(value) => updateURL({ sort: value })}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <ArrowUpDown className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="-created_at">Newest</SelectItem>
+              <SelectItem value="created_at">Oldest</SelectItem>
+              <SelectItem value="name">Name (A-Z)</SelectItem>
+              <SelectItem value="-total_orders">Most Orders</SelectItem>
+              <SelectItem value="-total_spent">High Spender</SelectItem>
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 

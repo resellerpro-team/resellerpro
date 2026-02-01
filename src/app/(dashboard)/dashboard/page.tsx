@@ -73,7 +73,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-2 text-nowrap">
         <StatsCard
           type="revenue"
           title="Today's Revenue"
@@ -236,7 +236,7 @@ function StatsCard({
             }`}>
             {isNeutral ? 'No change' : `${isPositive ? '+' : ''}${change}%`}
           </span>
-          <span className="text-[12px] text-muted-foreground/70">from yesterday</span>
+          <span className="text-[12px] hidden md:flex text-muted-foreground/70">from yesterday</span>
         </div>
       </CardContent>
     </Card>

@@ -105,7 +105,6 @@ export function ExportCustomers({ customers, businessName = 'ResellerPro', class
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          size="sm"
           disabled={isExporting || isCheckingSubscription}
           className={className}
         >

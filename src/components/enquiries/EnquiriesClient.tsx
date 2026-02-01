@@ -111,20 +111,20 @@ export function EnquiriesClient() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Enquiries</h1>
-                    <p className="text-muted-foreground">Manage ongoing customer conversations and leads</p>
+                    <p className="text-muted-foreground">Manage ongoing customer convertions and leads</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <ExportEnquiries enquiries={enquiries} businessName={businessName} />
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <ExportEnquiries enquiries={enquiries} businessName={businessName} className="w-full sm:w-auto" />
                     {canCreateEnquiry ? (
                         <RequireVerification>
-                            <Button onClick={() => router.push('/enquiries/new')}>
+                            <Button className="w-full sm:w-auto" onClick={() => router.push('/enquiries/new')}>
                                 <MessageSquare className="mr-2 h-4 w-4" /> Add Enquiry
                             </Button>
                         </RequireVerification>
                     ) : (
                         <Button
                             variant="outline"
-                            className="gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
+                            className="w-full sm:w-auto gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
                             onClick={() => {
                                 toast({
                                     title: "Limit Reached 🔒",
@@ -141,7 +141,7 @@ export function EnquiriesClient() {
             </div>
 
             {/* TWO: Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatsCard
                     title="New Enquiries"
                     value={stats.new}
@@ -174,7 +174,7 @@ export function EnquiriesClient() {
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search by name, message..."
+                            placeholder="Search enquiries..."
                             className="pl-9"
                             defaultValue={search}
                             onChange={(e) => updateURL({ search: e.target.value })}
