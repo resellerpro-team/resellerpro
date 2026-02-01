@@ -23,9 +23,10 @@ interface ExportOrdersProps {
   orders: Order[]
   dateRange?: { from?: string; to?: string }
   businessName?: string
+  className?: string
 }
 
-export function ExportOrders({ orders, dateRange, businessName = 'ResellerPro' }: ExportOrdersProps) {
+export function ExportOrders({ orders, dateRange, businessName = 'ResellerPro', className }: ExportOrdersProps) {
   const [isExporting, setIsExporting] = useState(false)
   const router = useRouter()
   const { isPremium, isLoading: isCheckingSubscription } = useSubscription()
@@ -103,12 +104,12 @@ export function ExportOrders({ orders, dateRange, businessName = 'ResellerPro' }
       exportToCSV(exportData, filename, {
         company: businessName,
         reportType: 'Detailed Orders Report',
-        dateRange: dateRange?.from && dateRange?.to 
+        dateRange: dateRange?.from && dateRange?.to
           ? `${formatDate(dateRange.from)} to ${formatDate(dateRange.to)}`
           : 'All Time',
-        generatedOn: new Date().toLocaleString('en-IN', { 
-          dateStyle: 'medium', 
-          timeStyle: 'short' 
+        generatedOn: new Date().toLocaleString('en-IN', {
+          dateStyle: 'medium',
+          timeStyle: 'short'
         }),
         totalRecords: orders.length
       })
@@ -165,7 +166,7 @@ export function ExportOrders({ orders, dateRange, businessName = 'ResellerPro' }
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" disabled={isExporting || isCheckingSubscription}>
+          <Button variant="outline" className={className} disabled={isExporting || isCheckingSubscription}>
             {isExporting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
