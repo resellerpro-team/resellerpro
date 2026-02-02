@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { ResellerProBanner } from './ResellerProBanner'
 
 interface AlertsWidgetProps {
     alerts: {
@@ -100,6 +101,12 @@ export function AlertsWidget({ alerts }: AlertsWidgetProps) {
                         })()}
                     </div>
                 </ScrollArea>
+                <ResellerProBanner
+                    className="mt-4"
+                    title="Advanced Business Insights"
+                    description="Get detailed revenue analysis, growth forecasts, and AI recommendations."
+                    variant="purple"
+                />
 
                 <div className="mt-4 pt-4 border-t">
                     <Button variant="ghost" size="sm" className="w-full justify-start text-xs" asChild>
