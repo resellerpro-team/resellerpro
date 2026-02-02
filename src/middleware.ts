@@ -68,6 +68,49 @@ export async function middleware(request: NextRequest) {
     user = { id: 'offline-user' } as any
   }
 
+  // 🔐 SESSION ENFORCEMENT: Verify if the session is still active in our database
+  // This ensures that "Logout Other Devices" works IMMEDIATELY (Senior Security Standard)
+  if (user && !isOffline && !request.nextUrl.pathname.startsWith('/auth') && !request.nextUrl.pathname.startsWith('/api')) {
+    try {
+      // 🛡️ Proactive Security: Check DB on sensitive dashboard/settings requests to enforce revocation
+      const isSensitivePath = request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.includes('/settings')
+
+      if (isSensitivePath) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          // Hash to match DB storage
+          const encoder = new TextEncoder()
+          const data = encoder.encode(session.access_token)
+          const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+          const hashArray = Array.from(new Uint8Array(hashBuffer))
+          const hashedToken = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
+          const { data: dbSession, error: dbError } = await supabase
+            .from('user_sessions')
+            .select('id')
+            .eq('session_token', hashedToken)
+            .single()
+
+          // If session is missing from DB (revoked), force logout
+          if (!dbSession || dbError) {
+            console.log(`[SECURITY] REJECTED: Revoked session for user ${user.id}`)
+            const url = request.nextUrl.clone()
+            url.pathname = '/signin'
+            url.searchParams.set('message', 'Security Alert: Your session was terminated from another device.')
+
+            const redirectResponse = NextResponse.redirect(url)
+            // Clear auth cookies
+            const cookiePrefix = 'sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1].split('.')[0] + '-auth-token'
+            redirectResponse.cookies.delete(cookiePrefix)
+            return redirectResponse
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Security enforcement fail-open:', e)
+    }
+  }
+
   // 🔒 Redirect logged-out users away from dashboard (only if online or no valid session)
   if (!user && !isOffline && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()

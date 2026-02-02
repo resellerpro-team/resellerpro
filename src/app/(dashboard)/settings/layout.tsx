@@ -9,6 +9,7 @@ import {
   Settings as SettingsIcon,
   Wallet,
   Gift,
+  ShieldCheck,
 } from "lucide-react"
 import Link from 'next/link'
 import { usePathname } from "next/navigation"
@@ -35,6 +36,11 @@ const settingsNavItems = [
     title: "Wallet",
     href: "/settings/wallet",
     icon: Wallet,
+  },
+  {
+    title: "Security",
+    href: "/settings/security",
+    icon: ShieldCheck,
   },
   {
     title: "Referrals",

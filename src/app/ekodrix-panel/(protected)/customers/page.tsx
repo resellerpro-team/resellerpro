@@ -82,7 +82,7 @@ function CustomersContent() {
   
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all')
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'created_at')
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'updated_at')
   const [sortOrder, setSortOrder] = useState(searchParams.get('sortOrder') || 'desc')
   const debouncedSearch = useDebounce(searchTerm, 500)
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'))
@@ -130,7 +130,7 @@ function CustomersContent() {
     const params = new URLSearchParams()
     if (debouncedSearch) params.set('search', debouncedSearch)
     if (statusFilter !== 'all') params.set('status', statusFilter)
-    if (sortBy !== 'created_at') params.set('sortBy', sortBy)
+    if (sortBy !== 'updated_at') params.set('sortBy', sortBy)
     if (sortOrder !== 'desc') params.set('sortOrder', sortOrder)
     if (page !== 1) params.set('page', page.toString())
     
@@ -209,7 +209,7 @@ function CustomersContent() {
         'Business': c.business_name || 'N/A',
         'Status': c.subscription?.status || 'Free',
         'Plan': c.subscription?.plan?.display_name || 'Free',
-        'Joined': c.created_at ? format(new Date(c.created_at), 'dd MMM yyyy') : (c.updated_at ? format(new Date(c.updated_at), 'dd MMM yyyy') : 'N/A')
+        'Joined': (c.created_at || c.updated_at) ? format(new Date(c.created_at || c.updated_at || ''), 'dd MMM yyyy') : 'N/A'
       }))
 
       exportToCSV(exportData, 'ekodrix_customers', {
@@ -309,11 +309,11 @@ function CustomersContent() {
                   <TableHead className="text-gray-300 py-4 px-6 text-gray-400">Subscription</TableHead>
                   <TableHead className="text-gray-300 py-4 px-6">
                     <button 
-                      onClick={() => { setSortBy('created_at'); setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }}
+                      onClick={() => { setSortBy('updated_at'); setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }}
                       className="flex items-center gap-1 hover:text-white transition-colors"
                     >
                       Joined
-                      {sortBy === 'created_at' && (sortOrder === 'asc' ? <ArrowUpRight className="w-3" /> : <ArrowDownRight className="w-3" />)}
+                      {sortBy === 'updated_at' && (sortOrder === 'asc' ? <ArrowUpRight className="w-3" /> : <ArrowDownRight className="w-3" />)}
                     </button>
                   </TableHead>
                   <TableHead className="text-gray-300 py-4 px-6 text-right">Actions</TableHead>
@@ -385,14 +385,14 @@ function CustomersContent() {
                       </TableCell>
                       <TableCell className="py-4 px-6">
                         <p className="text-sm text-gray-400">
-                          { customer.created_at 
-                            ? format(new Date(customer.created_at), 'MMM dd, yyyy') 
-                            : (customer.updated_at ? format(new Date(customer.updated_at), 'MMM dd, yyyy') : 'N/A') }
+                          { (customer.created_at || customer.updated_at) 
+                            ? format(new Date(customer.created_at || customer.updated_at || ''), 'MMM dd, yyyy') 
+                            : 'N/A' }
                         </p>
                         <p className="text-[10px] text-gray-600">
-                          { customer.created_at 
-                            ? format(new Date(customer.created_at), 'hh:mm a') 
-                            : (customer.updated_at ? format(new Date(customer.updated_at), 'hh:mm a') : '') }
+                          { (customer.created_at || customer.updated_at) 
+                            ? format(new Date(customer.created_at || customer.updated_at || ''), 'hh:mm a') 
+                            : '' }
                         </p>
                       </TableCell>
                       <TableCell className="py-4 px-6 text-right">
