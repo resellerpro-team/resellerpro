@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const search = searchParams.get('search') || ''
         const status = searchParams.get('status') || 'all'
-        const sortBy = searchParams.get('sortBy') || 'updated_at'
+        const sortBy = searchParams.get('sortBy') || 'created_at'
         const sortOrder = searchParams.get('sortOrder') || 'desc'
         const page = parseInt(searchParams.get('page') || '1')
         const limit = 20
