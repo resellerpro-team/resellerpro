@@ -108,7 +108,7 @@ export async function CustomersTable() {
         status
       )
     `)
-    .order('created_at', { ascending: false })
+    .order('updated_at', { ascending: false })
 
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm shadow-lg transition-all hover:border-indigo-500/30">

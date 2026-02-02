@@ -141,6 +141,10 @@ export function WhatsAppShare({
       message += `\n *Product Image:*\n${product.image_url}\n`;
     }
 
+    // Add public viewing link
+    const publicUrl = `${window.location.origin}/p/${product.id}`;
+    message += `\n🔗 *View Details:* ${publicUrl}\n`;
+
     message += `\n━━━━━━━━━━━━━━━━━━━\n`;
     message += ` *Interested? Contact us to order!*`;
 
