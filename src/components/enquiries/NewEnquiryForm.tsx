@@ -27,6 +27,7 @@ export default function NewEnquiryForm() {
     const planName = subscription?.plan?.display_name || 'Free Plan';
 
     const [phone, setPhone] = useState("");
+    const [phoneError, setPhoneError] = useState("");
     const [name, setName] = useState("");
     const [message, setMessage] = useState("");
 
@@ -71,7 +72,7 @@ export default function NewEnquiryForm() {
                 });
                 // Invalidate enquiries query
                 queryClient.invalidateQueries({ queryKey: ["enquiries"] });
-                
+
                 router.push("/enquiries");
                 router.refresh();
             },
@@ -124,11 +125,37 @@ export default function NewEnquiryForm() {
                                 inputMode="numeric"
                                 pattern="[0-9]*"
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, '');
+                                    // Restrict to max 10 digits
+                                    if (value.length <= 10) {
+                                        setPhone(value);
+                                        // Validate length
+                                        if (value.length > 0 && value.length !== 10) {
+                                            setPhoneError("Enter only 10 numbers");
+                                        } else {
+                                            setPhoneError("");
+                                        }
+                                    }
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !isLoading) {
+                                        e.preventDefault();
+                                        // Trigger form submission
+                                        const form = e.currentTarget.form;
+                                        if (form) {
+                                            form.requestSubmit();
+                                        }
+                                    }
+                                }}
                                 placeholder="10-digit mobile number"
                                 required
                                 disabled={isLoading}
+                                className={phoneError ? "border-red-500" : ""}
                             />
+                            {phoneError && (
+                                <p className="text-sm text-red-500">{phoneError}</p>
+                            )}
                         </div>
 
                         {/* Message (Required) */}

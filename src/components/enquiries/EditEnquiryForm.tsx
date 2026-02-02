@@ -37,6 +37,7 @@ export default function EditEnquiryForm({ id }: { id: string }) {
 
     // Form State
     const [phone, setPhone] = useState("");
+    const [phoneError, setPhoneError] = useState("");
     const [name, setName] = useState("");
     const [message, setMessage] = useState("");
     const [status, setStatus] = useState("new");
@@ -65,7 +66,7 @@ export default function EditEnquiryForm({ id }: { id: string }) {
             onSuccess: () => {
                 // Invalidate enquiries query
                 queryClient.invalidateQueries({ queryKey: ["enquiries"] });
-                
+
                 toast({ title: "Enquiry Updated", description: "Changes saved successfully." });
                 router.push("/enquiries");
                 router.refresh();
@@ -81,7 +82,7 @@ export default function EditEnquiryForm({ id }: { id: string }) {
             onSuccess: () => {
                 // Invalidate enquiries query
                 queryClient.invalidateQueries({ queryKey: ["enquiries"] });
-                
+
                 toast({ title: "Enquiry Deleted", description: "Enquiry moved to trash." });
                 router.push("/enquiries");
                 router.refresh();
@@ -144,11 +145,31 @@ export default function EditEnquiryForm({ id }: { id: string }) {
                             <Label htmlFor="phone">Phone Number</Label>
                             <Input
                                 id="phone"
+                                type="tel"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, '');
+                                    // Restrict to max 10 digits
+                                    if (value.length <= 10) {
+                                        setPhone(value);
+                                        // Validate length
+                                        if (value.length > 0 && value.length !== 10) {
+                                            setPhoneError("Enter only 10 numbers");
+                                        } else {
+                                            setPhoneError("");
+                                        }
+                                    }
+                                }}
+                                placeholder="10-digit mobile number"
                                 required
                                 disabled={isLoading}
+                                className={phoneError ? "border-red-500" : ""}
                             />
+                            {phoneError && (
+                                <p className="text-sm text-red-500">{phoneError}</p>
+                            )}
                         </div>
 
                         {/* Name */}
