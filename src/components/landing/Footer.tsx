@@ -20,11 +20,11 @@ export default function Footer() {
               className="flex items-center space-x-3 cursor-pointer"
             >
               <NextImage
-                src="/logo.png"
+                src="/logo.svg"
                 alt="ResellerPro"
-                width={48}
-                height={48}
-                className="w-12 h-12 object-contain"
+                width={64}
+                height={64}
+                className="w-16 h-16"
               />
               <span className="text-2xl font-bold text-gray-900">ResellerPro</span>
             </div>
@@ -98,15 +98,16 @@ export default function Footer() {
               <li className="flex items-center space-x-3">
                 <Mail size={18} className="text-blue-600" />
                 <a href="mailto:resellerpro@gmail.com" className="hover:text-blue-600">
-                  resellerpro@gmail.com
+                  resellerpro.tech@gmail.com
                 </a>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone size={18} className="text-blue-600" />
-                <a href="tel:+917025302327" className="hover:text-blue-600">
-                  +91 7025302327
+                <a href="tel:+917736767759" className="hover:text-blue-600">
+                  +91 7736767759
                 </a>
               </li>
+
             </ul>
 
             {/* Social Icons */}
