@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     url: 'https://resellerpro.in',
     siteName: 'ResellerPro',
     images: [
+
       {
         url: 'https://resellerpro.in/og-image.png',
         width: 1200,
@@ -39,7 +40,15 @@ export const metadata: Metadata = {
     images: ['https://resellerpro.in/og-image.png'],
   },
   manifest: '/manifest.json',
-  icons: { icon: '/icons/icon-192x192.png', apple: '/icons/icon-512x512.png' },
+  icons: {
+    icon: [
+      { url: '/icons/icon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icons/icon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/icons/icon-180x180.png',
+  },
 }
 
 export const viewport: Viewport = {
