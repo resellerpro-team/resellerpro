@@ -1,9 +1,9 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import EkodrixSidebar from '@/components/ekodrix-panel/ekodrix-sidebar'
+import jwt from 'jsonwebtoken'
+import EkodrixPanelShell from '@/components/ekodrix-panel/ekodrix-panel-shell'
 
 const SESSION_COOKIE_NAME = 'ekodrix-session'
-const SESSION_SECRET = 'ekodrix-panel-secret-2026'
 
 async function validateSession() {
   const cookieStore = await cookies()
@@ -12,15 +12,9 @@ async function validateSession() {
   if (!sessionToken) return false
 
   try {
-    const decoded = Buffer.from(sessionToken, 'base64').toString('utf-8')
-    const [dataStr, secret] = decoded.split('|')
-
-    if (secret !== SESSION_SECRET) return false
-
-    const data = JSON.parse(dataStr)
-    if (data.exp < Date.now()) return false
-
-    return true
+    const secret = process.env.EKODRIX_SESSION_SECRET || 'dev-ekodrix-secret-change-in-production'
+    const decoded = jwt.verify(sessionToken, secret) as { user: string; iat: number; exp: number }
+    return !!decoded.user
   } catch {
     return false
   }
@@ -37,17 +31,5 @@ export default async function EkodrixPanelLayout({
     redirect('/ekodrix-panel/signin')
   }
 
-  return (
-    <div className="min-h-screen flex bg-[#0a0f1a] text-gray-100">
-      {/* Sidebar */}
-      <EkodrixSidebar />
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="min-h-screen">
-          {children}
-        </div>
-      </main>
-    </div>
-  )
+  return <EkodrixPanelShell>{children}</EkodrixPanelShell>
 }

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { verifyEkodrixAuth } from '@/lib/ekodrix-auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
     try {
+        // 🔒 SECURITY: Verify admin authentication
+        await verifyEkodrixAuth()
+
         const supabase = await createAdminClient()
         const body = await request.json()
         const { userId, title, message, priority = 'normal' } = body
