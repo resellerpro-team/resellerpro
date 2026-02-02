@@ -7,7 +7,7 @@
 
 import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 // Constants
 const SESSION_COOKIE_NAME = 'ekodrix-session'

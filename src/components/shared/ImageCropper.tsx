@@ -15,6 +15,7 @@ interface ImageCropperProps {
 
 function getCroppedImg(imageSrc: string, pixelCrop: any) {
     const image = new Image()
+    image.crossOrigin = 'anonymous'
     image.src = imageSrc
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
