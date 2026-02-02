@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { verifyEkodrixAuth } from '@/lib/ekodrix-auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
     try {
+        // 🔒 SECURITY: Verify admin authentication
+        await verifyEkodrixAuth()
+
         const supabase = await createAdminClient()
         const { searchParams } = new URL(request.url)
 
@@ -40,11 +44,17 @@ export async function GET(request: NextRequest) {
             }
         }
 
+        // 🔒 SECURITY: Sanitize search input to prevent SQL injection
+        const sanitizeSearch = (input: string): string => {
+            return input.replace(/[%_\\'"]/g, '\\$&')
+        }
+
         if (search) {
+            const safeSearch = sanitizeSearch(search)
             const { data: profileSearch } = await supabase
                 .from('profiles')
                 .select('id')
-                .or(`full_name.ilike.%${search}%,email.ilike.%${search}%,business_name.ilike.%${search}%`)
+                .or(`full_name.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%,business_name.ilike.%${safeSearch}%`)
 
             const searchIds = profileSearch?.map(p => p.id) || []
             query = query.in('user_id', searchIds)
@@ -85,9 +95,31 @@ export async function GET(request: NextRequest) {
             }
         }
 
+        // Summary Stats (MRR & Active Counts)
+        const { data: allActiveSubs } = await supabase
+            .from('user_subscriptions')
+            .select(`
+                id, status, 
+                plan:subscription_plans(price)
+            `)
+            .eq('status', 'active')
+
+        const mrr = allActiveSubs?.reduce((sum, s: any) => sum + (s.plan?.price || 0), 0) || 0
+        const expiringSoon = formattedSubscriptions.filter(s => {
+            const end = new Date(s.current_period_end)
+            const soon = new Date()
+            soon.setDate(soon.getDate() + 7)
+            return end > new Date() && end < soon
+        }).length
+
         return NextResponse.json({
             success: true,
             data: formattedSubscriptions,
+            summary: {
+                mrr,
+                activeCount: allActiveSubs?.length || 0,
+                expiringSoon
+            },
             pagination: {
                 total: count || 0,
                 page,

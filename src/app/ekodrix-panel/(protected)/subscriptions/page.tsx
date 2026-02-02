@@ -1,7 +1,7 @@
-'use client'
+﻿'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import React, { useCallback, useEffect, useState, Suspense } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -19,8 +19,10 @@ import {
   Calendar,
   Clock,
   ArrowRight,
-  ArrowUpRight,
-  ArrowDownRight,
+  RefreshCw,
+  IndianRupee,
+  Activity,
+  AlertTriangle
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { format, isValid } from 'date-fns'
@@ -31,7 +33,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useDebounce } from '@/hooks/use-debounce'
 import { cn } from '@/lib/utils'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Suspense } from 'react'
 
 interface Subscription {
   id: string
@@ -53,19 +54,19 @@ interface Subscription {
   }
 }
 
-export default function EkodrixSubscriptionsPage() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-emerald-500" /></div>}>
-      <SubscriptionsContent />
-    </Suspense>
-  )
+interface SummaryData {
+  mrr: number
+  activeCount: number
+  expiringSoon: number
 }
 
 function SubscriptionsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+  const [summary, setSummary] = useState<SummaryData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all')
   const [planFilter, setPlanFilter] = useState(searchParams.get('plan') || 'all')
@@ -75,8 +76,10 @@ function SubscriptionsContent() {
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'))
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 })
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
+  const fetchData = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true)
+    else setLoading(true)
+    
     try {
       const params = new URLSearchParams({
         search: debouncedSearch,
@@ -89,238 +92,238 @@ function SubscriptionsContent() {
       const response = await fetch(`/api/ekodrix-panel/subscriptions?${params.toString()}`)
       const result = await response.json()
       if (result.success) {
-        setSubscriptions(result.data)
-        setPagination(result.pagination)
+        setSubscriptions(result.data || [])
+        setSummary(result.summary || null)
+        setPagination(result.pagination || { total: 0, totalPages: 1 })
       }
     } catch (error) {
       console.error('Failed to fetch subscriptions:', error)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }, [debouncedSearch, statusFilter, planFilter, sortBy, sortOrder, page])
 
   useEffect(() => {
     fetchData()
-    // Sync URL without reload
-    const params = new URLSearchParams()
-    if (debouncedSearch) params.set('search', debouncedSearch)
-    if (statusFilter !== 'all') params.set('status', statusFilter)
-    if (planFilter !== 'all') params.set('plan', planFilter)
-    if (sortBy !== 'current_period_end') params.set('sortBy', sortBy)
-    if (sortOrder !== 'desc') params.set('sortOrder', sortOrder)
-    if (page !== 1) params.set('page', page.toString())
-
-    const queryString = params.toString()
-    const newUrl = queryString ? `?${queryString}` : window.location.pathname
-    window.history.replaceState(null, '', newUrl)
-  }, [fetchData, debouncedSearch, statusFilter, planFilter, sortBy, sortOrder, page])
-
-  // React to URL parameter changes
-  useEffect(() => {
-    const urlSearch = searchParams.get('search') || ''
-    if (urlSearch !== searchTerm && !debouncedSearch) {
-      setSearchTerm(urlSearch)
-    }
-  }, [searchParams])
+  }, [fetchData])
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto min-h-screen">
+      {/* Revenue Monitor Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
             <CreditCard className="w-8 h-8 text-emerald-500" />
-            Subscriptions Overview
-            <Badge variant="outline" className="ml-2 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-              {pagination.total} Active
-            </Badge>
+            Revenue Lifecycle
           </h1>
-          <p className="text-gray-400 mt-1">Monitor all active and expired plans across the platform</p>
+          <p className="text-gray-400 text-sm">Monitor Recurring Revenue and Customer Retention</p>
         </div>
+        <Button
+          onClick={() => fetchData(true)}
+          variant="outline"
+          className="border-white/10 bg-white/5 text-gray-400 hover:text-white h-11 px-6 rounded-xl"
+          disabled={refreshing}
+        >
+          <RefreshCw className={cn("w-4 h-4 mr-2", refreshing && "animate-spin")} />
+          Sync Records
+        </Button>
       </div>
 
-      {/* Advanced Filters */}
-      <Card className="border border-white/5 bg-white/[0.02] backdrop-blur-sm">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border-blue-500/20">
+           <CardContent className="p-6">
+              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1.5">Monthly Recurring Revenue</p>
+              <div className="flex items-center gap-2">
+                 <IndianRupee className="w-5 h-5 text-white/50" />
+                 <p className="text-3xl font-bold text-white tracking-tighter">{(summary?.mrr || 0).toLocaleString()}</p>
+              </div>
+           </CardContent>
+        </Card>
+        
+        <Card className="bg-white/[0.02] border-white/5">
+           <CardContent className="p-6">
+              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5">Active Subscribers</p>
+              <div className="flex items-center justify-between">
+                 <p className="text-3xl font-bold text-white tracking-tighter">{summary?.activeCount || 0}</p>
+                 <Activity className="w-5 h-5 text-emerald-400 opacity-20" />
+              </div>
+           </CardContent>
+        </Card>
+
+        <Card className={cn(
+          "bg-white/[0.02] border-white/5",
+          (summary?.expiringSoon || 0) > 0 && "bg-amber-500/10 border-amber-500/20"
+        )}>
+           <CardContent className="p-6">
+              <p className={cn(
+                "text-[10px] font-black uppercase tracking-widest mb-1.5",
+                (summary?.expiringSoon || 0) > 0 ? "text-amber-400" : "text-gray-400"
+              )}>Churn Risk (Expiring Soon)</p>
+              <div className="flex items-center justify-between">
+                 <p className="text-3xl font-bold text-white tracking-tighter">{summary?.expiringSoon || 0}</p>
+                 <AlertTriangle className={cn(
+                   "w-5 h-5 opacity-20",
+                   (summary?.expiringSoon || 0) > 0 ? "text-amber-400" : "text-gray-400"
+                 )} />
+              </div>
+           </CardContent>
+        </Card>
+      </div>
+
+      {/* Tool Bar */}
+      <Card className="border border-white/5 bg-white/[0.02]">
         <CardContent className="p-4 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <Input
-              placeholder="Search user, email or business..."
+              placeholder="Search user, email or business identity..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-white/5 border-white/10 text-gray-200 pl-10 h-11 focus:border-emerald-500 transition-all"
+              className="bg-white/5 border-white/10 text-gray-200 pl-10 h-12 rounded-xl"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="border-white/10 bg-white/5 text-gray-300 h-11 w-[140px]">
+              <SelectTrigger className="border-white/10 bg-white/5 text-gray-300 h-12 w-full md:w-[150px] rounded-xl">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent className="bg-[#0a0a0a] border border-white/10 text-white">
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-                <SelectItem value="canceled">Canceled</SelectItem>
+              <SelectContent className="bg-[#0a0a0a] border border-white/10 text-white rounded-xl">
+                <SelectItem value="all">Every State</SelectItem>
+                <SelectItem value="active">Active Only</SelectItem>
+                <SelectItem value="expired">Expired Plans</SelectItem>
+                <SelectItem value="canceled">Terminated</SelectItem>
               </SelectContent>
             </Select>
             <Select value={planFilter} onValueChange={setPlanFilter}>
-              <SelectTrigger className="border-white/10 bg-white/5 text-gray-300 h-11 w-[140px]">
-                <SelectValue placeholder="Plan Type" />
+              <SelectTrigger className="border-white/10 bg-white/5 text-gray-300 h-12 w-full md:w-[180px] rounded-xl">
+                <SelectValue placeholder="Tier" />
               </SelectTrigger>
-              <SelectContent className="bg-[#0a0a0a] border border-white/10 text-white">
-                <SelectItem value="all">All Plans</SelectItem>
-                <SelectItem value="ekodrix_pro">Pro</SelectItem>
-                <SelectItem value="ekodrix_basic">Basic</SelectItem>
-                <SelectItem value="free">Free</SelectItem>
+              <SelectContent className="bg-[#0a0a0a] border border-white/10 text-white rounded-xl">
+                <SelectItem value="all">All Tiers</SelectItem>
+                <SelectItem value="Professional">Professional</SelectItem>
+                <SelectItem value="Business Premium">Business Premium</SelectItem>
+                <SelectItem value="Free">Free Plan</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border border-white/5 bg-white/[0.02] backdrop-blur-sm rounded-xl overflow-hidden">
+      {/* Data Table */}
+      <Card className="border border-white/5 bg-white/[0.02] rounded-2xl overflow-hidden">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-white/5 border-b border-white/5">
-                <TableRow>
-                  <TableHead className="text-gray-300 py-4 px-6 text-xs uppercase tracking-wider font-semibold">User & Business</TableHead>
-                  <TableHead className="text-gray-300 py-4 px-6 text-xs uppercase tracking-wider font-semibold text-center">Plan</TableHead>
-                  <TableHead className="text-gray-300 py-4 px-6 text-xs uppercase tracking-wider font-semibold">
-                    <button
-                      onClick={() => { setSortBy('status'); setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }}
-                      className="flex items-center gap-1 hover:text-white transition-colors"
-                    >
-                      Status
-                      {sortBy === 'status' && (sortOrder === 'asc' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
-                    </button>
-                  </TableHead>
-                  <TableHead className="text-gray-300 py-4 px-6 text-xs uppercase tracking-wider font-semibold">
-                    <button
-                      onClick={() => { setSortBy('current_period_end'); setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }}
-                      className="flex items-center gap-1 hover:text-white transition-colors"
-                    >
-                      Validity
-                      {sortBy === 'current_period_end' && (sortOrder === 'asc' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
-                    </button>
-                  </TableHead>
-                  <TableHead className="text-gray-300 py-4 px-6 text-xs uppercase tracking-wider font-semibold text-right">Action</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-48 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto" />
-                  </TableCell>
-                </TableRow>
-              ) : subscriptions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-48 text-center text-gray-500">No subscriptions found</TableCell>
-                </TableRow>
-              ) : (
-                subscriptions.map((sub) => {
-                  const isExpired = new Date(sub.current_period_end) < new Date()
-                  return (
-                    <TableRow key={sub.id} className="hover:bg-white/[0.02] border-b border-white/5 transition-colors">
-                      <TableCell className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold border border-emerald-500/20">
-                            {sub.profile?.full_name?.charAt(0) || 'U'}
+          <div className="overflow-x-auto min-h-[400px]">
+            <Table>
+              <TableHeader className="bg-white/5 border-b border-white/5">
+                  <TableRow>
+                    <TableHead className="text-gray-400 py-5 px-6 text-[10px] uppercase tracking-widest font-black">Customer</TableHead>
+                    <TableHead className="text-gray-400 py-5 px-6 text-[10px] uppercase tracking-widest font-black text-center">Subscription</TableHead>
+                    <TableHead className="text-gray-400 py-5 px-6 text-[10px] uppercase tracking-widest font-black">Status</TableHead>
+                    <TableHead className="text-gray-400 py-5 px-6 text-[10px] uppercase tracking-widest font-black">Valid Until</TableHead>
+                    <TableHead className="text-gray-400 py-5 px-6 text-[10px] uppercase tracking-widest font-black text-right">Action</TableHead>
+                  </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-64 text-center">
+                       <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto" />
+                       <p className="text-[10px] text-gray-500 font-black uppercase mt-4 tracking-widest">Validating Revenue Cache...</p>
+                    </TableCell>
+                  </TableRow>
+                ) : subscriptions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-48 text-center text-gray-500 italic">No matching records found in the ledger.</TableCell>
+                  </TableRow>
+                ) : (
+                  subscriptions.map((sub) => {
+                    const isExpired = sub.current_period_end ? new Date(sub.current_period_end) < new Date() : false
+                    const daysLeft = sub.current_period_end ? Math.ceil((new Date(sub.current_period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0
+                    
+                    return (
+                      <TableRow key={sub.id} className="hover:bg-white/[0.03] border-b border-white/5">
+                        <TableCell className="py-4 px-6 min-w-[200px]">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold border border-emerald-500/20 shrink-0">
+                              {sub.profile?.full_name?.charAt(0) || 'U'}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-white font-bold text-sm truncate">{sub.profile?.full_name || 'Anonymous User'}</p>
+                              <p className="text-[9px] text-emerald-500/60 font-black uppercase tracking-tighter truncate">{sub.profile?.business_name || 'Ekodrix Partner'}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-white font-medium text-sm">{sub.profile?.full_name || 'System User'}</p>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-tighter">{sub.profile?.business_name || 'Individual'}</p>
-                            <p className="text-[11px] text-gray-600 mt-0.5">{sub.profile?.email || 'no-email@resellerpro.in'}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-4 px-6">
-                        <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/5 px-2.5 py-0.5 rounded-lg text-[11px] font-medium">
-                          {sub.plan.display_name}
-                        </Badge>
-                        <p className="text-[10px] text-gray-600 mt-1">₹{sub.plan.price}/month</p>
-                      </TableCell>
-                      <TableCell className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <div className={cn(
-                            "w-2 h-2 rounded-full",
-                            sub.status === 'active' && !isExpired ? "bg-emerald-500" : "bg-red-500"
-                          )} />
-                          <span className={cn(
-                            "text-xs font-medium uppercase tracking-widest",
-                            sub.status === 'active' && !isExpired ? "text-emerald-400" : "text-red-400"
-                          )}>
-                            {isExpired ? 'Expired' : sub.status}
-                          </span>
-                        </div>
-                        {sub.cancel_at_period_end && (
-                          <p className="text-[10px] text-amber-500/70 mt-1 italic italic">Cancels at end</p>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-4 px-6">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
-                            <Clock className="w-3 h-3 text-emerald-500/60" />
-                            {sub.current_period_start && isValid(new Date(sub.current_period_start)) 
-                              ? format(new Date(sub.current_period_start), 'dd MMM yy') 
-                              : 'N/A'} — 
-                            {sub.current_period_end && isValid(new Date(sub.current_period_end))
-                              ? format(new Date(sub.current_period_end), 'dd MMM yy')
-                              : 'N/A'}
-                          </div>
-                          {isExpired ? (
-                            <p className="text-[10px] text-red-400/60 font-medium">
-                              Expired {sub.current_period_end && isValid(new Date(sub.current_period_end)) ? format(new Date(sub.current_period_end), 'dd MMM') : ''}
-                            </p>
-                          ) : (
-                            <p className="text-[10px] text-emerald-400/60 font-medium">
-                              Ends in {sub.current_period_end ? Math.ceil((new Date(sub.current_period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : '?'} days
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-4 px-6 text-right">
-                        <Button variant="ghost" size="sm" className="h-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg text-xs" asChild>
-                          <Link href={`/ekodrix-panel/customers/${sub.user_id}`}>
-                            View Profile
-                            <ArrowRight className="w-3 h-3 ml-1.5" />
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
-              )}
-            </TableBody>
-          </Table>
+                        </TableCell>
+                        <TableCell className="py-4 px-6 text-center">
+                           <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter">
+                             {sub.plan.display_name}
+                           </Badge>
+                        </TableCell>
+                        <TableCell className="py-4 px-6 text-[9px] font-black uppercase tracking-widest">
+                           <div className="flex items-center gap-2">
+                              <div className={cn("w-2 h-2 rounded-full", sub.status === 'active' && !isExpired ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-red-500")} />
+                              <span className={sub.status === 'active' && !isExpired ? "text-emerald-400" : "text-red-400"}>
+                                {isExpired ? 'Lapsed' : sub.status}
+                              </span>
+                           </div>
+                        </TableCell>
+                        <TableCell className="py-4 px-6 whitespace-nowrap text-[10px] text-gray-400 font-bold">
+                           {sub.current_period_end && isValid(new Date(sub.current_period_end)) ? format(new Date(sub.current_period_end), 'dd MMM yyyy') : '--'}
+                        </TableCell>
+                        <TableCell className="py-4 px-6 text-right">
+                          <Button variant="ghost" size="sm" className="h-9 px-3 text-emerald-400 hover:bg-emerald-500/10 rounded-xl text-[10px] font-black uppercase" asChild>
+                            <Link href={`/ekodrix-panel/customers/${sub.user_id}`}>
+                               Details
+                               <ArrowRight className="w-3 h-3 ml-2" />
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between px-2">
-        <p className="text-sm text-gray-500">
-          Page <span className="text-white font-medium">{page}</span> of <span className="text-white font-medium">{pagination.totalPages}</span>
+      {/* Pagination Footer */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
+        <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
+          Active Registry: <span className="text-white">{pagination.total} ENTITIES</span>
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            size="sm"
             disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-            className="border-white/10 bg-white/5 text-gray-400 hover:text-white rounded-lg h-9"
+            onClick={() => { setPage(page - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="border-white/10 bg-white/5 text-gray-400 hover:text-white h-10 px-4 rounded-xl"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
+          <div className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-emerald-400">
+             {page} / {pagination.totalPages}
+          </div>
           <Button
             variant="outline"
-            size="sm"
             disabled={page >= pagination.totalPages}
-            onClick={() => setPage(page + 1)}
-            className="border-white/10 bg-white/5 text-gray-400 hover:text-white rounded-lg h-9"
+            onClick={() => { setPage(page + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="border-white/10 bg-white/5 text-gray-400 hover:text-white h-10 px-4 rounded-xl"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function EkodrixSubscriptionsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>}>
+      <SubscriptionsContent />
+    </Suspense>
   )
 }

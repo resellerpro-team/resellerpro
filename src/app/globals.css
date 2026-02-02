@@ -61,11 +61,13 @@
 
 @layer utilities {
   /* Hide scrollbar but keep functionality */
-  .scrollbar-hide {
+  .scrollbar-hide,
+  .custom-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  .scrollbar-hide::-webkit-scrollbar {
+  .scrollbar-hide::-webkit-scrollbar,
+  .custom-scrollbar::-webkit-scrollbar {
     display: none;
   }
 

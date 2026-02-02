@@ -24,6 +24,8 @@ export interface CreateNotificationParams {
     entityType?: EntityType
     entityId?: string
     priority?: Priority
+    actionUrl?: string
+    actionLabel?: string
 }
 
 /**
@@ -45,6 +47,10 @@ export async function createNotification(params: CreateNotificationParams) {
                 entity_type: params.entityType,
                 entity_id: params.entityId,
                 priority: params.priority || 'normal',
+                metadata: {
+                    action_url: params.actionUrl,
+                    action_label: params.actionLabel
+                }
             })
 
         if (error) {
@@ -212,11 +218,17 @@ export async function checkTimeBasedNotifications(userId: string) {
                     const hoursSinceLastNotify = lastNotifiedAt ? (now.getTime() - lastNotifiedAt.getTime()) / (1000 * 60 * 60) : 999
 
                     if (hoursSinceLastNotify > 24) {
+                        const urgencyTitle = diffDays === 1 ? '🔴 FINAL NOTICE: Subscription Expiring' :
+                            diffDays <= 3 ? '⚠️ URGENT: Action Required' : 'Subscription expiring soon'
+
+                        const urgencyMessage = diffDays === 1 ? 'Your plan expires in LESS THAN 24 HOURS. Renew now to avoid service interruption.' :
+                            `Your professional plan expires in ${diffDays} days. Please check your billing settings.`
+
                         await createNotification({
                             userId,
                             type: 'subscription_expiring_soon',
-                            title: 'Subscription expiring soon',
-                            message: `Your plan expires in ${diffDays} days`,
+                            title: urgencyTitle,
+                            message: urgencyMessage,
                             entityType: 'subscription',
                             entityId: subscription.id,
                             priority: 'high',
