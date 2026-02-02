@@ -476,46 +476,48 @@ export function TodoWidget({ todos: initialTodos, suggestions }: TodoWidgetProps
             </Button>
 
             {showSuggestions && (
-              <ScrollArea className="max-h-[220px] -mr-2 pr-2">
-                <div className="space-y-2 animate-fade-in pr-4">
-                  {displaySuggestions.length > 0 ? (
-                    displaySuggestions.map((suggestion) => {
-                      const SourceIcon = getSourceIcon(suggestion.source_type)
-                      return (
-                        <div
-                          key={suggestion.id}
-                          className="flex items-start gap-2 p-2 rounded-md bg-primary/5 border border-primary/10 group hover:bg-primary/10 transition-colors"
-                        >
-                          <SourceIcon className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${getPriorityColor(suggestion.priority)}`} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium leading-tight">
-                              {suggestion.text}
-                            </p>
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] h-4 px-1 mt-1 ${getPriorityColor(suggestion.priority)}`}
-                            >
-                              {suggestion.priority}
-                            </Badge>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleAddSuggestion(suggestion)}
-                            className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              <div className="h-[220px]">
+                <ScrollArea className="h-full -mr-2 pr-2">
+                  <div className="space-y-2 animate-fade-in pr-4 pb-4">
+                    {displaySuggestions.length > 0 ? (
+                      displaySuggestions.map((suggestion) => {
+                        const SourceIcon = getSourceIcon(suggestion.source_type)
+                        return (
+                          <div
+                            key={suggestion.id}
+                            className="flex items-start gap-2 p-2 rounded-md bg-primary/5 border border-primary/10 group hover:bg-primary/10 transition-colors"
                           >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div className="text-center py-4 text-muted-foreground italic text-xs">
-                      All caught up! ✨
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
+                            <SourceIcon className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${getPriorityColor(suggestion.priority)}`} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium leading-tight">
+                                {suggestion.text}
+                              </p>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] h-4 px-1 mt-1 ${getPriorityColor(suggestion.priority)}`}
+                              >
+                                {suggestion.priority}
+                              </Badge>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleAddSuggestion(suggestion)}
+                              className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="text-center py-4 text-muted-foreground italic text-xs">
+                        All caught up! ✨
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
             )}
           </div>
         )}
