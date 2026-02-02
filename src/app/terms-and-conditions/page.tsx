@@ -146,9 +146,9 @@ export default function TermsAndConditionsPage() {
                                 can contact us at:
                             </p>
                             <p className="mt-2">
-                                📧 <strong>resellerpro@gmail.com</strong>
+                                📧 <strong>resellerpro.tech@gmail.com</strong>
                                 <br />
-                                📞 <strong>+91 70253 02327</strong>
+                                📞 <strong>+91 77367 67759</strong>
                             </p>
                         </section>
                     </div>

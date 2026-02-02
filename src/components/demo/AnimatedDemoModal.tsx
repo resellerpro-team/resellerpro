@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { 
+import {
   X, Copy, CheckCircle2, Package, Play, Pause, ArrowRight, MessageSquare,
   ClipboardCopy, Users, Phone, MapPin, ShoppingCart, Truck, TrendingUp,
   DollarSign, BarChart3, Award, Sparkles, Send, Clock, Download, FileSpreadsheet, FileText, AlertCircle, Plus,
@@ -120,7 +120,7 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         const newProgress = prev + (100 / (currentSceneDuration / 50)) * playbackSpeed
-        
+
         if (newProgress >= 100) {
           if (currentScene < totalScenes - 1) {
             setCurrentScene(currentScene + 1)
@@ -183,13 +183,13 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
     const currentSceneTime = (prog / 100) * (VIDEO_SCENES[sceneIdx]?.duration || 4000) / 1000
     const totalElapsed = VIDEO_SCENES.slice(0, sceneIdx).reduce((acc, s) => acc + s.duration, 0) / 1000 + currentSceneTime
     const totalDuration = VIDEO_SCENES.reduce((acc, s) => acc + s.duration, 0) / 1000
-    
+
     const formatSecs = (secs: number) => {
       const m = Math.floor(secs / 60)
       const s = Math.floor(secs % 60)
       return `${m}:${s.toString().padStart(2, '0')}`
     }
-    
+
     return `${formatSecs(totalElapsed)} / ${formatSecs(totalDuration)}`
   }
 
@@ -264,11 +264,11 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
     if (!document.fullscreenElement) {
       containerRef.current.requestFullscreen().then(() => {
         setIsFullscreen(true)
-      }).catch(() => {})
+      }).catch(() => { })
     } else {
       document.exitFullscreen().then(() => {
         setIsFullscreen(false)
-      }).catch(() => {})
+      }).catch(() => { })
     }
   }, [])
 
@@ -336,7 +336,7 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
       const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
         ? 'video/webm;codecs=vp9'
         : 'video/webm'
-      
+
       const mediaRecorder = new MediaRecorder(displayStream, {
         mimeType,
         videoBitsPerSecond: 5000000
@@ -352,7 +352,7 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
 
       mediaRecorder.onstop = () => {
         setRecordingStatus('processing')
-        
+
         // Create blob and download
         const blob = new Blob(recordedChunksRef.current, { type: mimeType })
         const url = URL.createObjectURL(blob)
@@ -363,10 +363,10 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
-        
+
         // Stop all tracks
         displayStream.getTracks().forEach(track => track.stop())
-        
+
         setRecordingStatus('idle')
         setIsRecording(false)
       }
@@ -414,18 +414,18 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         ref={containerRef}
         className="max-w-[98vw] w-full sm:max-w-7xl h-[96vh] sm:h-[92vh] p-0 overflow-hidden bg-black/95 border-none shadow-2xl"
         onMouseMove={showControlsTemporarily}
         onClick={() => { if (isPlaying) showControlsTemporarily() }}
       >
-        <div 
+        <div
           className="relative h-full flex flex-col"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          
+
           {/* Keyboard Shortcuts Hint */}
           <div className="absolute top-2 left-2 z-40 hidden lg:block">
             <div className="text-[10px] text-white/40 space-x-3">
@@ -435,17 +435,17 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
               <span>F: Fullscreen</span>
             </div>
           </div>
-          
+
           {/* Close Button - Highly Visible */}
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="absolute top-2 right-2 sm:top-3 sm:right-3 z-50 p-2 sm:p-2.5 rounded-full bg-white hover:bg-gray-100 transition-all shadow-lg"
           >
             <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900" />
           </button>
 
           {/* Video Content */}
-          <div 
+          <div
             className="flex-1 relative overflow-hidden bg-gradient-to-br from-background via-background to-muted/30 cursor-pointer"
             onClick={() => setIsPlaying(!isPlaying)}
           >
@@ -495,11 +495,11 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
           </div>
 
           {/* Professional Video Player Controls */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
-            animate={{ 
-              opacity: showControls ? 1 : 0, 
-              y: showControls ? 0 : 20 
+            animate={{
+              opacity: showControls ? 1 : 0,
+              y: showControls ? 0 : 20
             }}
             transition={{ duration: 0.2 }}
             className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-10 pb-3 px-3 sm:px-6"
@@ -511,8 +511,8 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                 {/* Scene markers */}
                 <div className="absolute inset-0 flex">
                   {VIDEO_SCENES.map((_, i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className="flex-1 border-r border-white/20 last:border-r-0 cursor-pointer hover:bg-white/10 transition-colors"
                       onClick={() => seekToScene(i)}
                     />
@@ -520,9 +520,9 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                 </div>
                 {/* Progress track */}
                 <div className="h-1.5 sm:h-2 bg-white/30 rounded-full overflow-hidden cursor-pointer group-hover:h-2 sm:group-hover:h-3 transition-all">
-                  <motion.div 
-                    className="h-full bg-gradient-to-r from-primary to-blue-400 relative" 
-                    animate={{ width: `${overallProgress}%` }} 
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-primary to-blue-400 relative"
+                    animate={{ width: `${overallProgress}%` }}
                     transition={{ duration: 0.1 }}
                   >
                     {/* Scrubber handle */}
@@ -531,15 +531,15 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                 </div>
               </div>
             </div>
-            
+
             {/* Controls Row */}
             <div className="flex items-center justify-between text-white">
               {/* Left: Playback Controls */}
               <div className="flex items-center gap-1 sm:gap-2">
                 {/* Previous */}
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={goToPreviousScene}
                   disabled={currentScene === 0}
                   className="h-8 w-8 sm:h-10 sm:w-10 p-0 text-white hover:bg-white/20 disabled:opacity-30"
@@ -548,10 +548,10 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                 </Button>
 
                 {/* Play/Pause */}
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  onClick={() => setIsPlaying(!isPlaying)} 
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsPlaying(!isPlaying)}
                   className="h-9 w-9 sm:h-12 sm:w-12 p-0 text-white hover:bg-white/20 rounded-full bg-white/10"
                 >
                   {isPlaying ? (
@@ -562,9 +562,9 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                 </Button>
 
                 {/* Next */}
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={goToNextScene}
                   disabled={currentScene === totalScenes - 1}
                   className="h-8 w-8 sm:h-10 sm:w-10 p-0 text-white hover:bg-white/20 disabled:opacity-30"
@@ -573,9 +573,9 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                 </Button>
 
                 {/* Volume */}
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={toggleMute}
                   className="h-8 w-8 sm:h-10 sm:w-10 p-0 text-white hover:bg-white/20"
                 >
@@ -605,9 +605,9 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
               {/* Right: Extra Controls */}
               <div className="flex items-center gap-1 sm:gap-2">
                 {/* Playback Speed */}
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={cyclePlaybackSpeed}
                   className="h-8 sm:h-10 px-2 text-white hover:bg-white/20"
                   title="Playback Speed"
@@ -617,14 +617,13 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                 </Button>
 
                 {/* Download/Record Button */}
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={isRecording ? stopRecording : startRecording}
                   disabled={recordingStatus === 'processing'}
-                  className={`h-8 sm:h-10 px-2 sm:px-3 text-white hover:bg-white/20 gap-1.5 ${
-                    isRecording ? 'bg-red-500/80 hover:bg-red-500' : ''
-                  }`}
+                  className={`h-8 sm:h-10 px-2 sm:px-3 text-white hover:bg-white/20 gap-1.5 ${isRecording ? 'bg-red-500/80 hover:bg-red-500' : ''
+                    }`}
                   title={isRecording ? 'Stop Recording' : 'Record & Download Video'}
                 >
                   {recordingStatus === 'processing' ? (
@@ -646,9 +645,9 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                 </Button>
 
                 {/* Fullscreen */}
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={toggleFullscreen}
                   className="h-8 w-8 sm:h-10 sm:w-10 p-0 text-white hover:bg-white/20"
                   title={isFullscreen ? 'Exit Fullscreen (F)' : 'Fullscreen (F)'}
@@ -661,9 +660,9 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
                 </Button>
 
                 {/* Restart */}
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={restart}
                   className="h-8 w-8 sm:h-10 sm:w-10 p-0 text-white hover:bg-white/20"
                   title="Restart"
@@ -970,7 +969,7 @@ City: Mumbai
 PIN: 400063`}</span>
                   </motion.div>
                 </motion.div>
-                
+
                 <motion.div
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: [0, 1, 0], scale: [0.8, 1, 0.8] }}
@@ -1116,7 +1115,7 @@ function Scene6CreateOrderWithExport() {
                 <CardTitle className="text-xs sm:text-base">Order #ORD-048</CardTitle>
                 <p className="text-[9px] text-muted-foreground mt-0.5 sm:text-xs">Rajesh Kumar</p>
               </div>
-              
+
               <motion.div
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: showExport ? 1 : 0, scale: showExport ? 1 : 0 }}
@@ -1331,7 +1330,7 @@ function Scene8UpdateOrderStatus() {
               <CardTitle className="text-xs sm:text-lg">Order #ORD-048</CardTitle>
               <p className="text-[9px] text-muted-foreground sm:text-sm mt-0.5">Rajesh Kumar • ₹3,048</p>
             </div>
-            
+
             {/* Mobile simplified status */}
             <div className="sm:hidden bg-white border rounded px-1.5 py-0.5 text-[10px] font-medium">
               {status}
@@ -1360,8 +1359,8 @@ function Scene8UpdateOrderStatus() {
               <motion.div
                 key={s.value}
                 initial={{ scale: 0.8, opacity: 0.5 }}
-                animate={{ 
-                  scale: s.done ? 1 : 0.9, 
+                animate={{
+                  scale: s.done ? 1 : 0.9,
                   opacity: s.done ? 1 : 0.5,
                   borderColor: s.done ? 'hsl(var(--primary))' : 'transparent'
                 }}
@@ -1561,9 +1560,9 @@ function Scene11AnalyticsCharts() {
               </div>
 
               {/* SVG Line Chart */}
-              <svg 
-                viewBox="0 0 100 100" 
-                preserveAspectRatio="none" 
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
                 className="absolute inset-0 w-full h-full"
               >
                 {/* Sales Line (Blue) */}
@@ -1766,11 +1765,11 @@ function Scene13RevenueInsights() {
                 <span className="font-bold sm:text-lg">₹52,840</span>
               </div>
               <div className="relative h-2 bg-secondary rounded-full overflow-hidden sm:h-4">
-                <motion.div 
-                  initial={{ width: 0 }} 
-                  animate={{ width: '70%' }} 
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: '70%' }}
                   transition={{ delay: 1, duration: 1 }}
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-green-500" 
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-green-500"
                 />
               </div>
               <p className="text-[9px] text-muted-foreground text-center sm:text-sm">70% of monthly target achieved</p>
@@ -1831,17 +1830,17 @@ function Scene14AllModules() {
 function Scene15FinalCTA({ onClose }: { onClose: () => void }) {
   return (
     <div className="w-full max-w-4xl mx-auto text-center px-4">
-      <motion.div 
-        initial={{ scale: 0, rotate: -45 }} 
-        animate={{ scale: 1, rotate: 0 }} 
+      <motion.div
+        initial={{ scale: 0, rotate: -45 }}
+        animate={{ scale: 1, rotate: 0 }}
         transition={{ type: "spring", damping: 10, stiffness: 100, delay: 0.3 }}
         className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 mt-2 sm:mt-6"
       >
-        <Image 
-          src="/resellerpro-logo-removebg-preview.png" 
-          alt="ResellerPro Logo" 
-          width={96} 
-          height={96} 
+        <Image
+          src="/logo.svg"
+          alt="ResellerPro Logo"
+          width={96}
+          height={96}
           className="w-full h-full object-contain"
         />
       </motion.div>
@@ -1906,9 +1905,9 @@ function Scene15FinalCTA({ onClose }: { onClose: () => void }) {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 2 }}>
           <Link href="/signup">
             <Button className="text-sm px-6 py-4 sm:text-2xl sm:px-12 sm:py-8 shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all font-black rounded-lg sm:rounded-2xl group h-auto">
-              Start Free Trial Now 
-              <motion.div 
-                animate={{ x: [0, 5, 0] }} 
+              Start Free Trial Now
+              <motion.div
+                animate={{ x: [0, 5, 0] }}
                 transition={{ repeat: Infinity, duration: 1.5 }}
                 className="inline-block ml-1.5 sm:ml-3"
               >
