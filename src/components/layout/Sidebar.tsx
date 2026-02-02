@@ -119,7 +119,7 @@ export default function Sidebar({ user }: { user: UserData }) {
         <div className="relative flex h-16 items-center gap-2 border-b px-6">
           <Link href="/dashboard" className="flex items-center gap-1">
             <NextImage
-              src="/resellerpro-logo-removebg-preview.png"
+              src="/logo.svg"
               alt="ResellerPro Logo"
               width={60}
               height={60}
