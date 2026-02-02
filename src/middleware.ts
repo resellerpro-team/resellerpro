@@ -78,31 +78,40 @@ export async function middleware(request: NextRequest) {
       if (isSensitivePath) {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
-          // Hash to match DB storage
-          const encoder = new TextEncoder()
-          const data = encoder.encode(session.access_token)
-          const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-          const hashArray = Array.from(new Uint8Array(hashBuffer))
-          const hashedToken = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+          // 🏁 RACE CONDITION PREVENTION (Grace Period)
+          // If the session was issued in the last 30 seconds, let it through. 
+          // Database replication/indexing might take a moment.
+          const issuedAt = session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at).getTime() : 0
+          const now = Date.now()
+          const isBrandNewSession = (now - issuedAt) < 30000 // 30s grace
 
-          const { data: dbSession, error: dbError } = await supabase
-            .from('user_sessions')
-            .select('id')
-            .eq('session_token', hashedToken)
-            .single()
+          if (!isBrandNewSession) {
+            // Hash to match DB storage
+            const encoder = new TextEncoder()
+            const data = encoder.encode(session.access_token)
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+            const hashArray = Array.from(new Uint8Array(hashBuffer))
+            const hashedToken = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
-          // If session is missing from DB (revoked), force logout
-          if (!dbSession || dbError) {
-            console.log(`[SECURITY] REJECTED: Revoked session for user ${user.id}`)
-            const url = request.nextUrl.clone()
-            url.pathname = '/signin'
-            url.searchParams.set('message', 'Security Alert: Your session was terminated from another device.')
+            const { data: dbSession, error: dbError } = await supabase
+              .from('user_sessions')
+              .select('id')
+              .eq('session_token', hashedToken)
+              .single()
 
-            const redirectResponse = NextResponse.redirect(url)
-            // Clear auth cookies
-            const cookiePrefix = 'sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1].split('.')[0] + '-auth-token'
-            redirectResponse.cookies.delete(cookiePrefix)
-            return redirectResponse
+            // If session is missing from DB (revoked), force logout
+            if (!dbSession || dbError) {
+              console.log(`[SECURITY] REJECTED: Revoked session for user ${user.id}`)
+              const url = request.nextUrl.clone()
+              url.pathname = '/signin'
+              url.searchParams.set('message', 'Security Alert: Your session was terminated from another device.')
+
+              const redirectResponse = NextResponse.redirect(url)
+              // Clear auth cookies
+              const cookiePrefix = 'sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1].split('.')[0] + '-auth-token'
+              redirectResponse.cookies.delete(cookiePrefix)
+              return redirectResponse
+            }
           }
         }
       }

@@ -29,11 +29,11 @@ export default function ProfileForm({ user }: { user: UserData }) {
   const [cropImage, setCropImage] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
-    full_name: user.full_name,
-    phone: user.phone,
+    full_name: user?.full_name || '',
+    phone: user?.phone || '',
   })
 
-  const [avatarUrl, setAvatarUrl] = useState(user.avatar_url)
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '')
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name } = e.target

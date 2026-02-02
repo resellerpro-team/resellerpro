@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import ProfileForm from '@/components/settings/ProfileForm'
 import { useProfile } from '@/lib/react-query/hooks/useProfile'
+import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 
 export function ProfileClient({ initialData }: { initialData?: any }) {
@@ -16,10 +17,13 @@ export function ProfileClient({ initialData }: { initialData?: any }) {
         )
     }
 
-    if (error) {
+    if (error || (!isLoading && !user)) {
         return (
-            <div className="flex items-center justify-center p-8 text-destructive">
-                Error loading profile
+            <div className="flex flex-col items-center justify-center p-8 text-destructive gap-4">
+                <p>Error loading profile data. Please refresh the page.</p>
+                <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+                    Retry
+                </Button>
             </div>
         )
     }
