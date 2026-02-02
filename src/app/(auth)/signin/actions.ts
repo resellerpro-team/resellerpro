@@ -104,7 +104,7 @@ export async function login(
     // ----------------------------------------------
     // 5️⃣ TRY LOGIN
     // ----------------------------------------------
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: { session }, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
@@ -120,7 +120,24 @@ export async function login(
     }
 
     // ----------------------------------------------
-    // 6️⃣ SUCCESS — CHECK IF FIRST LOGIN
+    // 6️⃣ TRACK SESSION (New Security Feature)
+    // ----------------------------------------------
+    if (session) {
+      const { trackSession } = await import('@/lib/security/session-tracker')
+      const userAgent = (await headers()).get('user-agent') || 'Unknown'
+
+      // Use fire-and-forget or await? Better to await briefly to ensure it's logged
+      await trackSession({
+        userId: session.user.id,
+        sessionToken: session.access_token,
+        ipAddress: ip,
+        userAgent: userAgent,
+        isCurrent: true
+      })
+    }
+
+    // ----------------------------------------------
+    // 7️⃣ SUCCESS — CHECK IF FIRST LOGIN
     // ----------------------------------------------
     const { data: { user } } = await supabase.auth.getUser()
 
