@@ -27,7 +27,7 @@ export default async function ProfilePage() {
 
   return (
     <Suspense fallback={<div className="flex justify-center p-10"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
-      <ProfileClient initialData={profile} />
+      <ProfileClient initialData={profile || undefined} />
     </Suspense>
   )
 }
