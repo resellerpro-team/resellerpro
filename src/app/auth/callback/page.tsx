@@ -60,15 +60,45 @@ function AuthCallbackContent() {
                 }
             }
 
+            // Define hardware tracker for reuse
+            const trackDeviceSession = async (accessToken: string) => {
+                try {
+                    let hardwareHint = null
+                    try {
+                        const uaData = (navigator as any).userAgentData
+                        if (uaData) {
+                            const entropy = await uaData.getHighEntropyValues(['model'])
+                            hardwareHint = entropy.model || null
+                        }
+                    } catch (e) {}
+
+                    await fetch('/api/security/track-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            userAgent: navigator.userAgent,
+                            deviceName: hardwareHint
+                        })
+                    })
+                } catch (trackError) {
+                    console.warn('Session tracking failed:', trackError)
+                }
+            }
+
             if (session) {
-                setMsg('Login successful! Redirecting...')
-                router.refresh() // Refresh to update server components
+                setMsg('Login successful! Tracking session...')
+                await trackDeviceSession(session.access_token)
+                
+                setMsg('Redirecting to dashboard...')
+                router.refresh()
                 router.replace(next)
             } else {
                 // Listen for late auth state change
-                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
                     if (event === 'SIGNED_IN' && session) {
-                        setMsg('Login successful (Async)! Redirecting...')
+                        setMsg('Login successful (Async)! Tracking session...')
+                        await trackDeviceSession(session.access_token)
+                        
                         router.refresh()
                         router.replace(next)
                     } else if (event === 'SIGNED_OUT') {
