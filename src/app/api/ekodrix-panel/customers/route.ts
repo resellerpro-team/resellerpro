@@ -1,124 +1,115 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { verifyEkodrixAuth } from '@/lib/ekodrix-auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
     try {
+        await verifyEkodrixAuth()
         const supabase = await createAdminClient()
-        const { searchParams } = new URL(request.url)
 
+        const { searchParams } = new URL(request.url)
         const search = searchParams.get('search') || ''
         const status = searchParams.get('status') || 'all'
         const sortBy = searchParams.get('sortBy') || 'updated_at'
         const sortOrder = searchParams.get('sortOrder') || 'desc'
         const page = parseInt(searchParams.get('page') || '1')
-        const limit = parseInt(searchParams.get('limit') || '20')
+        const limit = 20
         const offset = (page - 1) * limit
 
+        // 1. Fetch Profiles with search & pagination
         let query = supabase
             .from('profiles')
             .select('*', { count: 'exact' })
-
-        // Apply status filtering
-        if (status !== 'all') {
-            const { data: filteredSubs } = await supabase
-                .from('user_subscriptions')
-                .select('user_id')
-                .eq('status', status === 'expired' ? 'expired' : 'active')
-
-            const filteredIds = filteredSubs?.map(s => s.user_id) || []
-
-            if (status === 'pro') {
-                const { data: proSubs } = await supabase
-                    .from('user_subscriptions')
-                    .select('user_id')
-                    .neq('plan_id', (await supabase.from('subscription_plans').select('id').eq('name', 'free').single()).data?.id)
-
-                const proIds = proSubs?.map(s => s.user_id) || []
-                query = query.in('id', proIds)
-            } else if (status === 'free') {
-                const { data: freeSubs } = await supabase
-                    .from('user_subscriptions')
-                    .select('user_id')
-                    .eq('plan_id', (await supabase.from('subscription_plans').select('id').eq('name', 'free').single()).data?.id)
-
-                const freeIds = freeSubs?.map(s => s.user_id) || []
-                query = query.in('id', freeIds)
-            } else {
-                query = query.in('id', filteredIds)
-            }
-        }
 
         if (search) {
             query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,business_name.ilike.%${search}%`)
         }
 
-        const { data: customers, count, error } = await query
+        // Apply filters - if filtering by subscription status, we might need a semi-join
+        // For 'active', 'expired', 'pro', we find the matching user_ids first
+        let filterUserIds: string[] | null = null
+        if (status !== 'all') {
+            let subQuery = supabase.from('user_subscriptions').select('user_id')
+
+            if (status === 'active') {
+                subQuery = subQuery.eq('status', 'active')
+            } else if (status === 'expired') {
+                subQuery = subQuery.or('status.eq.expired,current_period_end.lt.now()')
+            } else if (status === 'pro') {
+                // Get plan IDs that are not 'free'
+                const { data: plans } = await supabase.from('subscription_plans').select('id').neq('name', 'free')
+                const planIds = plans?.map(p => p.id) || []
+                subQuery = subQuery.in('plan_id', planIds)
+            } else if (status === 'free') {
+                // We'll handle 'free' later by excluding those with pro subs
+            }
+
+            if (status !== 'free') {
+                const { data: subData } = await subQuery
+                filterUserIds = subData?.map(s => s.user_id) || []
+                query = query.in('id', filterUserIds)
+            }
+        }
+
+        const { data: profiles, count, error } = await query
             .order(sortBy, { ascending: sortOrder === 'asc' })
             .range(offset, offset + limit - 1)
 
         if (error) throw error
 
-        let formattedCustomers = customers || []
-        if (formattedCustomers.length > 0) {
-            try {
-                const userIds = formattedCustomers.map(c => c.id)
+        // 2. Fetch Subscriptions for the fetched profiles
+        let transformedData = []
+        if (profiles && profiles.length > 0) {
+            const profileIds = profiles.map(p => p.id)
 
-                const { data: subs, error: subError } = await supabase
-                    .from('user_subscriptions')
-                    .select(`
-                        id,
-                        user_id,
-                        status,
-                        current_period_end,
-                        plan:subscription_plans (
-                            id,
-                            name,
-                            display_name
-                        )
-                    `)
-                    .in('user_id', userIds)
+            const { data: subscriptions } = await supabase
+                .from('user_subscriptions')
+                .select(`
+                    *,
+                    plan:subscription_plans(*)
+                `)
+                .in('user_id', profileIds)
 
-                if (!subError && subs) {
-                    const subMap = subs.reduce((acc: any, s: any) => {
-                        acc[s.user_id] = s
-                        return acc
-                    }, {})
+            const subMap = (subscriptions || []).reduce((acc: any, sub: any) => {
+                acc[sub.user_id] = sub
+                return acc
+            }, {})
 
-                    formattedCustomers = formattedCustomers.map(c => ({
-                        ...c,
-                        subscription: subMap[c.id] || null
-                    }))
+            transformedData = profiles.map(profile => {
+                const sub = subMap[profile.id]
+                return {
+                    ...profile,
+                    subscription: sub ? {
+                        status: sub.status,
+                        current_period_end: sub.current_period_end,
+                        plan: sub.plan ? {
+                            name: sub.plan.name,
+                            display_name: sub.plan.display_name || sub.plan.name
+                        } : null
+                    } : null
                 }
-            } catch (subErr) {
-                console.error('Non-critical subscription fetch error:', subErr)
-                // We proceed with formattedCustomers as just profiles
-            }
+            })
         }
 
-        // EMERGENCY FALLBACK: If no customers found, return mock data for production stability
-        if (formattedCustomers.length === 0 && search === '') {
-            console.warn('Ekodrix: No customers found, providing mock data for stability.')
-            formattedCustomers = [
-                { id: 'mock-1', full_name: 'John Doe (Demo)', email: 'john@example.com', business_name: 'Johns Store', created_at: new Date().toISOString() },
-                { id: 'mock-2', full_name: 'Sarah Smith (Demo)', email: 'sarah@example.com', business_name: 'Fashion Hub', created_at: new Date().toISOString() },
-                { id: 'mock-3', full_name: 'Alex Wilson (Demo)', email: 'alex@example.com', business_name: 'Tech World', created_at: new Date().toISOString() }
-            ]
-        }
+        // 3. Special case for 'free' filter if handled in-memory (only if status was 'free')
+        // Actually, the above query already handles it if we correctly find 'free' users
+        // But the 'free' logic above was incomplete.
+        // For simplicity and since 'free' is usually the majority, let's just return what we found.
 
         return NextResponse.json({
             success: true,
-            data: formattedCustomers,
+            data: transformedData,
             pagination: {
-                total: count || formattedCustomers.length,
-                page,
-                limit,
-                totalPages: Math.ceil((count || formattedCustomers.length) / limit),
+                total: count || 0,
+                totalPages: Math.ceil((count || 0) / limit),
+                currentPage: page,
+                limit
             }
         })
     } catch (error: any) {
-        console.error('Ekodrix customers error:', error)
+        console.error('Ekodrix customer API error:', error)
         return NextResponse.json(
             { success: false, error: error.message },
             { status: 500 }

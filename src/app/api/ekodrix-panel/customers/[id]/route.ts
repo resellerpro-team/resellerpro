@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { verifyEkodrixAuth } from '@/lib/ekodrix-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,6 +9,9 @@ export async function GET(
     { params }: { params: { id: string } }
 ) {
     try {
+        // 🔒 SECURITY: Verify admin authentication
+        await verifyEkodrixAuth()
+
         const supabase = await createAdminClient()
         const { id } = params
 
@@ -82,6 +86,9 @@ export async function POST(
     { params }: { params: { id: string } }
 ) {
     try {
+        // 🔒 SECURITY: Verify admin authentication
+        await verifyEkodrixAuth()
+
         const supabase = await createAdminClient()
         const { id } = params
         const body = await request.json()

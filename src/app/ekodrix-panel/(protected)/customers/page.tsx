@@ -182,29 +182,50 @@ function CustomersContent() {
     }
   }
 
-  const handleExportCSV = () => {
-    if (customers.length === 0) {
-      toast({ title: 'No data', description: 'No customers to export', variant: 'destructive' })
-      return
+  const [exporting, setExporting] = useState(false)
+
+  const handleExportCSV = async () => {
+    setExporting(true)
+    try {
+      const params = new URLSearchParams({
+        search: debouncedSearch,
+        status: statusFilter,
+        sortBy,
+        sortOrder,
+        export: 'true'
+      })
+      
+      const response = await fetch(`/api/ekodrix-panel/customers?${params.toString()}`)
+      const result = await response.json()
+      
+      if (!result.success || !result.data || result.data.length === 0) {
+        toast({ title: 'No data', description: 'No customers found for export', variant: 'destructive' })
+        return
+      }
+
+      const exportData = result.data.map((c: any) => ({
+        'Full Name': c.full_name || 'N/A',
+        'Email': c.email || 'N/A',
+        'Business': c.business_name || 'N/A',
+        'Status': c.subscription?.status || 'Free',
+        'Plan': c.subscription?.plan?.display_name || 'Free',
+        'Joined': (c.created_at || c.updated_at) ? format(new Date(c.created_at || c.updated_at || ''), 'dd MMM yyyy') : 'N/A'
+      }))
+
+      exportToCSV(exportData, 'ekodrix_customers', {
+        company: 'Ekodrix',
+        reportType: 'Full Customer List',
+        generatedOn: format(new Date(), 'dd MMM yyyy HH:mm'),
+        totalRecords: result.pagination.total
+      })
+      
+      toast({ title: 'Success', description: `CSV Export of ${result.data.length} customers finished` })
+    } catch (error) {
+       console.error('Export failed:', error)
+       toast({ title: 'Error', description: 'Failed to generate report', variant: 'destructive' })
+    } finally {
+      setExporting(false)
     }
-
-    const exportData = customers.map(c => ({
-      'Full Name': c.full_name || 'N/A',
-      'Email': c.email || 'N/A',
-      'Business': c.business_name || 'N/A',
-      'Status': c.subscription?.status || 'Free',
-      'Plan': c.subscription?.plan?.display_name || 'Free',
-      'Joined': (c.created_at || c.updated_at) ? format(new Date(c.created_at || c.updated_at || ''), 'dd MMM yyyy') : 'N/A'
-    }))
-
-    exportToCSV(exportData, 'ekodrix_customers', {
-      company: 'Ekodrix',
-      reportType: 'Customer List',
-      generatedOn: format(new Date(), 'dd MMM yyyy HH:mm'),
-      totalRecords: pagination.total
-    })
-    
-    toast({ title: 'Success', description: 'CSV Export started' })
   }
 
   return (
@@ -254,8 +275,16 @@ function CustomersContent() {
               variant="outline" 
               className="border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 h-11 px-6"
               onClick={handleExportCSV}
+              disabled={exporting}
             >
-              Export CSV
+              {exporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                'Export CSV'
+              )}
             </Button>
           </div>
         </CardContent>

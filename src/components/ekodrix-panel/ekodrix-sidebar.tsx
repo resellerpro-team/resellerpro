@@ -18,16 +18,7 @@ import {
   Wallet,
 } from 'lucide-react'
 
-export default function EkodrixSidebar() {
-  const pathname = usePathname()
-  const router = useRouter()
-
-  async function handleLogout() {
-    await fetch('/api/ekodrix-auth', { method: 'DELETE' })
-    router.push('/ekodrix-panel/signin')
-    router.refresh()
-  }
-
+export function SidebarContent({ pathname, handleLogout }: { pathname: string; handleLogout: () => void }) {
   const navGroups = [
     {
       title: 'Overview',
@@ -62,11 +53,11 @@ export default function EkodrixSidebar() {
   ]
 
   return (
-    <aside className="w-72 h-screen bg-[#0a0f1a] text-gray-200 border-r border-white/5 flex flex-col sticky top-0">
-      {/* Logo / Brand - Fixed */}
+    <div className="flex flex-col h-full bg-[#0a0f1a]">
+      {/* Logo / Brand */}
       <div className="p-6 border-b border-white/5 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 relative flex items-center justify-center">
+          <div className="w-12 h-12 relative flex items-center justify-center">
             <Image 
               src="/ekodrix-icon.png" 
               alt="Ekodrix Logo" 
@@ -76,17 +67,17 @@ export default function EkodrixSidebar() {
             />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Ekodrix Panel</h2>
-            <p className="text-xs text-gray-500">Control Center</p>
+            <h2 className="text-lg font-bold text-white tracking-tight">Ekodrix Panel</h2>
+            <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-emerald-500/60">Administrator</p>
           </div>
         </div>
       </div>
 
-      {/* Navigation - Scrollable */}
-      <nav className="flex-1 py-4 overflow-y-auto custom-scrollbar">
+      {/* Navigation */}
+      <nav className="flex-1 py-6 overflow-y-auto custom-scrollbar px-3">
         {navGroups.map((group) => (
-          <div key={group.title} className="mb-6">
-            <p className="px-6 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+          <div key={group.title} className="mb-8">
+            <p className="px-4 mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">
               {group.title}
             </p>
             <div className="space-y-1">
@@ -97,16 +88,19 @@ export default function EkodrixSidebar() {
                     key={href}
                     href={href}
                     className={cn(
-                      'flex items-center gap-3 mx-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
+                      'flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group',
                       isActive
-                        ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-400 border-l-2 border-emerald-500'
-                        : 'text-gray-400 hover:text-white hover:bg-white/[0.03]'
+                        ? 'bg-emerald-500/10 text-emerald-400'
+                        : 'text-gray-500 hover:text-white hover:bg-white/[0.04]'
                     )}
                   >
+                    {isActive && (
+                      <div className="absolute left-0 w-1 h-5 bg-emerald-500 rounded-full" />
+                    )}
                     <Icon
                       size={18}
                       className={cn(
-                        'transition-colors',
+                        'transition-transform duration-300 group-hover:scale-110',
                         isActive ? 'text-emerald-400' : 'text-gray-500'
                       )}
                     />
@@ -119,17 +113,34 @@ export default function EkodrixSidebar() {
         ))}
       </nav>
 
-      {/* Logout Button - Fixed At Bottom */}
-      <div className="border-t border-white/5 p-4 shrink-0 bg-[#0a0f1a]">
+      {/* Logout */}
+      <div className="p-4 bg-white/[0.02] border-t border-white/5">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full text-sm font-medium text-gray-400 hover:text-red-400 
-                     hover:bg-red-500/10 px-4 py-2.5 rounded-lg transition-all"
+          className="flex items-center gap-3 w-full text-sm font-bold text-gray-500 hover:text-red-400 
+                     hover:bg-red-500/10 px-4 py-3 rounded-xl transition-all group"
         >
-          <LogOut size={18} />
-          <span>Logout</span>
+          <LogOut size={18} className="group-hover:rotate-12 transition-transform" />
+          <span>Terminate Session</span>
         </button>
       </div>
+    </div>
+  )
+}
+
+export default function EkodrixSidebar() {
+  const pathname = usePathname()
+  const router = useRouter()
+
+  async function handleLogout() {
+    await fetch('/api/ekodrix-auth', { method: 'DELETE' })
+    router.push('/ekodrix-panel/signin')
+    router.refresh()
+  }
+
+  return (
+    <aside className="hidden lg:flex w-72 h-screen border-r border-white/5 flex-col sticky top-0 shrink-0">
+      <SidebarContent pathname={pathname} handleLogout={handleLogout} />
     </aside>
   )
 }
