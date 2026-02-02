@@ -63,8 +63,21 @@ export async function POST(request: NextRequest) {
             let query = supabase.from('profiles').select('id')
 
             if (target === 'new_users') {
-                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-                query = query.gte('created_at', sevenDaysAgo)
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
+                // Get users from Auth service (where created_at DEFINITELY exists)
+                const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers()
+                if (authError) throw authError
+
+                const newUserIds = authUsers.users
+                    .filter(u => new Date(u.created_at) >= sevenDaysAgo)
+                    .map(u => u.id)
+
+                if (newUserIds.length === 0) {
+                    return NextResponse.json({ success: true, message: 'No new users found in the last 7 days' })
+                }
+
+                query = query.in('id', newUserIds)
             } else if (target === 'pro_users') {
                 // Sub-query or join logic for pro users? 
                 // For simplicity, let's fetch IDs from user_subscriptions where status is active
