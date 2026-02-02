@@ -49,12 +49,11 @@ export const pricingPlans = [
   },
   {
     id: 'beginner',
-    name: 'Beginner', // Lowercase match? No, let's keep ID as lowercase key. 
-    // The previous code used 'id' for logical checks, 'name' for display sometimes but defined 'name' as Capitalized.
-    // Let's standardise: id = key in PLAN_LIMITS.
+    name: 'Business Premium', // Renamed from Beginner
+    display_name: 'Business Premium',
     price: 199,
     interval: 'month',
-    description: 'For small businesses',
+    description: 'For growing businesses',
     features: [
       `${PLAN_LIMITS.beginner.orders} Orders/month`,
       `${PLAN_LIMITS.beginner.products} Products`,

@@ -1,47 +1,69 @@
+/**
+ * 🔒 Ekodrix Panel Authentication API
+ * 
+ * SECURITY FIXES APPLIED:
+ * - Credentials moved to environment variables
+ * - Base64 encoding replaced with JWT tokens
+ * - Bcrypt password hashing
+ * - Strict cookie settings (httpOnly, secure, sameSite)
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import {
+    validateAdminCredentials,
+    createSessionToken,
+    verifyEkodrixAuth,
+    getSessionCookieOptions
+} from '@/lib/ekodrix-auth'
 
-// Fixed credentials for Ekodrix Panel
-const VALID_USERNAME = 'ekodrix-user'
-const VALID_PASSWORD = 'Ekodrix@2026!'
 const SESSION_COOKIE_NAME = 'ekodrix-session'
-const SESSION_SECRET = 'ekodrix-panel-secret-2026'
 
+/**
+ * POST /api/ekodrix-auth - Login
+ */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
         const { username, password } = body
 
-        // Validate credentials
-        if (username !== VALID_USERNAME || password !== VALID_PASSWORD) {
+        // Validate input
+        if (!username || !password) {
+            return NextResponse.json(
+                { success: false, message: 'Username and password required' },
+                { status: 400 }
+            )
+        }
+
+        // Validate credentials (uses bcrypt comparison)
+        const isValid = await validateAdminCredentials(username, password)
+
+        if (!isValid) {
+            // Generic error message to prevent enumeration
             return NextResponse.json(
                 { success: false, message: 'Invalid credentials' },
                 { status: 401 }
             )
         }
 
-        // Create session token (simple base64 encoding for demo - in production use JWT)
-        const sessionData = {
-            user: username,
-            exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-        }
-        const sessionToken = Buffer.from(
-            JSON.stringify(sessionData) + '|' + SESSION_SECRET
-        ).toString('base64')
+        // Create JWT session token
+        const sessionToken = createSessionToken(username)
 
-        // Set session cookie
+        // Set secure session cookie
         const cookieStore = await cookies()
+        const cookieOptions = getSessionCookieOptions()
+
         cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 24 * 60 * 60, // 24 hours
-            path: '/',
+            httpOnly: cookieOptions.httpOnly,
+            secure: cookieOptions.secure,
+            sameSite: cookieOptions.sameSite,
+            maxAge: cookieOptions.maxAge,
+            path: cookieOptions.path,
         })
 
         return NextResponse.json({ success: true, message: 'Login successful' })
     } catch (error) {
-        console.error('Ekodrix auth error:', error)
+        console.error('[Ekodrix Auth] Login error:', error)
         return NextResponse.json(
             { success: false, message: 'Authentication failed' },
             { status: 500 }
@@ -49,37 +71,32 @@ export async function POST(request: NextRequest) {
     }
 }
 
+/**
+ * DELETE /api/ekodrix-auth - Logout
+ */
 export async function DELETE() {
-    // Logout - clear session cookie
-    const cookieStore = await cookies()
-    cookieStore.delete(SESSION_COOKIE_NAME)
-    return NextResponse.json({ success: true })
+    try {
+        const cookieStore = await cookies()
+        cookieStore.delete(SESSION_COOKIE_NAME)
+        return NextResponse.json({ success: true })
+    } catch (error) {
+        console.error('[Ekodrix Auth] Logout error:', error)
+        return NextResponse.json({ success: true }) // Still succeed even on error
+    }
 }
 
+/**
+ * GET /api/ekodrix-auth - Check session validity
+ */
 export async function GET() {
-    // Check session validity
-    const cookieStore = await cookies()
-    const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value
-
-    if (!sessionToken) {
-        return NextResponse.json({ authenticated: false }, { status: 401 })
-    }
-
     try {
-        const decoded = Buffer.from(sessionToken, 'base64').toString('utf-8')
-        const [dataStr, secret] = decoded.split('|')
-
-        if (secret !== SESSION_SECRET) {
-            return NextResponse.json({ authenticated: false }, { status: 401 })
-        }
-
-        const data = JSON.parse(dataStr)
-        if (data.exp < Date.now()) {
-            return NextResponse.json({ authenticated: false, message: 'Session expired' }, { status: 401 })
-        }
-
-        return NextResponse.json({ authenticated: true, user: data.user })
-    } catch {
-        return NextResponse.json({ authenticated: false }, { status: 401 })
+        const decoded = await verifyEkodrixAuth()
+        return NextResponse.json({ authenticated: true, user: decoded.user })
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Session invalid'
+        return NextResponse.json(
+            { authenticated: false, message },
+            { status: 401 }
+        )
     }
 }
