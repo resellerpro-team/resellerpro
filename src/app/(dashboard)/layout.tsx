@@ -43,26 +43,56 @@ export default async function DashboardLayout({
   ])
 
   let profile = profileResult.data
-  const subscription = subscriptionResult.data
+  let subscription = subscriptionResult.data
 
-  // SELF-HEALING: If profile is missing, create it now
-  if (!profile && user) {
-    console.log('Profile missing for user, creating now:', user.id)
-    const { data: newProfile, error: createError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: user.id,
-        full_name: user.user_metadata?.full_name || 'User',
-        email_verified: false, // Default to false, will be updated by OTP
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' })
-      .select()
-      .single()
+  // SELF-HEALING: If profile or subscription is missing, ensure base initialization
+  if ((!profile || !subscription) && user) {
+    try {
+      console.log('Self-healing initialization for user:', user.id)
+      
+      // 1. Ensure Profile exists (using upsert to avoid duplicate errors)
+      if (!profile) {
+        const { data: newProfile, error: pError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            full_name: user.user_metadata?.full_name || 'User',
+            email_verified: false,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' })
+          .select()
+          .single()
+        
+        if (!pError) profile = newProfile
+      }
 
-    if (createError) {
-      console.error('Error auto-creating profile:', createError)
-    } else {
-      profile = newProfile
+      // 2. Ensure Default Subscription exists if missing
+      // (This prevents dashboard crashes if DB triggers failed or didn't run yet)
+      if (!subscription) {
+        const { data: freePlan } = await supabase
+          .from('subscription_plans')
+          .select('id, display_name')
+          .eq('name', 'free')
+          .single()
+
+        if (freePlan) {
+          const { data: newSub, error: sError } = await supabase
+            .from('user_subscriptions')
+            .upsert({
+              user_id: user.id,
+              plan_id: freePlan.id,
+              status: 'active',
+              current_period_start: new Date().toISOString(),
+              current_period_end: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString() // 10 years
+            }, { onConflict: 'user_id' }) // Handle conflict gracefully
+            .select('plan:subscription_plans(display_name)')
+            .single()
+          
+          if (!sError) subscription = newSub
+        }
+      }
+    } catch (upsertError) {
+      console.error('Self-healing failed (non-critical):', upsertError)
     }
   }
 
@@ -73,7 +103,7 @@ export default async function DashboardLayout({
     avatarUrl: profile?.avatar_url,
     businessName: profile?.business_name,
     planName: (Array.isArray(subscription?.plan)
-      ? subscription?.plan[0]?.display_name
+      ? (subscription?.plan as any)[0]?.display_name
       : (subscription?.plan as any)?.display_name) || 'Free Plan',
   }
 
