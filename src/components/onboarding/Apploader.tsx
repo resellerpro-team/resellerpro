@@ -130,7 +130,7 @@ export function FirstVisitLoader() {
                     className="flex items-center justify-center"
                   >
                     <NextImage
-                      src="/logo.png"
+                      src="/logo.svg"
                       alt="ResellerPro Logo"
                       width={64}
                       height={64}

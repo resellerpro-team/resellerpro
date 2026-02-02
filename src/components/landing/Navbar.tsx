@@ -14,11 +14,11 @@ export default function Navbar() {
           >
             <div className="relative -m-2">
               <NextImage
-                src="/logo.png"
+                src="/logo.svg"
                 alt="ResellerPro Logo"
-                width={80}
-                height={80}
-                className="h-20 w-20 object-contain"
+                width={64}
+                height={64}
+                className="h-16 w-16 object-contain mr-2"
               />
             </div>
             <span className="text-2xl font-bold text-gray-900 tracking-tight group-hover:text-blue-600 transition-colors">

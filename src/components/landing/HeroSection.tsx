@@ -249,7 +249,7 @@ export default function HeroSection() {
                             <div className="flex items-center gap-2.5">
                               <div className="w-[42px] h-[42px] rounded-[14px] bg-white flex items-center justify-center shadow-lg shadow-primary/40 overflow-hidden border">
                                 <NextImage
-                                  src="/logo.png"
+                                  src="/logo.svg"
                                   alt="RS"
                                   width={28}
                                   height={28}
