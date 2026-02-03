@@ -288,12 +288,12 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/20">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-48 -left-48 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-1/2 -right-48 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute -bottom-48 left-1/3 w-96 h-96 bg-violet-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute -top-48 -left-48 w-96 h-96 bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/2 -right-48 w-96 h-96 bg-indigo-400/20 dark:bg-indigo-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute -bottom-48 left-1/3 w-96 h-96 bg-violet-400/20 dark:bg-violet-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       {/* Main Content */}
@@ -305,7 +305,7 @@ export default function LoginForm() {
             <div className="hidden lg:flex flex-col justify-center items-center text-center px-4 space-y-8">
               {/* Greeting */}
               <div className="space-y-4">
-                <h1 className="text-3xl font-medium text-slate-600">
+                <h1 className="text-3xl font-medium text-slate-600 dark:text-slate-400">
                   {getGreeting()}!
                 </h1>
                 <h2 className="text-5xl font-bold bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent">
@@ -315,7 +315,7 @@ export default function LoginForm() {
 
               {/* Motivational Quote */}
               <div className="max-w-md space-y-3">
-                <blockquote className="text-lg text-slate-600 italic leading-relaxed">
+                <blockquote className="text-lg text-slate-600 dark:text-slate-400 italic leading-relaxed">
                   "{quote.text}"
                 </blockquote>
                 <p className="text-sm text-slate-500">
@@ -325,13 +325,13 @@ export default function LoginForm() {
 
               {/* Simple Animation or Icon */}
               <div className="flex items-center gap-4 pt-8">
-                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-slate-200/50">
+                <div className="p-3 bg-white/50 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-slate-200/50 dark:border-slate-800/50">
                   <TrendingUp className="w-6 h-6 text-emerald-600" />
                 </div>
-                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-slate-200/50">
+                <div className="p-3 bg-white/50 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-slate-200/50 dark:border-slate-800/50">
                   <Target className="w-6 h-6 text-blue-600" />
                 </div>
-                <div className="p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-slate-200/50">
+                <div className="p-3 bg-white/50 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-slate-200/50 dark:border-slate-800/50">
                   <Rocket className="w-6 h-6 text-indigo-600" />
                 </div>
               </div>
@@ -344,13 +344,13 @@ export default function LoginForm() {
 
             {/* Right Side - Login Form */}
             <div className="w-full">
-              <div className="bg-white/80 backdrop-blur-2xl rounded-3xl border border-slate-200/50 shadow-2xl shadow-blue-500/10 p-8 lg:p-10">
+              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-3xl border border-slate-200/50 dark:border-slate-800/50 shadow-2xl shadow-blue-500/10 dark:shadow-none p-8 lg:p-10">
                 {/* Header */}
                 <div className="mb-8">
-                  <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                  <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
                     {loginMethod === 'password' ? 'Sign in to your account' : 'Sign in with OTP'}
                   </h2>
-                  <p className="text-slate-600">
+                  <p className="text-slate-600 dark:text-slate-400">
                     {loginMethod === 'password'
                       ? 'Enter your credentials to continue'
                       : "We'll send a verification code to your email"}
@@ -362,21 +362,21 @@ export default function LoginForm() {
                     <form onSubmit={handleSubmit} className="space-y-5">
                       {/* Email Field */}
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+                        <Label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                           Email
                         </Label>
                         <div className="relative">
-                          <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'email' ? 'text-blue-600' : 'text-slate-400'
+                          <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'email' ? 'text-blue-600' : 'text-slate-400 dark:text-slate-500'
                             }`} />
                           <Input
                             id="email"
                             name="email"
                             type="email"
                             placeholder="you@email.com"
-                            className={`pl-11 h-12 bg-white/50 border-slate-200 transition-all ${focusedField === 'email'
+                            className={`pl-11 h-12 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all ${focusedField === 'email'
                               ? 'border-blue-600 ring-4 ring-blue-600/10'
-                              : 'hover:border-slate-300'
-                              } ${formErrors.email ? 'border-rose-300' : ''}`}
+                              : 'hover:border-slate-300 dark:hover:border-slate-600'
+                              } ${formErrors.email ? 'border-rose-300 dark:border-rose-500/50' : ''}`}
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             onFocus={() => setFocusedField('email')}
@@ -398,28 +398,28 @@ export default function LoginForm() {
                       {/* Password Field */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+                          <Label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                             Password
                           </Label>
                           <Link
                             href="/forgot-password"
-                            className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
                           >
                             Forgot password?
                           </Link>
                         </div>
                         <div className="relative">
-                          <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'password' ? 'text-blue-600' : 'text-slate-400'
+                          <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'password' ? 'text-blue-600' : 'text-slate-400 dark:text-slate-500'
                             }`} />
                           <Input
                             id="password"
                             name="password"
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Enter your password"
-                            className={`pl-11 pr-11 h-12 bg-white/50 border-slate-200 transition-all ${focusedField === 'password'
+                            className={`pl-11 pr-11 h-12 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all ${focusedField === 'password'
                               ? 'border-blue-600 ring-4 ring-blue-600/10'
-                              : 'hover:border-slate-300'
-                              } ${formErrors.password ? 'border-rose-300' : ''}`}
+                              : 'hover:border-slate-300 dark:hover:border-slate-600'
+                              } ${formErrors.password ? 'border-rose-300 dark:border-rose-500/50' : ''}`}
                             value={formData.password}
                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                             onFocus={() => setFocusedField('password')}
@@ -431,7 +431,7 @@ export default function LoginForm() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
                             tabIndex={-1}
                           >
                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -450,17 +450,17 @@ export default function LoginForm() {
                     {/* Divider */}
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-slate-200"></div>
+                        <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
                       </div>
                       <div className="relative flex justify-center text-sm">
-                        <span className="px-4 bg-white/80 text-slate-600">Or continue with</span>
+                        <span className="px-4 bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400">Or continue with</span>
                       </div>
                     </div>
 
                     {/* OTP Option */}
                     <Button
                       variant="outline"
-                      className="w-full h-12 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all"
+                      className="w-full h-12 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all text-slate-900 dark:text-white"
                       onClick={() => setLoginMethod('otp')}
                     >
                       <Mail className="w-5 h-5 mr-2" />
@@ -472,19 +472,19 @@ export default function LoginForm() {
                     {otpStep === 'email' ? (
                       <form onSubmit={handleSendOtp} className="space-y-5">
                         <div className="space-y-2">
-                          <Label htmlFor="otp-email" className="text-sm font-medium text-slate-700">
+                          <Label htmlFor="otp-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                             Email Address
                           </Label>
                           <div className="relative">
-                            <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'otp-email' ? 'text-blue-600' : 'text-slate-400'
+                            <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'otp-email' ? 'text-blue-600' : 'text-slate-400 dark:text-slate-500'
                               }`} />
                             <Input
                               id="otp-email"
                               type="email"
                               placeholder="you@email.com"
-                              className={`pl-11 h-12 bg-white/50 border-slate-200 transition-all ${focusedField === 'otp-email'
+                              className={`pl-11 h-12 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all ${focusedField === 'otp-email'
                                 ? 'border-blue-600 ring-4 ring-blue-600/10'
-                                : 'hover:border-slate-300'
+                                : 'hover:border-slate-300 dark:hover:border-slate-600'
                                 }`}
                               value={otpEmail}
                               onChange={(e) => setOtpEmail(e.target.value)}
@@ -523,27 +523,27 @@ export default function LoginForm() {
                       <form onSubmit={handleVerifyOtp} className="space-y-5">
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <Label htmlFor="otp-code" className="text-sm font-medium text-slate-700">
+                            <Label htmlFor="otp-code" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                               Enter OTP Code
                             </Label>
                             <button
                               type="button"
                               onClick={() => setOtpStep('email')}
-                              className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
                             >
                               Change Email
                             </button>
                           </div>
                           <div className="relative">
-                            <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'otp-code' ? 'text-blue-600' : 'text-slate-400'
+                            <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'otp-code' ? 'text-blue-600' : 'text-slate-400 dark:text-slate-500'
                               }`} />
                             <Input
                               id="otp-code"
                               type="text"
                               placeholder="123456"
-                              className={`pl-11 h-12 text-center tracking-widest text-lg font-mono bg-white/50 border-slate-200 transition-all ${focusedField === 'otp-code'
+                              className={`pl-11 h-12 text-center tracking-widest text-lg font-mono bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all ${focusedField === 'otp-code'
                                 ? 'border-blue-600 ring-4 ring-blue-600/10'
-                                : 'hover:border-slate-300'
+                                : 'hover:border-slate-300 dark:hover:border-slate-600'
                                 }`}
                               value={otpCode}
                               onChange={(e) => setOtpCode(e.target.value)}
@@ -554,8 +554,8 @@ export default function LoginForm() {
                               disabled={otpLoading}
                             />
                           </div>
-                          <p className="text-sm text-slate-500">
-                            We sent a 6-digit code to <strong className="text-slate-700">{otpEmail}</strong>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            We sent a 6-digit code to <strong className="text-slate-700 dark:text-slate-200">{otpEmail}</strong>
                           </p>
                         </div>
 
@@ -583,7 +583,7 @@ export default function LoginForm() {
 
                     <Button
                       variant="ghost"
-                      className="w-full h-12 hover:bg-slate-50"
+                      className="w-full h-12 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400"
                       onClick={() => {
                         setLoginMethod('password')
                         setOtpStep('email')
@@ -598,10 +598,10 @@ export default function LoginForm() {
                 )}
 
                 {/* Sign Up Link */}
-                <div className="mt-8 pt-6 border-t border-slate-200">
-                  <p className="text-center text-sm text-slate-600">
+                <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+                  <p className="text-center text-sm text-slate-600 dark:text-slate-400">
                     Don't have an account?{' '}
-                    <Link href="/signup" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                    <Link href="/signup" className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
                       Sign up for free
                     </Link>
                   </p>
