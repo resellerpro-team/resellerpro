@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 
 export type Enquiry = {
     id: string;
@@ -23,6 +23,7 @@ export function useEnquiries(queryString: string) {
             if (!res.ok) throw new Error("Failed to fetch enquiries");
             return res.json() as Promise<Enquiry[]>;
         },
+        placeholderData: keepPreviousData,
     });
 }
 
