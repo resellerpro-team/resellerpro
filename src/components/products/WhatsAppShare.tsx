@@ -240,17 +240,17 @@ export function WhatsAppShare({
 
         <div className="px-4 py-6 sm:px-8 max-h-[75vh] overflow-y-auto">
           <Tabs defaultValue="image" className="w-full">
-            <TabsList className="bg-white/50 p-1 mb-8 rounded-xl border border-slate-200">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 mb-8 rounded-xl h-auto">
               <TabsTrigger
                 value="image"
-                className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-700 font-semibold"
+                className="rounded-lg py-3 text-sm font-semibold transition-all data-[state=active]:bg-[#128C7E] data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500 hover:text-slate-900"
               >
                 <Layout className="w-4 h-4 mr-2" />
                 Product Card
               </TabsTrigger>
               <TabsTrigger
                 value="text"
-                className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-700 font-semibold"
+                className="rounded-lg py-3 text-sm font-semibold transition-all data-[state=active]:bg-[#128C7E] data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500 hover:text-slate-900"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Direct Share
