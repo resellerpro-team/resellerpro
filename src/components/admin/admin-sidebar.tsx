@@ -82,7 +82,7 @@ export default function AdminSidebar() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
-    router.push('/admin/signin')
+    router.push('/')
   }
 
   const navItems = [
