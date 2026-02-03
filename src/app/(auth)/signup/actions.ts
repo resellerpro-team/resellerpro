@@ -51,12 +51,11 @@ const SignupSchema = z.object({
     .max(50, 'Name must not exceed 50 characters.'),
 
   // BUSINESS NAME VALIDATION
-  // Optional field, but if provided, apply same constraints as fullName
+  // Made mandatory as per requirements
   businessName: z.string()
     .trim()
-    .max(50, 'Business name must not exceed 50 characters.')
-    .optional()
-    .or(z.literal('')), // Allow empty string
+    .min(2, 'Business name must be at least 2 characters.')
+    .max(50, 'Business name must not exceed 50 characters.'),
 
   // PHONE VALIDATION
   // Made optional as per requirements
