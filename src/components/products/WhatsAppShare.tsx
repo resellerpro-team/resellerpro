@@ -1,7 +1,5 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
-import { Download, Copy, Check, MessageCircle } from "lucide-react";
+import { Download, Copy, Check, MessageCircle, Share2, Smartphone, Send, Layout, Info } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
@@ -19,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchableSelect, SearchableSelectOption } from "@/components/ui/searchable-select";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Product = {
   id: string;
@@ -67,7 +66,6 @@ export function WhatsAppShare({
   const { toast } = useToast();
   const supabase = createClient();
 
-  // Fetch customers when dialog opens
   useEffect(() => {
     if (open) {
       fetchCustomers();
@@ -101,7 +99,6 @@ export function WhatsAppShare({
     }
   };
 
-  // Get all available images
   const allImages =
     product.images && product.images.length > 0
       ? product.images
@@ -112,10 +109,10 @@ export function WhatsAppShare({
   const formatProductMessage = () => {
     const stockStatus =
       product.stock_status === "in_stock"
-        ? "In Stock"
+        ? "✅ In Stock"
         : product.stock_status === "low_stock"
-          ? "Low Stock"
-          : "Out of Stock";
+          ? "⚠️ Low Stock"
+          : "❌ Out of Stock";
 
     let message = `*${product.name}*\n`;
     message += `━━━━━━━━━━━━━━━━━━━\n\n`;
@@ -124,29 +121,18 @@ export function WhatsAppShare({
       message += `${product.description}\n\n`;
     }
 
-    message += `*Price:* ₹${product.selling_price.toLocaleString()}\n`;
-    message += `*Availability:* ${stockStatus}\n`;
+    message += `💰 *Price:* ₹${product.selling_price.toLocaleString()}\n`;
+    message += `📦 *Availability:* ${stockStatus}\n`;
 
     if (product.category) {
-      message += `*Category:* ${product.category}\n`;
+      message += `🏷️ *Category:* ${product.category}\n`;
     }
 
-    // Add images
-    if (product.images && product.images.length > 0) {
-      message += `\n *Product Images:*\n`;
-      product.images.forEach((img, idx) => {
-        message += `${idx + 1}. ${img}\n`;
-      });
-    } else if (product.image_url) {
-      message += `\n *Product Image:*\n${product.image_url}\n`;
-    }
-
-    // Add public viewing link
     const publicUrl = `${window.location.origin}/p/${product.id}`;
     message += `\n🔗 *View Details:* ${publicUrl}\n`;
 
     message += `\n━━━━━━━━━━━━━━━━━━━\n`;
-    message += ` *Interested? Contact us to order!*`;
+    message += `*Interested? Reply to order!* 📱`;
 
     return message;
   };
@@ -172,47 +158,27 @@ export function WhatsAppShare({
   const downloadProductCard = async () => {
     setDownloading(true);
     try {
-      // Get the current image URL
       const imageUrl = allImages[selectedImageIndex];
+      if (!imageUrl) return;
 
-      if (!imageUrl) {
-        toast({
-          title: "No Image",
-          description: "No image available to download",
-          variant: "destructive",
-        });
-        setDownloading(false);
-        return;
-      }
-
-      // Fetch the image
       const response = await fetch(imageUrl);
       const blob = await response.blob();
-
-      // Create download link
       const link = document.createElement("a");
-      const imageName =
-        allImages.length > 1
-          ? `${product.name.replace(/[^a-z0-9]/gi, "_")}_image_${selectedImageIndex + 1
-          }.png`
-          : `${product.name.replace(/[^a-z0-9]/gi, "_")}.png`;
+      const imageName = `${product.name.replace(/[^a-z0-9]/gi, "_")}_${selectedImageIndex + 1}.png`;
 
       link.download = imageName;
       link.href = URL.createObjectURL(blob);
       link.click();
-
-      // Clean up
       URL.revokeObjectURL(link.href);
 
       toast({
-        title: "Downloaded!",
-        description: `Product image ${allImages.length > 1 ? `${selectedImageIndex + 1}` : ""
-          } saved successfully.`,
+        title: "Success",
+        description: "Image saved successfully",
       });
     } catch (error) {
       toast({
-        title: "Download Failed",
-        description: "Could not download image. Please try again.",
+        title: "Failed",
+        description: "Could not download image",
         variant: "destructive",
       });
     } finally {
@@ -222,46 +188,13 @@ export function WhatsAppShare({
 
   const shareToWhatsApp = () => {
     if (!phoneNumber) {
-      toast({
-        title: "Phone Number Required",
-        description: "Please enter a phone number to continue",
-        variant: "destructive",
-      });
+      toast({ title: "Phone Required", variant: "destructive" });
       return;
     }
-
-    const cleanNumber = phoneNumber.replace(/[^\d+]/g, "");
-
-    if (cleanNumber.replace("+", "").length < 10) {
-      toast({
-        title: "Invalid Phone Number",
-        description: "Please enter a valid phone number with country code",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const message = formatProductMessage();
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${cleanNumber.replace(
-      "+",
-      ""
-    )}?text=${encodedMessage}`;
-
-    window.open(whatsappUrl, "_blank");
-
-    toast({
-      title: "Opening WhatsApp...",
-      description: "Message will be sent with product details and images.",
-    });
-
+    const cleanNumber = phoneNumber.replace(/[^\d+]/g, "").replace("+", "");
+    const encodedMessage = encodeURIComponent(formatProductMessage());
+    window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, "_blank");
     setPhoneNumber("");
-  };
-
-  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const cleaned = value.replace(/[^\d+\-\s()]/g, "");
-    setPhoneNumber(cleaned);
   };
 
   return (
@@ -271,7 +204,7 @@ export function WhatsAppShare({
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 flex-shrink-0 transition-transform active:scale-95"
+            className="h-10 w-10 shrink-0 rounded-full transition-all hover:bg-green-50 active:scale-95"
           >
             <WhatsAppIcon className="h-6 w-6" />
           </Button>
@@ -279,308 +212,242 @@ export function WhatsAppShare({
           <Button
             variant={variant}
             size={size}
-            className={`w-full ${variant === "default"
-              ? "bg-[#25D366] hover:bg-[#22c35e] text-white border-0"
-              : ""
+            className={`w-full font-medium transition-all active:scale-[0.98] ${variant === "default"
+              ? "bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-md hover:shadow-lg"
+              : "border-green-200 hover:bg-green-50 text-green-700"
               }`}
           >
-            <WhatsAppIcon className="h-4 w-4 mr-2" fill={variant === "default" ? "#ffffff" : "#25D366"} />
-            Share on WhatsApp
+            <WhatsAppIcon className={`h-4 w-4 mr-2 ${variant === "default" ? "fill-white" : "fill-[#25D366]"}`} />
+            Share Product
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <WhatsAppIcon className="h-5 w-5 text-[#25D366]" />
-            Share Product on WhatsApp
-          </DialogTitle>
-          <DialogDescription>
-            Share product details with your customers
-          </DialogDescription>
-        </DialogHeader>
 
-        <Tabs defaultValue="image" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="image" className="gap-2">
-              <Download className="h-4 w-4" />
-              Image Card
-            </TabsTrigger>
-            <TabsTrigger value="text" className="gap-2">
-              <MessageCircle className="h-4 w-4" />
-              Text Message
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Image Card Tab */}
-          <TabsContent value="image" className="space-y-4">
-            {/* Image Selector for Multiple Images */}
-            {allImages.length > 1 && (
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">
-                  Select Image to Download
-                </Label>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  {allImages.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImageIndex(idx)}
-                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx
-                        ? "border-blue-600 ring-2 ring-blue-600"
-                        : "border-gray-200 hover:border-gray-400"
-                        }`}
-                    >
-                      <Image
-                        src={img}
-                        alt={`Image ${idx + 1}`}
-                        fill
-                        className="object-cover"
-                        crossOrigin="anonymous"
-                      />
-                      {selectedImageIndex === idx && (
-                        <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
-                          <Check className="h-6 w-6 text-white" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Selected: Image {selectedImageIndex + 1} of {allImages.length}
-                </p>
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none bg-slate-50">
+        <div className="bg-[#075E54] p-6 text-white">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm">
+                <WhatsAppIcon className="h-7 w-7 fill-white" />
               </div>
-            )}
+              <div className="text-left">
+                <DialogTitle className="text-xl font-bold tracking-tight text-white">WhatsApp Share</DialogTitle>
+                <DialogDescription className="text-green-100/80">Connect with your customers instantly</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
 
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">
-                Product Card Preview
-              </Label>
-
-              {/* Downloadable Product Card */}
-              <div
-                ref={cardRef}
-                className="bg-white p-6 rounded-lg border-2 space-y-4 w-full max-w-[500px] mx-auto"
+        <div className="px-4 py-6 sm:px-8 max-h-[75vh] overflow-y-auto">
+          <Tabs defaultValue="image" className="w-full">
+            <TabsList className="bg-white/50 p-1 mb-8 rounded-xl border border-slate-200">
+              <TabsTrigger
+                value="image"
+                className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-700 font-semibold"
               >
-                {/* Header */}
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold text-gray-900">
-                    {product.name}
-                  </h3>
-                  {product.description && (
-                    <p className="text-sm text-gray-600 line-clamp-3">
-                      {product.description}
-                    </p>
+                <Layout className="w-4 h-4 mr-2" />
+                Product Card
+              </TabsTrigger>
+              <TabsTrigger
+                value="text"
+                className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-700 font-semibold"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Direct Share
+              </TabsTrigger>
+            </TabsList>
+
+            <AnimatePresence mode="wait">
+              <TabsContent value="image" className="space-y-6 mt-0">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  {allImages.length > 1 && (
+                    <div className="space-y-3">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Pick Cover Image</Label>
+                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                        {allImages.map((img, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setSelectedImageIndex(idx)}
+                            className={`relative min-w-[80px] h-[80px] rounded-xl overflow-hidden border-2 transition-all shrink-0 ${selectedImageIndex === idx ? "border-[#25D366] ring-4 ring-green-100 scale-95" : "border-white hover:border-slate-200"
+                              }`}
+                          >
+                            <Image src={img} alt="" fill className="object-cover" crossOrigin="anonymous" />
+                            {selectedImageIndex === idx && (
+                              <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                                <Check className="w-5 h-5 text-white bg-green-500 rounded-full p-0.5 shadow-sm" />
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </div>
 
-                {/* Product Image - Show selected image */}
-                {allImages.length > 0 && (
-                  <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100">
-                    <Image
-                      src={allImages[selectedImageIndex]}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      crossOrigin="anonymous"
-                    />
-                  </div>
-                )}
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-green-500 to-blue-500 rounded-[28px] blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
+                    <div ref={cardRef} className="relative bg-white rounded-[24px] shadow-2xl overflow-hidden max-w-sm mx-auto border border-white">
+                      <div className="relative aspect-square">
+                        <Image
+                          src={allImages[selectedImageIndex] || ""}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          crossOrigin="anonymous"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white">
+                          <h3 className="text-2xl font-bold leading-tight mb-1">{product.name}</h3>
+                          <p className="text-sm text-white/80 line-clamp-1">{product.category}</p>
+                        </div>
+                      </div>
 
-                {/* Price & Status */}
-                <div className="space-y-3 py-4 border-t border-b">
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-500 uppercase tracking-wide">
-                      Price
-                    </p>
-                    <p className="text-3xl font-bold text-blue-600">
-                      ₹{product.selling_price.toLocaleString()}
-                    </p>
-                  </div>
+                      <div className="p-8 space-y-6">
+                        <div className="flex justify-between items-end">
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">Selling Price</p>
+                            <p className="text-3xl font-black text-slate-900 tracking-tight">₹{product.selling_price.toLocaleString()}</p>
+                          </div>
+                          <Badge className={`px-4 py-1.5 rounded-full font-bold shadow-sm ${product.stock_status === "in_stock" ? "bg-green-50 text-green-700" :
+                            product.stock_status === "low_stock" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
+                            }`}>
+                            {product.stock_status === "in_stock" ? "In Stock" :
+                              product.stock_status === "low_stock" ? "Low Stock" : "Out of Stock"}
+                          </Badge>
+                        </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">
-                        Availability
-                      </p>
-                      {product.stock_status === "in_stock" && (
-                        <span className="inline-block mt-1 px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-full">
-                          ✓ In Stock
-                        </span>
-                      )}
-                      {product.stock_status === "low_stock" && (
-                        <span className="inline-block mt-1 px-3 py-1 bg-yellow-500 text-white text-sm font-semibold rounded-full">
-                          ⚠ Limited Stock
-                        </span>
-                      )}
-                      {product.stock_status === "out_of_stock" && (
-                        <span className="inline-block mt-1 px-3 py-1 bg-red-500 text-white text-sm font-semibold rounded-full">
-                          ✗ Out of Stock
-                        </span>
-                      )}
+                        <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="p-2 bg-green-50 rounded-lg">
+                              <WhatsAppIcon className="w-4 h-4 fill-green-600" />
+                            </div>
+                            <span className="text-sm font-bold text-green-700">Order via WhatsApp</span>
+                          </div>
+                          <div className="w-8 h-8 rounded-full border-2 border-slate-100 flex items-center justify-center">
+                            <span className="text-[10px] font-black text-slate-200">RP</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Footer Info */}
-                {product.category && (
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">
-                      📦 Category: {product.category}
-                    </span>
-                  </div>
-                )}
+                  <Button
+                    onClick={downloadProductCard}
+                    disabled={downloading}
+                    className="w-full bg-[#128C7E] hover:bg-[#075E54] text-white h-14 rounded-2xl font-bold text-base shadow-lg shadow-green-900/10 transition-all hover:translate-y-[-2px] active:translate-y-[1px]"
+                  >
+                    {downloading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Generating Card...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Download className="w-5 h-5" />
+                        Download High-Res Card
+                      </div>
+                    )}
+                  </Button>
+                </motion.div>
+              </TabsContent>
 
-                {/* Call to Action */}
-                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg text-center border border-green-100">
-                  <p className="text-base font-bold text-green-700">
-                    📱 Contact us to order now!
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <Button
-                onClick={downloadProductCard}
-                disabled={downloading}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                size="lg"
-              >
-                {downloading ? (
-                  <>
-                    <Download className="h-4 w-4 mr-2 animate-bounce" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download{" "}
-                    {allImages.length > 1
-                      ? `Image ${selectedImageIndex + 1}`
-                      : "Image"}
-                  </>
-                )}
-              </Button>
-
-              <p className="text-xs text-center text-muted-foreground">
-                {allImages.length > 1
-                  ? `💡 Downloads clean product image without text overlays`
-                  : `💡 Downloads the product image only, without title or price`}
-              </p>
-            </div>
-          </TabsContent>
-
-          {/* Text Message Tab */}
-          <TabsContent value="text" className="space-y-4">
-            {/* Customer Selector + Phone Number Input */}
-            <div className="space-y-4">
-              {/* Customer Dropdown */}
-              <div className="space-y-3">
-                <Label htmlFor="customer" className="text-base font-semibold">
-                  Select Customer (Optional)
-                </Label>
-                {customers.length === 0 && !loadingCustomers ? (
-                  <p className="text-xs text-muted-foreground p-4 border rounded-md text-center">
-                    No customers found with phone numbers.
-                  </p>
-                ) : (
-                  <SearchableSelect
-                    options={customers.map((c): SearchableSelectOption => ({
-                      value: c.id,
-                      label: c.name,
-                      subtitle: c.phone,
-                    }))}
-                    value={selectedCustomer}
-                    onValueChange={handleCustomerSelect}
-                    placeholder={
-                      loadingCustomers
-                        ? "Loading customers..."
-                        : "Choose from your customers"
-                    }
-                    searchPlaceholder="Search customers..."
-                    emptyMessage="No customers found."
-                    disabled={loadingCustomers}
-                  />
-                )}
-              </div>
-
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    or enter manually
-                  </span>
-                </div>
-              </div>
-
-              {/* Manual Phone Number Input */}
-              <div className="space-y-3">
-                <Label htmlFor="phone" className="text-base font-semibold">
-                  Phone Number
-                </Label>
-                <Input
-                  id="phone"
-                  placeholder="e.g., +919876543210"
-                  value={phoneNumber}
-                  onChange={handlePhoneNumberChange}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      shareToWhatsApp();
-                    }
-                  }}
-                  className="text-base h-12"
-                />
-                <p className="text-xs text-muted-foreground">
-                  💡 Include country code (e.g., +91 for India)
-                </p>
-              </div>
-            </div>
-
-            {/* Message Preview */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">
-                  Message Preview
-                </Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={copyToClipboard}
-                  className="h-8"
+              <TabsContent value="text" className="space-y-6 mt-0">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="space-y-6"
                 >
-                  {copied ? (
-                    <>
-                      <Check className="h-3 w-3 mr-1" />
-                      Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3 w-3 mr-1" />
-                      Copy
-                    </>
-                  )}
-                </Button>
-              </div>
-              <div className="bg-background border rounded-lg p-4 max-h-[250px] overflow-y-auto">
-                <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">
-                  {formatProductMessage()}
-                </pre>
-              </div>
-            </div>
+                  <div className="bg-white rounded-[24px] p-6 shadow-sm border border-slate-200/60 space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 text-slate-400" />
+                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Recipient Details</Label>
+                      </div>
 
-            <Button
-              onClick={shareToWhatsApp}
-              className="w-full bg-green-600 hover:bg-green-700"
-              size="lg"
-            >
-              <WhatsAppIcon className="h-4 w-4 mr-2" fill="#ffffff" />
-              Send to Customer
-            </Button>
-          </TabsContent>
-        </Tabs>
+                      <SearchableSelect
+                        options={customers.map((c): SearchableSelectOption => ({
+                          value: c.id,
+                          label: c.name,
+                          subtitle: c.phone,
+                        }))}
+                        value={selectedCustomer}
+                        onValueChange={handleCustomerSelect}
+                        placeholder={loadingCustomers ? "Syncing customers..." : "Select existing customer"}
+                        className="h-12 border-slate-200 rounded-xl bg-slate-50/50"
+                      />
+
+                      <div className="relative py-2">
+                        <div className="absolute inset-0 flex items-center px-2">
+                          <div className="w-full border-t border-slate-100"></div>
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-white px-3 text-slate-300 font-bold tracking-widest">Or Entry</span>
+                        </div>
+                      </div>
+
+                      <Input
+                        placeholder="+91 Phone number"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d+]/g, ""))}
+                        className="h-12 border-slate-200 rounded-xl bg-slate-50/50 text-base"
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MessageCircle className="w-4 h-4 text-slate-400" />
+                          <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Message Preview</Label>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={copyToClipboard}
+                          className="h-8 rounded-lg text-slate-500 hover:text-green-600 hover:bg-green-50"
+                        >
+                          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                      </div>
+
+                      {/* WhatsApp Chat Bubble Style */}
+                      <div className="bg-[#e5ddd5] p-3 rounded-2xl relative min-h-[150px] shadow-inner">
+                        <div className="absolute top-0 right-3 w-0 h-0 border-t-[10px] border-t-[#dcf8c6] border-r-[10px] border-r-transparent -translate-y-2"></div>
+                        <div className="bg-[#dcf8c6] p-4 rounded-xl rounded-tr-none shadow-sm ml-auto max-w-[90%] relative">
+                          <div className="text-[13px] whitespace-pre-wrap font-sans text-[#4a4a4a] leading-relaxed">
+                            {formatProductMessage()}
+                          </div>
+                          <div className="flex items-center justify-end gap-1 mt-1 opacity-40">
+                            <span className="text-[10px]">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <Check className="w-3 h-3 scale-75" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={shareToWhatsApp}
+                    className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 rounded-2xl font-bold text-base shadow-lg shadow-green-900/10 transition-all hover:translate-y-[-2px]"
+                  >
+                    <Send className="w-5 h-5 mr-3" />
+                    Open in WhatsApp
+                  </Button>
+                </motion.div>
+              </TabsContent>
+            </AnimatePresence>
+          </Tabs>
+        </div>
+
+        <div className="px-8 py-4 bg-slate-100/50 border-t border-slate-200 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
+            <Info className="w-4 h-4 text-slate-500" />
+          </div>
+          <p className="text-[11px] text-slate-500 font-medium leading-snug">
+            Sending details through WhatsApp helps you close deals faster. Your contact information is never shared without your permission.
+          </p>
+        </div>
       </DialogContent>
     </Dialog>
   );
