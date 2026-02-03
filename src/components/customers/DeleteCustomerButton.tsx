@@ -15,9 +15,12 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 
+import { useQueryClient } from '@tanstack/react-query'
+
 export default function DeleteCustomerButton({ customerId }: { customerId: string }) {
   const { toast } = useToast()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [isPending, startTransition] = useTransition()
 
   // Controls the pop-up dialog
@@ -32,8 +35,20 @@ export default function DeleteCustomerButton({ customerId }: { customerId: strin
           title: "Customer Deleted",
           description: result.message,
         })
+
+        // Invalidate queries to update lists if we are on a list page
+        queryClient.invalidateQueries({ queryKey: ['customers'] })
+        queryClient.invalidateQueries({ queryKey: ['customers-stats'] })
+
+        // Only push if we are on the detail page (logic might need check, but safe default)
+        // If we are in the list, pushing to /customers is fine (no-op or reload of same route)
+        // But we want to avoid hard reload.
+        // Let's assume this button is used on detail page mainly or list. 
+        // Best approach: Invalidate and let the UI react. 
+        // If we are deleting from a list, router.push is not needed.
+        // If we are deleting from details, we need to go back.
+        // Let's keep router.push for navigation safety but remove router.refresh()
         router.push("/customers")
-        router.refresh()
       } else {
         toast({
           title: "Error",
@@ -47,7 +62,7 @@ export default function DeleteCustomerButton({ customerId }: { customerId: strin
   return (
     <>
       {/* Delete Button */}
-      <Button 
+      <Button
         variant="outline"
         onClick={() => setOpen(true)}
         disabled={isPending}
@@ -68,15 +83,15 @@ export default function DeleteCustomerButton({ customerId }: { customerId: strin
           </DialogHeader>
 
           <DialogFooter className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setOpen(false)}
               disabled={isPending}
             >
               Cancel
             </Button>
 
-            <Button 
+            <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={isPending}

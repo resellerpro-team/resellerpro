@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, CreditCard } from 'lucide-react'
 import { updatePaymentStatus } from '@/app/(dashboard)/orders/actions'
+import { useQueryClient } from '@tanstack/react-query'
 
 const PAYMENT_STATUSES = [
   { value: 'paid', label: 'Paid' },
@@ -41,6 +42,7 @@ export function PaymentStatusUpdate({
 }) {
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [isPending, startTransition] = useTransition()
   const [paymentStatus, setPaymentStatus] = useState(currentPaymentStatus)
   const [paymentMethod, setPaymentMethod] = useState(currentPaymentMethod || '')
@@ -72,7 +74,9 @@ export function PaymentStatusUpdate({
           title: 'Success ✅',
           description: result.message || 'Payment status updated successfully',
         })
-        router.refresh()
+        // Invalidate orders query & stats
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+        queryClient.invalidateQueries({ queryKey: ['orders-stats'] })
       } else {
         toast({
           title: 'Error',

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 
 export function useOrders(params: {
     search?: string
@@ -24,5 +24,6 @@ export function useOrders(params: {
             if (!res.ok) throw new Error('Failed to fetch orders')
             return res.json()
         },
+        placeholderData: keepPreviousData,
     })
 }

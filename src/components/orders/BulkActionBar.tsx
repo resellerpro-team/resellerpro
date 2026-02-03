@@ -73,7 +73,6 @@ export function BulkActionBar({
                 queryClient.invalidateQueries({ queryKey: ['orders'] })
                 queryClient.invalidateQueries({ queryKey: ['orders-stats'] })
 
-                router.refresh()
                 onClearSelection()
                 onSuccess?.()
             } else {
@@ -138,7 +137,7 @@ export function BulkActionBar({
                                                 <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/5 text-amber-600">
                                                     <Info className="h-3.5 w-3.5 shrink-0" />
                                                     <p className="text-[10px] font-bold leading-tight">
-                                                       Status 'Shipped' is not available for bulk action.
+                                                        Status 'Shipped' is not available for bulk action.
                                                     </p>
                                                 </div>
                                             </div>
