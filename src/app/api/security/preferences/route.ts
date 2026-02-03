@@ -19,16 +19,16 @@ export async function GET() {
             .eq('user_id', user.id)
             .single()
 
-        // If no preferences exist, create defaults
+        // If no preferences exist, create defaults (safe upsert)
         let finalPreferences = preferences
         if (!preferences) {
-            const { data: newPrefs, error: insertError } = await supabase
+            const { data: newPrefs, error: upsertError } = await supabase
                 .from('security_preferences')
-                .insert({ user_id: user.id })
+                .upsert({ user_id: user.id }, { onConflict: 'user_id' })
                 .select()
                 .single()
 
-            if (insertError) throw insertError
+            if (upsertError) throw upsertError
             finalPreferences = newPrefs
         }
 
@@ -78,7 +78,7 @@ export async function PATCH(request: NextRequest) {
 
         const { data, error } = await supabase
             .from('security_preferences')
-            .upsert({ user_id: user.id, ...updates })
+            .upsert({ user_id: user.id, ...updates }, { onConflict: 'user_id' })
             .select()
             .single()
 
