@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 
 export async function fetchCustomers(queryString: string) {
   const res = await fetch(`/api/customers?${queryString}`, {
@@ -20,5 +20,6 @@ export function useCustomers(queryString: string) {
     queryFn: () => fetchCustomers(queryString),
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    placeholderData: keepPreviousData,
   });
 }

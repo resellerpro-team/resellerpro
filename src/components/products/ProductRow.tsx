@@ -96,7 +96,7 @@ export function ProductRow({ product }: { product: Product }) {
 
       // Invalidate react-query cache to refresh the list immediately
       queryClient.invalidateQueries({ queryKey: ['products'] })
-      router.refresh()
+      queryClient.invalidateQueries({ queryKey: ['products-stats'] })
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -129,7 +129,6 @@ export function ProductRow({ product }: { product: Product }) {
 
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['products-stats'] }) // Refresh stats too
-      router.refresh()
     } catch (error: any) {
       toast({
         title: 'Delete Failed',
