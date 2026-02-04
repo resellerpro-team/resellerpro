@@ -240,17 +240,17 @@ export function WhatsAppShare({
 
         <div className="px-4 py-6 sm:px-8 max-h-[75vh] overflow-y-auto">
           <Tabs defaultValue="image" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 mb-8 rounded-xl h-auto">
+            <TabsList className="bg-white/50 p-1 mb-8 rounded-xl border border-slate-200">
               <TabsTrigger
                 value="image"
-                className="rounded-lg py-3 text-sm font-semibold transition-all data-[state=active]:bg-[#128C7E] data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500 hover:text-slate-900"
+                className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-700 font-semibold"
               >
                 <Layout className="w-4 h-4 mr-2" />
                 Product Card
               </TabsTrigger>
               <TabsTrigger
                 value="text"
-                className="rounded-lg py-3 text-sm font-semibold transition-all data-[state=active]:bg-[#128C7E] data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500 hover:text-slate-900"
+                className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-700 font-semibold"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Direct Share
@@ -359,81 +359,90 @@ export function WhatsAppShare({
                   animate={{ opacity: 1, scale: 1 }}
                   className="space-y-6"
                 >
-                  <div className="bg-white rounded-[24px] p-6 shadow-sm border border-slate-200/60 space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Smartphone className="w-4 h-4 text-slate-400" />
-                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Recipient Details</Label>
-                      </div>
-
-                      <SearchableSelect
-                        options={customers.map((c): SearchableSelectOption => ({
-                          value: c.id,
-                          label: c.name,
-                          subtitle: c.phone,
-                        }))}
-                        value={selectedCustomer}
-                        onValueChange={handleCustomerSelect}
-                        placeholder={loadingCustomers ? "Syncing customers..." : "Select existing customer"}
-                        className="h-12 border-slate-200 rounded-xl bg-slate-50/50"
-                      />
-
-                      <div className="relative py-2">
-                        <div className="absolute inset-0 flex items-center px-2">
-                          <div className="w-full border-t border-slate-100"></div>
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-white px-3 text-slate-300 font-bold tracking-widest">Or Entry</span>
-                        </div>
-                      </div>
-
-                      <Input
-                        placeholder="+91 Phone number"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d+]/g, ""))}
-                        className="h-12 border-slate-200 rounded-xl bg-slate-50/50 text-base"
-                      />
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <MessageCircle className="w-4 h-4 text-slate-400" />
-                          <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Message Preview</Label>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={copyToClipboard}
-                          className="h-8 rounded-lg text-slate-500 hover:text-green-600 hover:bg-green-50"
-                        >
-                          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </Button>
-                      </div>
-
-                      {/* WhatsApp Chat Bubble Style */}
-                      <div className="bg-[#e5ddd5] p-3 rounded-2xl relative min-h-[150px] shadow-inner">
-                        <div className="absolute top-0 right-3 w-0 h-0 border-t-[10px] border-t-[#dcf8c6] border-r-[10px] border-r-transparent -translate-y-2"></div>
-                        <div className="bg-[#dcf8c6] p-4 rounded-xl rounded-tr-none shadow-sm ml-auto max-w-[90%] relative">
-                          <div className="text-[13px] whitespace-pre-wrap font-sans text-[#4a4a4a] leading-relaxed">
-                            {formatProductMessage()}
-                          </div>
-                          <div className="flex items-center justify-end gap-1 mt-1 opacity-40">
-                            <span className="text-[10px]">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            <Check className="w-3 h-3 scale-75" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={shareToWhatsApp}
-                    className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 rounded-2xl font-bold text-base shadow-lg shadow-green-900/10 transition-all hover:translate-y-[-2px]"
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      shareToWhatsApp();
+                    }}
+                    className="contents"
                   >
-                    <Send className="w-5 h-5 mr-3" />
-                    Open in WhatsApp
-                  </Button>
+                    <div className="bg-white rounded-[24px] p-6 shadow-sm border border-slate-200/60 space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="w-4 h-4 text-slate-400" />
+                          <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Recipient Details</Label>
+                        </div>
+
+                        <SearchableSelect
+                          options={customers.map((c): SearchableSelectOption => ({
+                            value: c.id,
+                            label: c.name,
+                            subtitle: c.phone,
+                          }))}
+                          value={selectedCustomer}
+                          onValueChange={handleCustomerSelect}
+                          placeholder={loadingCustomers ? "Syncing customers..." : "Select existing customer"}
+                          className="h-12 border-slate-200 rounded-xl bg-slate-50/50"
+                        />
+
+                        <div className="relative py-2">
+                          <div className="absolute inset-0 flex items-center px-2">
+                            <div className="w-full border-t border-slate-100"></div>
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white px-3 text-slate-300 font-bold tracking-widest">Or Entry</span>
+                          </div>
+                        </div>
+
+                        <Input
+                          placeholder="+91 Phone number"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d+]/g, ""))}
+                          className="h-12 border-slate-200 rounded-xl bg-slate-50/50 text-base"
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <MessageCircle className="w-4 h-4 text-slate-400" />
+                            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Message Preview</Label>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={copyToClipboard}
+                            className="h-8 rounded-lg text-slate-500 hover:text-green-600 hover:bg-green-50"
+                          >
+                            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                          </Button>
+                        </div>
+
+                        {/* WhatsApp Chat Bubble Style */}
+                        <div className="bg-[#e5ddd5] p-3 rounded-2xl relative min-h-[150px] shadow-inner">
+                          <div className="absolute top-0 right-3 w-0 h-0 border-t-[10px] border-t-[#dcf8c6] border-r-[10px] border-r-transparent -translate-y-2"></div>
+                          <div className="bg-[#dcf8c6] p-4 rounded-xl rounded-tr-none shadow-sm ml-auto max-w-[90%] relative">
+                            <div className="text-[13px] whitespace-pre-wrap font-sans text-[#4a4a4a] leading-relaxed">
+                              {formatProductMessage()}
+                            </div>
+                            <div className="flex items-center justify-end gap-1 mt-1 opacity-40">
+                              <span className="text-[10px]">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              <Check className="w-3 h-3 scale-75" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 rounded-2xl font-bold text-base shadow-lg shadow-green-900/10 transition-all hover:translate-y-[-2px]"
+                    >
+                      <Send className="w-5 h-5 mr-3" />
+                      Open in WhatsApp
+                    </Button>
+                  </form>
                 </motion.div>
               </TabsContent>
             </AnimatePresence>
