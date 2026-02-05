@@ -396,11 +396,10 @@ export function NewOrderForm({
                       className={`p-4 border rounded-lg ${hasError ? 'border-red-500 bg-red-50 dark:bg-red-950/10' : ''
                         }`}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex flex-wrap items-start gap-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex gap-2 mb-1">
                             <p className="font-medium">{item.productName}</p>
-                            {getStockBadge(item.stockStatus, item.maxStock)}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span>Cost: ₹{item.unitCost}</span>
