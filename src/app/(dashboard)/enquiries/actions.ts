@@ -12,6 +12,14 @@ export async function convertEnquiryToOrder(formData: FormData) {
         return { success: false, message: "Authentication required" };
     }
 
+    // --- CHECK LIMITS with Security Check ---
+    const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+    const subscription = await checkAndDowngradeSubscription(user.id)
+
+    if (!subscription) {
+        return { success: false, message: "Subscription record missing" }
+    }
+
     try {
         // 1. Extract Data
         const enquiryId = formData.get("enquiryId") as string;

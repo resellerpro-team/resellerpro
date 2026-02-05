@@ -27,29 +27,22 @@ export default async function DashboardLayout({
     redirect('/signin')
   }
 
-  // Fetch profile and subscription in parallel for better performance
-  // Added email_verified to profile selection
-  const [profileResult, subscriptionResult] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('full_name, avatar_url, business_name, email_verified')
-      .eq('id', user.id)
-      .single(),
-    supabase
-      .from('user_subscriptions')
-      .select('plan:subscription_plans(display_name)')
-      .eq('user_id', user.id)
-      .single()
-  ])
+  // Fetch profile and subscription initialization
+  const profileResult = await supabase
+    .from('profiles')
+    .select('full_name, avatar_url, business_name, email_verified')
+    .eq('id', user.id)
+    .single()
 
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+  let subscription = await checkAndDowngradeSubscription(user.id)
   let profile = profileResult.data
-  let subscription = subscriptionResult.data
 
   // SELF-HEALING: If profile or subscription is missing, ensure base initialization
   if ((!profile || !subscription) && user) {
     try {
       console.log('Self-healing initialization for user:', user.id)
-      
+
       // 1. Ensure Profile exists (using upsert to avoid duplicate errors)
       if (!profile) {
         const { data: newProfile, error: pError } = await supabase
@@ -62,7 +55,7 @@ export default async function DashboardLayout({
           }, { onConflict: 'id' })
           .select()
           .single()
-        
+
         if (!pError) profile = newProfile
       }
 
@@ -87,7 +80,7 @@ export default async function DashboardLayout({
             }, { onConflict: 'user_id' }) // Handle conflict gracefully
             .select('plan:subscription_plans(display_name)')
             .single()
-          
+
           if (!sError) subscription = newSub
         }
       }

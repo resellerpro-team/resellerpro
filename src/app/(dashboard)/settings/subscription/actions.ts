@@ -55,42 +55,35 @@ export async function getSubscriptionData() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  await ensureSubscriptionExists(user.id)
-
-  const { data: subscription } = await supabase
-    .from('user_subscriptions')
-    .select(`*, plan:subscription_plans(*)`)
-    .eq('user_id', user.id)
-    .single()
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+  const subscription = await checkAndDowngradeSubscription(user.id)
 
   if (!subscription) return null
 
   const { PLAN_LIMITS } = await import('@/config/pricing')
-  // Handle array or object for plan
 
+  // Re-calculate plan info after potential downgrade
   const planData = subscription.plan
   const planNameRaw = (Array.isArray(planData) ? planData[0]?.name : planData?.name)?.toLowerCase() || 'free'
+  // Handle array or object for plan
+
   const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS
   const limits = PLAN_LIMITS[planKey]
 
   // --- FETCH USAGE ---
-  const periodStart = new Date()
-  periodStart.setDate(1)
-  periodStart.setHours(0, 0, 0, 0)
+  // Count total records instead of monthly (requested change)
 
-  // 1. Orders (This Month)
+  // 1. Orders (Total)
   const { count: ordersCount } = await supabase
     .from('orders')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
-    .gte('created_at', periodStart.toISOString())
 
-  // 2. Enquiries (This Month)
+  // 2. Enquiries (Total)
   const { count: enquiriesCount } = await supabase
     .from('enquiries')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
-    .gte('created_at', periodStart.toISOString())
 
   // 3. Products (Total)
   const { count: productsCount } = await supabase

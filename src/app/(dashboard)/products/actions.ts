@@ -27,19 +27,15 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, message: "Not authenticated" };
 
-  // --- CHECK LIMITS ---
-  const { data: subscription } = await supabase
-    .from('user_subscriptions')
-    .select('plan:subscription_plans(name)')
-    .eq('user_id', user.id)
-    .single();
+  // --- CHECK LIMITS with Security Check ---
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils');
+  const subscription = await checkAndDowngradeSubscription(user.id);
+
+  if (!subscription) return { success: false, message: "Subscription record missing" };
 
   const { PLAN_LIMITS } = await import('@/config/pricing');
-  // Handle potential nested array from Supabase join
-  const planData = subscription?.plan;
-  // @ts-expect-error - Plan data structure can vary
-  const planName = (Array.isArray(planData) ? planData[0]?.name : planData?.name);
-  const planNameRaw = planName?.toLowerCase() || 'free';
+  const planData = subscription.plan;
+  const planNameRaw = (Array.isArray(planData) ? planData[0]?.name : planData?.name)?.toLowerCase() || 'free';
   const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS;
   const limits = PLAN_LIMITS[planKey];
 
@@ -51,6 +47,7 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
       .eq('user_id', user.id);
 
     if ((count || 0) >= limits.products) {
+      console.log(`[SECURITY] Product limit reached for user ${user.id}: ${count}/${limits.products}`);
       return {
         success: false,
         message: `You've reached your limit of ${limits.products} products on the ${planKey} plan. Upgrade to add more!`,
@@ -60,6 +57,7 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
 
   const valid = ProductSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!valid.success) {
+    console.error("Validation error during product creation:", valid.error.flatten());
     return {
       success: false,
       message: "Invalid form data",
@@ -80,7 +78,10 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
   // We'll check indices 0 to 9 (assuming frontend sends image_0, image_1...)
   // But strictly stop once we have `maxImages` successful uploads.
   for (let i = 0; i < 10; i++) {
-    if (uploadedCount >= maxImages) break;
+    if (uploadedCount >= maxImages) {
+      console.log(`[SECURITY] Max images (${maxImages}) reached for product creation. Skipping image_${i}.`);
+      break;
+    }
 
     const file = formData.get(`image_${i}`) as File | null;
     if (!file || file.size === 0) continue;
@@ -88,14 +89,16 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
     const ext = file.name.split(".").pop();
     const name = `${user.id}/${Date.now()}-${i}.${ext}`;
 
-    const { error } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("product-images")
       .upload(name, file);
 
-    if (!error) {
+    if (!uploadError) {
       const { data } = supabase.storage.from("product-images").getPublicUrl(name);
       imageUrls.push(data.publicUrl);
       uploadedCount++;
+    } else {
+      console.error(`[STORAGE] Image upload failed for image_${i}:`, uploadError.message);
     }
   }
 
@@ -107,7 +110,10 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
     images: imageUrls.length ? imageUrls : null,
   });
 
-  if (error) return { success: false, message: error.message };
+  if (error) {
+    console.error("Database error creating product:", error.message);
+    return { success: false, message: error.message };
+  }
 
   return { success: true, message: "Product created successfully" };
 }
@@ -119,12 +125,25 @@ export async function updateProduct(prev: FormState, formData: FormData): Promis
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, message: "Not authenticated" };
 
+  // --- SECURITY CHECK ---
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils');
+  const subscription = await checkAndDowngradeSubscription(user.id);
+
+  if (!subscription) return { success: false, message: "Subscription record missing" };
+
+  const { PLAN_LIMITS } = await import('@/config/pricing');
+  const planData = subscription.plan;
+  const planNameRaw = (Array.isArray(planData) ? planData[0]?.name : planData?.name)?.toLowerCase() || 'free';
+  const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS;
+  const limits = PLAN_LIMITS[planKey];
+
   const ProductUpdateSchema = ProductSchema.extend({
     id: z.string().uuid(),
   });
 
   const valid = ProductUpdateSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!valid.success) {
+    console.error("Validation error during product update:", valid.error.flatten());
     return {
       success: false,
       message: "Invalid form data",
@@ -141,9 +160,13 @@ export async function updateProduct(prev: FormState, formData: FormData): Promis
     const ext = file.name.split(".").pop();
     const name = `${user.id}/${Date.now()}.${ext}`;
 
-    await supabase.storage.from("product-images").upload(name, file);
-    const { data } = supabase.storage.from("product-images").getPublicUrl(name);
-    image_url = data.publicUrl;
+    const { error: uploadError } = await supabase.storage.from("product-images").upload(name, file);
+    if (uploadError) {
+      console.error("[STORAGE] Image upload failed during product update:", uploadError.message);
+    } else {
+      const { data } = supabase.storage.from("product-images").getPublicUrl(name);
+      image_url = data.publicUrl;
+    }
   }
 
   const { error } = await supabase
@@ -151,7 +174,10 @@ export async function updateProduct(prev: FormState, formData: FormData): Promis
     .update({ ...input, ...(image_url ? { image_url } : {}) })
     .eq("id", id);
 
-  if (error) return { success: false, message: error.message };
+  if (error) {
+    console.error("Database error updating product:", error.message);
+    return { success: false, message: error.message };
+  }
 
   return { success: true, message: "Product updated" };
 }
