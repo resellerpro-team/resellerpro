@@ -81,7 +81,12 @@ export async function middleware(request: NextRequest) {
           // 🏁 RACE CONDITION PREVENTION (Grace Period)
           // If the session was issued in the last 30 seconds, let it through. 
           // Database replication/indexing might take a moment.
-          const issuedAt = session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at).getTime() : 0
+          // Use last_sign_in_at first, but fall back to session age calculation for OTP verification flows
+          const lastSignInAt = session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at).getTime() : 0
+          // Calculate session creation time from expires_at (sessions typically last 1 hour)
+          const expiresAt = session.expires_at ? session.expires_at * 1000 : 0
+          const sessionAge = expiresAt ? Date.now() - (expiresAt - 3600000) : Infinity // Assume 1hr session
+          const issuedAt = lastSignInAt || (expiresAt ? expiresAt - 3600000 : 0)
           const now = Date.now()
           const isBrandNewSession = (now - issuedAt) < 30000 // 30s grace
 

@@ -169,10 +169,9 @@ export function OrderStatusUpdate({
         setCourierName('')
         setTrackingNumber('')
 
-        // Invalidate orders query
+        // Invalidate orders query & stats
         queryClient.invalidateQueries({ queryKey: ['orders'] })
-
-        router.refresh()
+        queryClient.invalidateQueries({ queryKey: ['orders-stats'] })
       } else {
         toast({
           title: 'Error',
@@ -212,10 +211,9 @@ export function OrderStatusUpdate({
 
         onStatusUpdated?.(oldStatus)
 
-        // Invalidate orders query
+        // Invalidate orders query & stats
         queryClient.invalidateQueries({ queryKey: ['orders'] })
-
-        router.refresh()
+        queryClient.invalidateQueries({ queryKey: ['orders-stats'] })
       } else {
         // FAILURE: Show error but don't change anything
         toast({

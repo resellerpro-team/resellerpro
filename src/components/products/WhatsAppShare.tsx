@@ -62,6 +62,8 @@ export function WhatsAppShare({
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const supabase = createClient();
@@ -71,6 +73,11 @@ export function WhatsAppShare({
       fetchCustomers();
     }
   }, [open]);
+
+  useEffect(() => {
+    // Detect mobile device
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
 
   const fetchCustomers = async () => {
     setLoadingCustomers(true);
@@ -186,6 +193,81 @@ export function WhatsAppShare({
     }
   };
 
+  const shareProductImage = async () => {
+    if (!navigator.share) {
+      toast({
+        title: "Not Supported",
+        description: "Sharing is not supported on this browser. Please use download instead.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSharing(true);
+    try {
+      const imageUrl = allImages[selectedImageIndex];
+      if (!imageUrl) return;
+
+      // Fetch image as blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+
+      // Create file for sharing
+      const fileName = `${product.name.replace(/[^a-z0-9]/gi, "_")}_${selectedImageIndex + 1}.jpg`;
+      const file = new File([blob], fileName, { type: blob.type });
+
+      // Check if files can be shared
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: product.name,
+          text: `Check out ${product.name} - ₹${product.selling_price}`,
+        });
+
+        toast({
+          title: "Success",
+          description: "Product image shared! Opening WhatsApp chat...",
+        });
+
+        // After sharing, open WhatsApp chat with the selected customer if possible
+        if (phoneNumber) {
+          setTimeout(() => {
+            const cleanNumber = phoneNumber.replace(/[^\d+]/g, "").replace("+", "");
+            const encodedMessage = encodeURIComponent(formatProductMessage());
+            window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, "_blank");
+          }, 1000);
+        }
+      } else {
+        // Fallback to download
+        const link = document.createElement("a");
+        link.download = fileName;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+        toast({
+          title: "Info",
+          description: "Sharing not available. Image downloaded instead.",
+        });
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        toast({
+          title: "Cancelled",
+          description: "Share cancelled",
+        });
+      } else {
+        toast({
+          title: "Failed",
+          description: "Could not share image",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const shareToWhatsApp = () => {
     if (!phoneNumber) {
       toast({ title: "Phone Required", variant: "destructive" });
@@ -240,17 +322,17 @@ export function WhatsAppShare({
 
         <div className="px-4 py-6 sm:px-8 max-h-[75vh] overflow-y-auto">
           <Tabs defaultValue="image" className="w-full">
-            <TabsList className="bg-white/50 p-1 mb-8 rounded-xl border border-slate-200">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 mb-8 rounded-xl h-auto">
               <TabsTrigger
                 value="image"
-                className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-700 font-semibold"
+                className="rounded-lg py-3 text-sm font-semibold transition-all data-[state=active]:bg-[#128C7E] data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500 hover:text-slate-900"
               >
                 <Layout className="w-4 h-4 mr-2" />
                 Product Card
               </TabsTrigger>
               <TabsTrigger
                 value="text"
-                className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-700 font-semibold"
+                className="rounded-lg py-3 text-sm font-semibold transition-all data-[state=active]:bg-[#128C7E] data-[state=active]:text-white data-[state=active]:shadow-md text-slate-500 hover:text-slate-900"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Direct Share
@@ -333,23 +415,46 @@ export function WhatsAppShare({
                     </div>
                   </div>
 
-                  <Button
-                    onClick={downloadProductCard}
-                    disabled={downloading}
-                    className="w-full bg-[#128C7E] hover:bg-[#075E54] text-white h-14 rounded-2xl font-bold text-base shadow-lg shadow-green-900/10 transition-all hover:translate-y-[-2px] active:translate-y-[1px]"
-                  >
-                    {downloading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Generating Card...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Download className="w-5 h-5" />
-                        Download High-Res Card
-                      </div>
+                  {/* Share and Download Buttons */}
+                  <div className="space-y-3">
+                    {isMobile && (
+                      <Button
+                        onClick={shareProductImage}
+                        disabled={isSharing || downloading}
+                        className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 rounded-2xl font-bold text-base shadow-lg shadow-green-900/10 transition-all hover:translate-y-[-2px] active:translate-y-[1px]"
+                      >
+                        {isSharing ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Preparing to Share...
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Share2 className="w-5 h-5" />
+                            Share Product Image
+                          </div>
+                        )}
+                      </Button>
                     )}
-                  </Button>
+
+                    <Button
+                      onClick={downloadProductCard}
+                      disabled={downloading || isSharing}
+                      className="w-full bg-[#128C7E] hover:bg-[#075E54] text-white h-14 rounded-2xl font-bold text-base shadow-lg shadow-green-900/10 transition-all hover:translate-y-[-2px] active:translate-y-[1px]"
+                    >
+                      {downloading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Generating Card...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Download className="w-5 h-5" />
+                          Download High-Res Card
+                        </div>
+                      )}
+                    </Button>
+                  </div>
                 </motion.div>
               </TabsContent>
 

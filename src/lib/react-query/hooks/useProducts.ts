@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 
 export function useProducts(queryString: string) {
   return useQuery({
@@ -10,5 +10,6 @@ export function useProducts(queryString: string) {
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
+    placeholderData: keepPreviousData,
   });
 }
