@@ -394,7 +394,7 @@ export async function verifyPaymentAndActivate(
         title: 'Wallet credited',
         message: `₹${reward.amount} added to your wallet (Referral reward)`,
         entityType: 'wallet',
-        priority: 'high',
+        priority: 'low',
       })
     }
   } catch (rewardError: any) {

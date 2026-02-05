@@ -245,7 +245,7 @@ export async function signup(
         title: 'Wallet credited',
         message: `₹${referralResult.amount} added to your wallet`,
         entityType: 'wallet',
-        priority: 'high',
+        priority: 'low',
       })
     }
   }
