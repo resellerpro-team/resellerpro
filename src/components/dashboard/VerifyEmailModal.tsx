@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { verifyOtp } from '@/app/actions/verify-otp'
-import { sendVerificationOtp } from '@/app/actions/send-verification-otp'
+import { sendVerificationOtp, getRecentOtpStatus } from '@/app/actions/send-verification-otp'
 import { Loader2, CheckCircle2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -31,15 +31,36 @@ export function VerifyEmailModal({ open, onOpenChange, email, onVerified }: Veri
     const [otp, setOtp] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [resendLoading, setResendLoading] = useState(false)
+    const [isCheckingStatus, setIsCheckingStatus] = useState(false)
     const [timeLeft, setTimeLeft] = useState(0)
 
-    // Reset step when modal opens/closes
+    // Check for recent OTP when modal opens
     useEffect(() => {
-        if (open) {
-            setStep('send')
+        const checkStatus = async () => {
+            if (open && email) {
+                setIsCheckingStatus(true)
+                try {
+                    const res = await getRecentOtpStatus(email)
+                    if (res.hasRecentOtp) {
+                        setStep('verify')
+                        setTimeLeft(res.remainingSeconds || 0)
+                    } else {
+                        setStep('send')
+                    }
+                } catch (error) {
+                    console.error('Error checking OTP status:', error)
+                    setStep('send')
+                } finally {
+                    setIsCheckingStatus(false)
+                }
+            }
+        }
+
+        checkStatus()
+        if (!open) {
             setOtp('')
         }
-    }, [open])
+    }, [open, email])
 
     // Countdown timer logic
     useEffect(() => {
@@ -60,7 +81,7 @@ export function VerifyEmailModal({ open, onOpenChange, email, onVerified }: Veri
                     description: `We've sent a code to ${email}`,
                 })
                 setStep('verify')
-                setTimeLeft(60)
+                setTimeLeft(300) // 5 minutes cooldown
             } else {
                 if (res.alreadyVerified) {
                     toast({ title: 'Already Verified', description: 'Your email is already verified.', })
@@ -141,7 +162,12 @@ export function VerifyEmailModal({ open, onOpenChange, email, onVerified }: Veri
                     </DialogDescription>
                 </DialogHeader>
 
-                {step === 'send' ? (
+                {isCheckingStatus ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                        <p className="text-sm text-muted-foreground">Checking verification status...</p>
+                    </div>
+                ) : step === 'send' ? (
                     <div className="py-6">
                         <Button
                             className="w-full"
