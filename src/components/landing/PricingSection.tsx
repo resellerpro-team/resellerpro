@@ -139,7 +139,7 @@ export default function PricingSection() {
   ]
 
   return (
-    <section id="pricing" className="py-19 bg-background relative overflow-hidden">
+    <section id="pricing" className="py-24 bg-background relative overflow-hidden">
 
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
