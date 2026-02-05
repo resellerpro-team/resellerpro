@@ -114,7 +114,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
       </ChartContainer>
 
       <CardFooter className="flex-col items-center gap-2 text-sm w-full">
-        <div className="flex gap-2 leading-none font-medium text-black mt-10">
+        <div className="flex gap-2 leading-none font-bold text-muted-foreground mt-10">
           {totalRevenue > 0 ? (
             <div className="flex flex-nowrap">
               Trending {Number(weeklyGrowth) >= 0 ? "up" : "down"} by{" "}
