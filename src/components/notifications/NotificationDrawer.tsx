@@ -70,16 +70,16 @@ export function NotificationDrawer() {
             if (data.data) {
                 const newNotifications = data.data
                 setNotifications(newNotifications)
-                
+
                 const newUnreadCount = newNotifications.filter((n: Notification) => !n.is_read).length
-                
+
                 // Alert / Auto-Open Logic for High Priority
                 const newHighPriority = newNotifications.find((n: Notification) => n.priority === 'high' && !n.is_read && n.id !== lastNotifiedId)
                 if (newHighPriority) {
                     setLastNotifiedId(newHighPriority.id)
                     setIsPopoverOpen(true) // Auto-open the popover signal
                 }
-                
+
                 setUnreadCount(newUnreadCount)
             }
         } catch (error) {
@@ -113,9 +113,9 @@ export function NotificationDrawer() {
 
     useEffect(() => {
         fetchNotifications()
-        
+
         const supabase = createClient()
-        
+
         // Listen for new notifications in real-time
         const channel = supabase
             .channel('notifications_realtime')
@@ -130,7 +130,7 @@ export function NotificationDrawer() {
                     const newNotif = payload.new as Notification
                     setNotifications(prev => [newNotif, ...prev])
                     setUnreadCount(prev => prev + 1)
-                    
+
                     // High Priority Auto-Open Trigger
                     if (newNotif.priority === 'high') {
                         setIsPopoverOpen(true)
@@ -161,7 +161,7 @@ export function NotificationDrawer() {
                 <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative hover:bg-muted/50 transition-colors">
                         <Bell className={cn(
-                            "h-5 w-5", 
+                            "h-5 w-5",
                             unreadCount > 0 && "text-primary animate-ring",
                             hasHighPriorityUnread && "text-red-500"
                         )} />
@@ -232,43 +232,49 @@ export function NotificationDrawer() {
                             </TabsTrigger>
                         </TabsList>
 
-                        <ScrollArea className="max-h-[420px]">
-                            <TabsContent value="unread" className="m-0 p-3 space-y-3 outline-none">
-                                {unreadNotifications.length === 0 ? (
-                                    <EmptyState
-                                        icon={Sparkles}
-                                        title="All caught up!"
-                                        message="You have no unread notifications at the moment."
-                                    />
-                                ) : (
-                                    unreadNotifications.map(notification => (
-                                        <NotificationCard
-                                            key={notification.id}
-                                            notification={notification}
-                                            compact
-                                            onMarkRead={() => markAsRead(notification.id)}
+                        <TabsContent value="unread" className="m-0 p-0 outline-none">
+                            <ScrollArea className="h-[400px]">
+                                <div className="p-3 space-y-3">
+                                    {unreadNotifications.length === 0 ? (
+                                        <EmptyState
+                                            icon={Sparkles}
+                                            title="All caught up!"
+                                            message="You have no unread notifications at the moment."
                                         />
-                                    ))
-                                )}
-                            </TabsContent>
-                            <TabsContent value="history" className="m-0 p-3 space-y-3 outline-none">
-                                {recentReadNotifications.length === 0 ? (
-                                    <EmptyState
-                                        icon={BellOff}
-                                        title="Empty History"
-                                        message="Recent notifications will appear here."
-                                    />
-                                ) : (
-                                    recentReadNotifications.map(notification => (
-                                        <NotificationCard
-                                            key={notification.id}
-                                            notification={notification}
-                                            compact
+                                    ) : (
+                                        unreadNotifications.map(notification => (
+                                            <NotificationCard
+                                                key={notification.id}
+                                                notification={notification}
+                                                compact
+                                                onMarkRead={() => markAsRead(notification.id)}
+                                            />
+                                        ))
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </TabsContent>
+                        <TabsContent value="history" className="m-0 p-0 outline-none">
+                            <ScrollArea className="h-[400px]">
+                                <div className="p-3 space-y-3">
+                                    {recentReadNotifications.length === 0 ? (
+                                        <EmptyState
+                                            icon={BellOff}
+                                            title="Empty History"
+                                            message="Recent notifications will appear here."
                                         />
-                                    ))
-                                )}
-                            </TabsContent>
-                        </ScrollArea>
+                                    ) : (
+                                        recentReadNotifications.map(notification => (
+                                            <NotificationCard
+                                                key={notification.id}
+                                                notification={notification}
+                                                compact
+                                            />
+                                        ))
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </TabsContent>
                     </Tabs>
 
                     <div className="p-3 border-t bg-muted/20">
@@ -325,7 +331,7 @@ export function NotificationDrawer() {
                         </div>
                     </SheetHeader>
 
-                    <Tabs defaultValue="action" className="flex-1 flex flex-col">
+                    <Tabs defaultValue="action" className="flex-1 flex flex-col min-h-0">
                         <div className="px-6 py-4 bg-muted/10">
                             <TabsList className="grid w-full grid-cols-2 h-11 p-1 bg-background/50 border shadow-sm rounded-xl">
                                 <TabsTrigger
@@ -343,9 +349,9 @@ export function NotificationDrawer() {
                             </TabsList>
                         </div>
 
-                        <div className="flex-1 relative">
-                            <ScrollArea className="absolute inset-0 h-full w-full">
-                                <TabsContent value="action" className="m-0 p-4 space-y-4 outline-none pb-12">
+                        <TabsContent value="action" className="m-0 flex-1 min-h-0 outline-none data-[state=active]:flex flex-col">
+                            <ScrollArea className="flex-1 min-h-0">
+                                <div className="p-4 space-y-4 pb-12">
                                     {unreadNotifications.length === 0 ? (
                                         <EmptyState
                                             icon={Sparkles}
@@ -361,9 +367,13 @@ export function NotificationDrawer() {
                                             />
                                         ))
                                     )}
-                                </TabsContent>
+                                </div>
+                            </ScrollArea>
+                        </TabsContent>
 
-                                <TabsContent value="history" className="m-0 p-4 space-y-4 outline-none pb-12">
+                        <TabsContent value="history" className="m-0 flex-1 min-h-0 outline-none data-[state=active]:flex flex-col">
+                            <ScrollArea className="flex-1 min-h-0">
+                                <div className="p-4 space-y-4 pb-12">
                                     {readNotifications.length === 0 ? (
                                         <EmptyState
                                             icon={BellOff}
@@ -378,9 +388,9 @@ export function NotificationDrawer() {
                                             />
                                         ))
                                     )}
-                                </TabsContent>
+                                </div>
                             </ScrollArea>
-                        </div>
+                        </TabsContent>
                     </Tabs>
                 </SheetContent>
             </Sheet>
@@ -400,11 +410,11 @@ function NotificationCard({
     const [isExpanded, setIsExpanded] = useState(false)
     const getIconConfig = (type: string, priority: string) => {
         if (priority === 'high') {
-             return { icon: AlertCircle, color: "bg-red-500/10 text-red-500 border-red-500/20", glow: "shadow-[0_0_12px_rgba(239,68,68,0.2)]" }
+            return { icon: AlertCircle, color: "bg-red-500/10 text-red-500 border-red-500/20", glow: "shadow-[0_0_12px_rgba(239,68,68,0.2)]" }
         }
-        
+
         if (priority === 'low' || type === 'marketing') {
-             return { icon: Sparkles, color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", glow: "" }
+            return { icon: Sparkles, color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", glow: "" }
         }
 
         switch (type) {
@@ -429,7 +439,7 @@ function NotificationCard({
     const { icon: Icon, color, glow } = getIconConfig(notification.type, notification.priority)
 
     return (
-        <div 
+        <div
             onClick={() => setIsExpanded(!isExpanded)}
             className={cn(
                 "group relative flex gap-4 rounded-2xl border transition-all duration-300 cursor-pointer",
@@ -471,7 +481,7 @@ function NotificationCard({
                         )} />
                     )}
                 </div>
-                
+
                 <div className="space-y-2">
                     <p className={cn(
                         "leading-relaxed transition-all duration-300",
@@ -482,7 +492,7 @@ function NotificationCard({
                         {message}
                     </p>
                     {message.length > 80 && (
-                        <button 
+                        <button
                             className="text-[10px] font-black text-primary hover:underline uppercase tracking-tighter"
                         >
                             {isExpanded ? 'Show less' : 'Read full message'}
@@ -497,12 +507,12 @@ function NotificationCard({
                             {formatDistanceToNow(new Date(created_at), { addSuffix: true })}
                         </span>
                         {priority === 'low' && (
-                             <Badge variant="outline" className="text-[8px] h-3 px-1 border-emerald-500/30 text-emerald-500 bg-emerald-500/5 font-black">INSIGHT</Badge>
+                            <Badge variant="outline" className="text-[8px] h-3 px-1 border-emerald-500/30 text-emerald-500 bg-emerald-500/5 font-black">INSIGHT</Badge>
                         )}
                     </div>
                     <div className="flex items-center gap-2">
                         {notification.metadata?.action_url && (
-                             <Button
+                            <Button
                                 variant="outline"
                                 size="sm"
                                 className="h-7 px-3 text-[10px] font-black uppercase rounded-lg bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary transition-all z-20"
