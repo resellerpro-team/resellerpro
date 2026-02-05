@@ -140,6 +140,8 @@ export default async function OrderDetailsPage({
             <InvoiceActions
               orderNumber={order.order_number}
               contentId="hidden-invoice-capture"
+              customerPhone={order.customers?.phone}
+              customerName={order.customers?.name}
             />
           </div>
 
