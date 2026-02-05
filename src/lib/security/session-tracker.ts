@@ -86,10 +86,14 @@ async function hashToken(token: string): Promise<string> {
  * Create or update a session record for the user
  */
 export async function trackSession(data: SessionData): Promise<void> {
-    console.log('[TRACKER DEBUG] trackSession called for userId:', data.userId)
+    if (process.env.NODE_ENV !== 'production') {
+        console.log('[TRACKER DEBUG] trackSession called for userId:', data.userId)
+    }
     try {
         const supabase = await createAdminClient()
-        console.log('[TRACKER DEBUG] Admin client created')
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('[TRACKER DEBUG] Admin client created')
+        }
 
         const deviceInfo = data.userAgent ? parseUserAgent(data.userAgent) : null
 
@@ -101,7 +105,9 @@ export async function trackSession(data: SessionData): Promise<void> {
 
         // Hash the session token for security (we just need to identify it)
         const hashedToken = await hashToken(data.sessionToken)
-        console.log('[TRACKER DEBUG] Token hashed (length):', hashedToken.length)
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('[TRACKER DEBUG] Token hashed (length):', hashedToken.length)
+        }
 
         // Upsert session record
         const { data: upsertResult, error } = await supabase
@@ -128,12 +134,18 @@ export async function trackSession(data: SessionData): Promise<void> {
             .select()
 
         if (error) {
-            console.error('[TRACKER DEBUG] DB Upsert error:', error)
+            if (process.env.NODE_ENV !== 'production') {
+                console.error('[TRACKER DEBUG] DB Upsert error:', error)
+            }
         } else {
-            console.log('[TRACKER DEBUG] DB Upsert success, record ID:', upsertResult?.[0]?.id)
+            if (process.env.NODE_ENV !== 'production') {
+                console.log('[TRACKER DEBUG] DB Upsert success, record ID:', upsertResult?.[0]?.id)
+            }
         }
     } catch (error) {
-        console.error('[TRACKER DEBUG] General tracking error:', error)
+        if (process.env.NODE_ENV !== 'production') {
+            console.error('[TRACKER DEBUG] General tracking error:', error)
+        }
     }
 }
 

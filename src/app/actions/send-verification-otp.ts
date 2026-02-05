@@ -40,3 +40,38 @@ export async function sendVerificationOtp(email: string) {
         return { success: false, message: error.message || 'Failed to send OTP.' }
     }
 }
+
+export async function getRecentOtpStatus(email: string) {
+    const parsed = SendOtpSchema.safeParse({ email })
+    if (!parsed.success) {
+        return { hasRecentOtp: false }
+    }
+
+    try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            return { hasRecentOtp: false }
+        }
+
+        const recentOtp = await OtpService.getRecentOtp(email)
+
+        if (recentOtp) {
+            const createdAt = new Date(recentOtp.created_at)
+            const now = new Date()
+            const elapsedSeconds = Math.floor((now.getTime() - createdAt.getTime()) / 1000)
+            const remainingSeconds = Math.max(0, 300 - elapsedSeconds)
+
+            return {
+                hasRecentOtp: true,
+                remainingSeconds,
+            }
+        }
+
+        return { hasRecentOtp: false }
+    } catch (error) {
+        console.error('Check Recent OTP Error:', error)
+        return { hasRecentOtp: false }
+    }
+}

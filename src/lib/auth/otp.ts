@@ -108,6 +108,28 @@ export class OtpService {
     }
 
     /**
+     * Gets the most recent valid (non-expired, non-verified) OTP for an email.
+     */
+    static async getRecentOtp(email: string) {
+        const supabase = await createAdminClient()
+
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+
+        const { data: recentOtp } = await supabase
+            .from('auth_otps')
+            .select('*')
+            .eq('email', email)
+            .eq('verified', false)
+            .gte('created_at', fiveMinutesAgo)
+            .gt('expires_at', new Date().toISOString())
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+        return recentOtp || null
+    }
+
+    /**
      * Verifies the OTP for a given email.
      */
     static async verifyOtp(email: string, code: string) {
