@@ -41,20 +41,15 @@ export async function createCustomer(
     return { success: false, message: 'Authentication required.' }
   }
 
-  // --- CHECK LIMITS ---
-  const { data: subscription } = await supabase
-    .from('user_subscriptions')
-    .select('plan:subscription_plans(name)')
-    .eq('user_id', user.id)
-    .single()
+  // --- CHECK LIMITS with Security Check ---
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+  const subscription = await checkAndDowngradeSubscription(user.id)
+
+  if (!subscription) return { success: false, message: 'Subscription record missing' }
 
   const { PLAN_LIMITS } = await import('@/config/pricing')
-
-  // Handle potential array return for joined relation
-  const planData = subscription?.plan
-  // @ts-expect-error - Plan data structure can vary
+  const planData = subscription.plan
   const planNameRaw = (Array.isArray(planData) ? planData[0]?.name : planData?.name)?.toLowerCase() || 'free'
-
   const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS
   const limits = PLAN_LIMITS[planKey]
 
@@ -180,6 +175,17 @@ export async function updateCustomer(
     id: z.string().uuid('Invalid customer ID.'),
   })
 
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, message: 'Authentication required.' }
+  }
+
+  // --- SECURITY CHECK ---
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+  const subscription = await checkAndDowngradeSubscription(user.id)
+
+  if (!subscription) return { success: false, message: 'Subscription record missing' }
+
   // Validate inputs
   const validated = CustomerUpdateSchema.safeParse({
     id: formData.get('id'),
@@ -286,6 +292,12 @@ export async function deleteCustomer(customerId: string): Promise<FormState> {
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
+
+  // --- SECURITY CHECK ---
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+  const subscription = await checkAndDowngradeSubscription(user.id)
+
+  if (!subscription) return { success: false, message: 'Subscription record missing' }
 
   // Check customer's orders that are NOT delivered/cancelled
   const { data: activeOrders, error: ordersError } = await supabase

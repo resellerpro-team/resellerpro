@@ -233,7 +233,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                   </Button>
                 ) : plan.name === 'free' ? (
                   <Button className="w-full mb-4 text-primary " variant="secondary" disabled>
-                    Starts at end of current plan
+                    Current Plan
                   </Button>
                 ) : (
                   <Button
@@ -247,7 +247,7 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
                         Processing...
                       </>
                     ) : (
-                      plan.name === 'business' ? 'Notify Me' : 'Upgrade Now'
+                      plan.name === 'business' ? 'Notify Me' : 'Subscribe Now'
                     )}
                   </Button>
                 )}
