@@ -201,7 +201,7 @@ export default function EditEnquiryForm({ id }: { id: string }) {
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button type="button" variant="destructive" disabled={isLoading}>
-                                    <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                    <Trash2 className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Delete</span>
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
