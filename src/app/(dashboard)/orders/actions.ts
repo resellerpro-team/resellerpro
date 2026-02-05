@@ -19,21 +19,19 @@ async function canCreateOrder() {
     return { allowed: false, reason: 'Not authenticated' }
   }
 
-  // Get user's subscription
-  const { data: subscription } = await supabase
-    .from('user_subscriptions')
-    .select(`
-      *,
-      plan:subscription_plans(*)
-    `)
-    .eq('user_id', user.id)
-    .single()
+  // Get user's subscription with Security Check
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+  const subscription = await checkAndDowngradeSubscription(user.id)
 
-  const { PLAN_LIMITS } = await import('@/config/pricing') // Dynamic import to avoid cycles if any
+  if (!subscription) {
+    return { allowed: false, reason: 'Subscription record missing' }
+  }
 
-  // Determine plan name (normalize to lowercase keys in PLAN_LIMITS)
-  const planNameRaw = subscription?.plan?.name?.toLowerCase() || 'free'
-  // TS safety: check if it's a valid key, else default to 'free'
+  const { PLAN_LIMITS } = await import('@/config/pricing')
+
+  // Determine plan name
+  const planData = subscription.plan
+  const planNameRaw = (Array.isArray(planData) ? planData[0]?.name : planData?.name)?.toLowerCase() || 'free'
   const planKey = (Object.keys(PLAN_LIMITS).includes(planNameRaw) ? planNameRaw : 'free') as keyof typeof PLAN_LIMITS
 
   const limits = PLAN_LIMITS[planKey]
@@ -44,23 +42,18 @@ async function canCreateOrder() {
     return { allowed: true }
   }
 
-  // Check usage for current month
-  const periodStart = new Date()
-  periodStart.setDate(1)
-  periodStart.setHours(0, 0, 0, 0)
-
-  const { count: ordersThisMonth } = await supabase
+  // Check usage (All-time total as requested)
+  const { count: totalOrders } = await supabase
     .from('orders')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
-    .gte('created_at', periodStart.toISOString())
 
-  const currentCount = ordersThisMonth || 0
+  const currentCount = totalOrders || 0
 
   if (currentCount >= orderLimit) {
     return {
       allowed: false,
-      reason: `You've reached your monthly limit of ${orderLimit} orders on the ${planKey} plan. Upgrade to increase your limit!`,
+      reason: `You've reached your total limit of ${orderLimit} orders on the ${planKey} plan. Upgrade to increase your limit!`,
       currentCount,
       limit: orderLimit,
     }
@@ -301,6 +294,12 @@ export async function updateOrderStatus(formData: FormData) {
     return { success: false, message: 'Authentication required.' }
   }
 
+  // --- SECURITY CHECK ---
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+  const subscription = await checkAndDowngradeSubscription(user.id)
+
+  if (!subscription) return { success: false, message: 'Subscription record missing' }
+
   try {
     const orderId = formData.get('orderId') as string
     const newStatus = formData.get('status') as string
@@ -453,6 +452,12 @@ export async function updatePaymentStatus(formData: FormData) {
     return { success: false, message: 'Authentication required.' }
   }
 
+  // --- SECURITY CHECK ---
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+  const subscription = await checkAndDowngradeSubscription(user.id)
+
+  if (!subscription) return { success: false, message: 'Subscription record missing' }
+
   try {
     const orderId = formData.get('orderId') as string
     const paymentStatus = formData.get('paymentStatus') as string
@@ -510,6 +515,12 @@ export async function deleteOrder(orderId: string) {
     return { success: false, message: 'Authentication required.' }
   }
 
+  // --- SECURITY CHECK ---
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+  const subscription = await checkAndDowngradeSubscription(user.id)
+
+  if (!subscription) return { success: false, message: 'Subscription record missing' }
+
   try {
 
     const { error } = await supabase
@@ -561,6 +572,12 @@ export async function bulkUpdateOrderStatus(orderIds: string[], newStatus: strin
   if (!user) {
     return { success: false, message: 'Authentication required.' }
   }
+
+  // --- SECURITY CHECK ---
+  const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+  const subscription = await checkAndDowngradeSubscription(user.id)
+
+  if (!subscription) return { success: false, message: 'Subscription record missing' }
 
   if (!orderIds.length || !newStatus) {
     return { success: false, message: 'Invalid data provided.' }

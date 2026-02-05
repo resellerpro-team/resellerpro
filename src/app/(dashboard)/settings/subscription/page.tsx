@@ -116,8 +116,8 @@ export default async function SubscriptionPage() {
             <div className="space-y-4 pt-2">
               <h4 className="text-sm font-semibold uppercase tracking-wider opacity-70">Plan Usage</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <MetricBar label="Orders" metric={subscription.metrics.orders} icon={<Package className="h-4 w-4" />} />
-                <MetricBar label="Enquiries" metric={subscription.metrics.enquiries} icon={<AlertCircle className="h-4 w-4" />} />
+                <MetricBar label="Total Orders" metric={subscription.metrics.orders} icon={<Package className="h-4 w-4" />} />
+                <MetricBar label="Total Enquiries" metric={subscription.metrics.enquiries} icon={<AlertCircle className="h-4 w-4" />} />
                 <MetricBar label="Customers" metric={subscription.metrics.customers} icon={<Check className="h-4 w-4" />} />
                 <MetricBar label="Products" metric={subscription.metrics.products} icon={<Zap className="h-4 w-4" />} />
               </div>
@@ -157,28 +157,28 @@ export default async function SubscriptionPage() {
 
                   {/* Orders */}
                   <MetricBar
-                    label="Orders (Monthly)"
+                    label="Total Orders"
                     metric={subscription.metrics.orders}
                     icon={<Package className="h-4 w-4" />}
                   />
 
                   {/* Enquiries */}
                   <MetricBar
-                    label="Enquiries (Monthly)"
+                    label="Total Enquiries"
                     metric={subscription.metrics.enquiries}
                     icon={<AlertCircle className="h-4 w-4" />}
                   />
 
                   {/* Customers */}
                   <MetricBar
-                    label="Customers (Total)"
+                    label="Customers"
                     metric={subscription.metrics.customers}
                     icon={<Check className="h-4 w-4" />}
                   />
 
                   {/* Products */}
                   <MetricBar
-                    label="Products (Total)"
+                    label="Products"
                     metric={subscription.metrics.products}
                     icon={<Zap className="h-4 w-4" />}
                   />

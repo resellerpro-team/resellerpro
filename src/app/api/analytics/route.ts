@@ -164,8 +164,38 @@ export async function GET(req: NextRequest) {
         }
 
         const searchParams = req.nextUrl.searchParams
-        const from = searchParams.get('from') || undefined
-        const to = searchParams.get('to') || undefined
+        let from = searchParams.get('from') || undefined
+        let to = searchParams.get('to') || undefined
+
+        // --- SECURITY: Subscription Check ---
+        const { checkAndDowngradeSubscription } = await import('@/lib/subscription-utils')
+        const subscription = await checkAndDowngradeSubscription(user.id)
+
+        const planData = subscription?.plan
+        const planNameRaw = (Array.isArray(planData) ? planData[0]?.name : planData?.name)?.toLowerCase() || 'free'
+        const isPremium = planNameRaw !== 'free'
+
+        // Enforce 7-day limit for free users
+        if (!isPremium) {
+            const today = new Date()
+            const limitDate = new Date()
+            limitDate.setDate(today.getDate() - 7)
+
+            const restrictedFrom = limitDate.toISOString().split('T')[0]
+            const restrictedTo = today.toISOString().split('T')[0]
+
+            // If no dates provided, use default restricted range
+            if (!from || !to) {
+                from = restrictedFrom
+                to = restrictedTo
+            } else {
+                // If dates provided, ensure they don't exceed the 7-day window
+                const requestedFrom = new Date(from)
+                if (requestedFrom < limitDate) {
+                    from = restrictedFrom
+                }
+            }
+        }
 
         const dateRanges = getDateRanges(from, to)
 

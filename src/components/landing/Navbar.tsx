@@ -29,13 +29,14 @@ export default function Navbar() {
           {/* Center Links */}
           <div className="hidden md:flex items-center space-x-8">
             {['Features', 'Pricing', 'Blog', 'Workflow'].map((item) => (
-              <a
+              <Link
                 key={item}
-                href={`#${item.toLowerCase()}`}
+                href={`/#${item.toLowerCase()}`}
                 className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                scroll={true}
               >
                 {item}
-              </a>
+              </Link>
             ))}
           </div>
 
