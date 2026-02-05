@@ -226,8 +226,17 @@ export function WhatsAppShare({
 
         toast({
           title: "Success",
-          description: "Product image shared successfully",
+          description: "Product image shared! Opening WhatsApp chat...",
         });
+
+        // After sharing, open WhatsApp chat with the selected customer if possible
+        if (phoneNumber) {
+          setTimeout(() => {
+            const cleanNumber = phoneNumber.replace(/[^\d+]/g, "").replace("+", "");
+            const encodedMessage = encodeURIComponent(formatProductMessage());
+            window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, "_blank");
+          }, 1000);
+        }
       } else {
         // Fallback to download
         const link = document.createElement("a");

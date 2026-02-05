@@ -44,6 +44,26 @@ export async function verifyOtp(email: string, code: string) {
             return { success: false, message: 'Failed to update profile verification status.' }
         }
 
+        // 🔐 CRITICAL: Track this session immediately to prevent middleware rejection
+        // After OTP verification, the session must be registered in the DB before redirect
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+            try {
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+                await fetch(`${baseUrl}/api/security/track-session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: user.id,
+                        sessionToken: session.access_token
+                    })
+                })
+                console.log('[OTP] Session tracking initiated for user:', user.id)
+            } catch (trackError) {
+                console.warn('[OTP] Session tracking failed (non-critical):', trackError)
+            }
+        }
+
         revalidatePath('/')
         return { success: true, message: 'Email verified successfully!' }
 
