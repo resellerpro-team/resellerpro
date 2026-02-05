@@ -62,6 +62,8 @@ export function WhatsAppShare({
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const supabase = createClient();
@@ -71,6 +73,11 @@ export function WhatsAppShare({
       fetchCustomers();
     }
   }, [open]);
+
+  useEffect(() => {
+    // Detect mobile device
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
 
   const fetchCustomers = async () => {
     setLoadingCustomers(true);
@@ -183,6 +190,72 @@ export function WhatsAppShare({
       });
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const shareProductImage = async () => {
+    if (!navigator.share) {
+      toast({
+        title: "Not Supported",
+        description: "Sharing is not supported on this browser. Please use download instead.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSharing(true);
+    try {
+      const imageUrl = allImages[selectedImageIndex];
+      if (!imageUrl) return;
+
+      // Fetch image as blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+
+      // Create file for sharing
+      const fileName = `${product.name.replace(/[^a-z0-9]/gi, "_")}_${selectedImageIndex + 1}.jpg`;
+      const file = new File([blob], fileName, { type: blob.type });
+
+      // Check if files can be shared
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: product.name,
+          text: `Check out ${product.name} - ₹${product.selling_price}`,
+        });
+
+        toast({
+          title: "Success",
+          description: "Product image shared successfully",
+        });
+      } else {
+        // Fallback to download
+        const link = document.createElement("a");
+        link.download = fileName;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+        toast({
+          title: "Info",
+          description: "Sharing not available. Image downloaded instead.",
+        });
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        toast({
+          title: "Cancelled",
+          description: "Share cancelled",
+        });
+      } else {
+        toast({
+          title: "Failed",
+          description: "Could not share image",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -333,23 +406,46 @@ export function WhatsAppShare({
                     </div>
                   </div>
 
-                  <Button
-                    onClick={downloadProductCard}
-                    disabled={downloading}
-                    className="w-full bg-[#128C7E] hover:bg-[#075E54] text-white h-14 rounded-2xl font-bold text-base shadow-lg shadow-green-900/10 transition-all hover:translate-y-[-2px] active:translate-y-[1px]"
-                  >
-                    {downloading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Generating Card...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Download className="w-5 h-5" />
-                        Download High-Res Card
-                      </div>
+                  {/* Share and Download Buttons */}
+                  <div className="space-y-3">
+                    {isMobile && (
+                      <Button
+                        onClick={shareProductImage}
+                        disabled={isSharing || downloading}
+                        className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white h-14 rounded-2xl font-bold text-base shadow-lg shadow-green-900/10 transition-all hover:translate-y-[-2px] active:translate-y-[1px]"
+                      >
+                        {isSharing ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Preparing to Share...
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Share2 className="w-5 h-5" />
+                            Share Product Image
+                          </div>
+                        )}
+                      </Button>
                     )}
-                  </Button>
+
+                    <Button
+                      onClick={downloadProductCard}
+                      disabled={downloading || isSharing}
+                      className="w-full bg-[#128C7E] hover:bg-[#075E54] text-white h-14 rounded-2xl font-bold text-base shadow-lg shadow-green-900/10 transition-all hover:translate-y-[-2px] active:translate-y-[1px]"
+                    >
+                      {downloading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Generating Card...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Download className="w-5 h-5" />
+                          Download High-Res Card
+                        </div>
+                      )}
+                    </Button>
+                  </div>
                 </motion.div>
               </TabsContent>
 
