@@ -40,10 +40,10 @@ export const pricingPlans = [
     interval: 'forever',
     description: 'Perfect for getting started',
     features: [
-      `${PLAN_LIMITS.free.orders} Orders/month`,
+      `${PLAN_LIMITS.free.orders} Orders`,
       `${PLAN_LIMITS.free.products} Products`,
       `${PLAN_LIMITS.free.customers} Customers`,
-      `${PLAN_LIMITS.free.enquiries} Enquiries/month`,
+      `${PLAN_LIMITS.free.enquiries} Enquiries`,
       `${PLAN_LIMITS.free.productImages} Images/product`,
     ],
   },
@@ -55,10 +55,10 @@ export const pricingPlans = [
     interval: 'month',
     description: 'For growing businesses',
     features: [
-      `${PLAN_LIMITS.beginner.orders} Orders/month`,
+      `${PLAN_LIMITS.beginner.orders} Orders`,
       `${PLAN_LIMITS.beginner.products} Products`,
       `${PLAN_LIMITS.beginner.customers} Customers`,
-      `${PLAN_LIMITS.beginner.enquiries} Enquiries/month`,
+      `${PLAN_LIMITS.beginner.enquiries} Enquiries`,
       `${PLAN_LIMITS.beginner.productImages} Images/product`,
     ],
   },
@@ -70,10 +70,10 @@ export const pricingPlans = [
     description: 'For growing businesses',
     popular: true,
     features: [
-      `${PLAN_LIMITS.professional.orders} Orders/month`,
+      `${PLAN_LIMITS.professional.orders} Orders`,
       `${PLAN_LIMITS.professional.products} Products`,
       'Unlimited Customers',
-      `${PLAN_LIMITS.professional.enquiries} Enquiries/month`,
+      `${PLAN_LIMITS.professional.enquiries} Enquiries`,
       `${PLAN_LIMITS.professional.productImages} Images/product`,
       'Priority Support'
     ],

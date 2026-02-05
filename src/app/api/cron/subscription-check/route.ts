@@ -17,28 +17,72 @@ export async function GET(req: NextRequest) {
     const supabase = await createAdminClient()
     const today = new Date()
 
-    // 2. Fetch active subscriptions
-    const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('subscription_status', 'expired')
-        .not('subscription_ends_at', 'is', null)
+    // 2. Fetch Free Plan ID for downgrades
+    const { data: freePlan } = await supabase
+        .from('subscription_plans')
+        .select('id')
+        .eq('name', 'free')
+        .single()
 
-    if (error || !profiles) {
-        return NextResponse.json({ error: error?.message }, { status: 500 })
+    // 3. BATCH DOWNGRADE: Find all expired paid subscriptions
+    // We check user_subscriptions table as it's the source of truth for plans
+    const { data: expiredSubs } = await supabase
+        .from('user_subscriptions')
+        .select('user_id, plan:subscription_plans(name)')
+        .lt('current_period_end', today.toISOString())
+        .eq('status', 'active')
+
+    const actuallyExpired = expiredSubs?.filter(s => (s.plan as any)?.name !== 'free') || []
+
+    if (actuallyExpired.length > 0 && freePlan) {
+        console.log(`[CRON] Downgrading ${actuallyExpired.length} expired subscriptions`)
+        for (const sub of actuallyExpired) {
+            // Perform downgrade in user_subscriptions (primary source of truth)
+            await supabase
+                .from('user_subscriptions')
+                .update({
+                    plan_id: freePlan.id,
+                    status: 'active', // Free is always active
+                    current_period_start: today.toISOString(),
+                    current_period_end: new Date(today.getTime() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString(),
+                    cancel_at_period_end: false,
+                    updated_at: today.toISOString()
+                })
+                .eq('user_id', sub.user_id)
+        }
+    }
+
+    // 4. Fetch active subscriptions for reminders (those expiring soon)
+    // We join with profiles to get the email and name
+    const { data: subscriptions, error } = await supabase
+        .from('user_subscriptions')
+        .select(`
+            current_period_end,
+            profile:profiles (
+                email,
+                full_name
+            )
+        `)
+        .eq('status', 'active')
+        .not('current_period_end', 'is', null)
+
+    if (error || !subscriptions) {
+        return NextResponse.json({ error: error?.message, results: { checked: 0 } }, { status: 500 })
     }
 
     const results = {
-        checked: profiles.length,
+        checked: subscriptions.length,
+        downgraded: actuallyExpired.length,
         sent7d: 0,
         sent3d: 0,
         sent1d: 0
     }
 
-    for (const profile of profiles) {
-        if (!profile.subscription_ends_at || !profile.email) continue
+    for (const sub of subscriptions) {
+        const profile = sub.profile as any
+        if (!sub.current_period_end || !profile?.email) continue
 
-        const expiryDate = new Date(profile.subscription_ends_at)
+        const expiryDate = new Date(sub.current_period_end)
         const daysUntilExpiry = differenceInDays(expiryDate, today)
         const expiryString = format(expiryDate, 'dd MMM yyyy')
 
