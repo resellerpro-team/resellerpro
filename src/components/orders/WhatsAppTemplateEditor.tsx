@@ -169,7 +169,7 @@ export function WhatsAppTemplateEditor({
                     .replace(/{items}/g, previewData?.items || '2x Premium Product\n1x Accessory Kit')
                     .replace(/{deliveryDate}/g, previewData?.deliveryDate || '25 Jan 2026')
                     .replace(/{trackingNumber}/g, previewData?.trackingNumber || 'TRK123456789')
-                    .replace(/{shopName}/g, previewData?.shopName || 'Your Store')}
+                    .replace(/{shopName}/g, previewData?.shopName || 'Our Store')}
                 </div>
               </ScrollArea>
             </div>

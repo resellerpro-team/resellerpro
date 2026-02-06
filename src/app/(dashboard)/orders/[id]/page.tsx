@@ -389,7 +389,7 @@ export default async function OrderDetailsPage({
                       order.order_items && order.order_items.length > 0
                         ? order.order_items
                           .map((item: any, idx: number) =>
-                            `${idx + 1}. ${item.product_name} - ₹${parseFloat(item.unit_selling_price).toFixed(0)} x ${item.quantity} = ₹${parseFloat(item.subtotal).toFixed(0)}`
+                            `${idx + 1}. ${item.product_name}`
                           )
                           .join('\n')
                         : 'Order items'
