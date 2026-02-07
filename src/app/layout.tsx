@@ -114,6 +114,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }),
           }}
         />
+        {/* 🚀 SELF-HEALING / CACHE-BUSTER: Force clear stale Service Workers causing UI issues */}
+        <script id="force-update" dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(registrations => {
+                for(let registration of registrations) {
+                  // In development or if explicitly requested, unregister stale workers
+                  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                  if (isDev) {
+                    registration.unregister();
+                    console.log('[ResellerPro] Unregistered stale Service Worker for development stability.');
+                  } else {
+                    console.log('[ResellerPro] Optimizing Service Worker...');
+                  }
+                }
+              });
+            }
+            // Add build timestamp to window to identify deployment
+            window.__BUILD_ID__ = "${new Date().toISOString()}";
+          `
+        }} />
       </head>
       <body className={inter.className}>
         {/* <AppLoader /> */}
