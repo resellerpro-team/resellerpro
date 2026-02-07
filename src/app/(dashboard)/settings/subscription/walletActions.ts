@@ -46,6 +46,19 @@ export async function activateWithWallet(planId: string) {
         const { createAdminClient } = await import('@/lib/supabase/admin')
         const adminSupabase = await createAdminClient()
 
+        // 🛑 IDEMPOTENCY CHECK: Check if already activated in the last 10 seconds
+        const { data: recentTrans } = await adminSupabase
+            .from('payment_transactions')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('status', 'success')
+            .gte('created_at', new Date(Date.now() - 10000).toISOString())
+            .single()
+
+        if (recentTrans) {
+            return { success: false, message: 'Subscription already processed. Please refresh.' }
+        }
+
         // Deduct wallet balance        
         const { error: walletError } = await adminSupabase
             .rpc('add_wallet_transaction', {
@@ -59,6 +72,21 @@ export async function activateWithWallet(planId: string) {
             console.error('❌ Wallet deduction error:', walletError)
             return { success: false, message: 'Failed to deduct wallet balance' }
         }
+
+        // Create a successful transaction record for audit/idempotency
+        await adminSupabase.from('payment_transactions').insert({
+            user_id: user.id,
+            amount: plan.price,
+            currency: 'INR',
+            status: 'success',
+            razorpay_order_id: `wallet_only_${Date.now()}`,
+            metadata: {
+                plan_id: planId,
+                plan_name: plan.name,
+                wallet_applied: plan.price,
+                total_price: plan.price,
+            },
+        })
 
         // Activate subscription
         const now = new Date()
@@ -78,7 +106,17 @@ export async function activateWithWallet(planId: string) {
 
         if (subUpdateError) {
             console.error('❌ Subscription update error:', subUpdateError)
-            return { success: false, message: 'Failed to update subscription' }
+
+            // 💰 ATOMIC ROLLBACK: Refund wallet balance
+            console.log(`[ROLLBACK] Refunding ₹${plan.price} to user ${user.id} due to wallet-activation failure`)
+            await adminSupabase.rpc('add_wallet_transaction', {
+                p_user_id: user.id,
+                p_amount: plan.price,
+                p_type: 'signup_reward',
+                p_description: 'Refund: Subscription activation failed',
+            })
+
+            return { success: false, message: 'Failed to activate subscription. Wallet balance has been restored.' }
         }
 
         // Process referral rewards (CRITICAL: This credits the referrer)

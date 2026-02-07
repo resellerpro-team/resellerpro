@@ -197,49 +197,22 @@ export async function createOrder(
       }
     }
 
-    // --- Deduct Stock & Check Low Stock ---
+    // --- Atomic Stock Deduction ---
     try {
       for (const item of items) {
         if (!item.productId) continue
 
-        let newQuantity: number | null = null
-
-        const { data: q, error: stockError } = await supabase
+        const { data: newQuantity, error: stockError } = await supabase
           .rpc('deduct_product_stock', {
             p_product_id: item.productId,
             p_quantity: item.quantity,
           })
 
         if (stockError) {
-          console.error(`⚠️ RPC failed for ${item.productId}, trying manual update:`, stockError)
-
-          // Fallback: Manual Update
-          const { data: product } = await supabase
-            .from('products')
-            .select('stock_quantity')
-            .eq('id', item.productId)
-            .single()
-
-          if (product) {
-            const current = product.stock_quantity
-            const next = Math.max(0, current - item.quantity)
-            const status = next === 0 ? 'out_of_stock' : (next <= 5 ? 'low_stock' : 'in_stock')
-
-            const { error: updateError } = await supabase
-              .from('products')
-              .update({
-                stock_quantity: next,
-                stock_status: status,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', item.productId)
-
-            if (!updateError) {
-              newQuantity = next
-            }
-          }
-        } else {
-          newQuantity = q
+          console.error(`❌ Stock deduction failed for product ${item.productId}:`, stockError)
+          // We don't fail the whole order if stock fails (as per business logic), 
+          // but we log it for audit.
+          continue
         }
 
         // Trigger LOW_STOCK notification if quantity <= 5
@@ -256,7 +229,7 @@ export async function createOrder(
         }
       }
     } catch (stockError) {
-      console.error('⚠️ Unexpected error during stock deduction:', stockError)
+      console.error('⚠️ Unexpected error during stock deduction phase:', stockError)
     }
 
 
