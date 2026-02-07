@@ -198,6 +198,7 @@ export async function GET(req: NextRequest) {
         }
 
         const dateRanges = getDateRanges(from, to)
+        const hasDateFilter = !!(from && to)
 
         // Build query for current period
         let currentQuery = supabase
@@ -213,7 +214,14 @@ export async function GET(req: NextRequest) {
             .eq('user_id', user.id)
             .order('created_at', { ascending: true })
 
-        if (dateRanges.hasFilter) {
+        // If explicitly filtered, use dates. If "All Time" (no filter), 
+        // we still want to filter the current view to the 30-day window 
+        // for accurate growth comparison, OR we allow all-time but 
+        // handle the comparison carefully.
+        // DECISION: If hasFilter is false, we fetch EVERYTHING (All Time) 
+        // but the 'stats' should reflect the growth of the last 30 days window.
+
+        if (hasDateFilter) {
             currentQuery = currentQuery
                 .gte('created_at', dateRanges.currentStart)
                 .lte('created_at', dateRanges.currentEnd)
@@ -265,11 +273,17 @@ export async function GET(req: NextRequest) {
         const previousProfitMargin = previousRevenue > 0 ? (previousProfit / previousRevenue) * 100 : 0
 
         // Calculate changes
-        const revenueChange = calculatePercentageChange(currentRevenue, previousRevenue)
-        const profitChange = calculatePercentageChange(currentProfit, previousProfit)
-        const orderCountChange = `${currentOrderCount - previousOrderCount >= 0 ? '+' : ''}${currentOrderCount - previousOrderCount}`
-        const avgOrderValueChange = calculatePercentageChange(currentAvgOrderValue, previousAvgOrderValue)
-        const profitMarginChange = calculatePercentageChange(profitMargin, previousProfitMargin)
+        // DECISION: If hasDateFilter is false (All Time), percentage changes are misleading.
+        // We set them to 'N/A' or calculated against the previous life-time (impossible).
+        const changeLabel = hasDateFilter ? '' : ' (N/A)'
+
+        const revenueChange = hasDateFilter ? calculatePercentageChange(currentRevenue, previousRevenue) : 'N/A'
+        const profitChange = hasDateFilter ? calculatePercentageChange(currentProfit, previousProfit) : 'N/A'
+        const orderCountChange = hasDateFilter
+            ? `${currentOrderCount - previousOrderCount >= 0 ? '+' : ''}${currentOrderCount - previousOrderCount}`
+            : 'All Time'
+        const avgOrderValueChange = hasDateFilter ? calculatePercentageChange(currentAvgOrderValue, previousAvgOrderValue) : 'N/A'
+        const profitMarginChange = hasDateFilter ? calculatePercentageChange(profitMargin, previousProfitMargin) : 'N/A'
 
         // Calculate top selling products
         const productSales: Record<string, { name: string; revenue: number; quantity: number }> = {}
