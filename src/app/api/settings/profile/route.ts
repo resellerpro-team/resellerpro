@@ -20,7 +20,19 @@ export async function GET() {
         .eq('id', user.id)
         .single()
 
-    if (profileError && profileError.code !== 'PGRST116') { // Ignore "no rows returned" if profile doesn't exist yet
+    if (profileError) {
+        if (profileError.code === 'PGRST116') {
+            // New user case: profile might not exist yet
+            return NextResponse.json({
+                id: user.id,
+                email: user.email || '',
+                full_name: '',
+                phone: '',
+                avatar_url: '',
+                business_name: '',
+                created_at: user.created_at
+            })
+        }
         return NextResponse.json({ error: profileError.message }, { status: 500 })
     }
 
