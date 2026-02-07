@@ -94,8 +94,12 @@ export default function ResetPasswordPage() {
 
       setSuccess(true)
 
+      // 🧹 Explicitly sign out to destroy the recovery session
+      // This prevents the middleware from auto-redirecting to /dashboard
+      await supabase.auth.signOut()
+
       setTimeout(() => {
-        router.push('/signin')
+        router.push('/signin?message=Password updated successfully!')
       }, 2000)
 
     } catch (error: any) {

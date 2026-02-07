@@ -37,7 +37,7 @@ export async function sendResetEmail(
     try {
         // Use simple redirect without PKCE - this works cross-browser!
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password`,
+            redirectTo: `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000'}/reset-password`,
         })
 
         if (error) {
