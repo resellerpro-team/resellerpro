@@ -69,7 +69,8 @@ export async function POST(request: Request) {
 
         if (error) {
             console.error('Error saving template:', error)
-            return NextResponse.json({ error: 'Failed to save template' }, { status: 500 })
+            if (error.code === 'PGRST116') return NextResponse.json({ error: 'Template record was not found or created' }, { status: 404 })
+            return NextResponse.json({ error: error.message || 'Failed to save template' }, { status: 500 })
         }
 
         return NextResponse.json({ success: true, template: data })
