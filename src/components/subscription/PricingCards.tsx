@@ -76,7 +76,8 @@ export function PricingCards({ plans, currentPlanName, walletBalance }: PricingC
         }
       } else if (method === 'razorpay' || method === 'wallet+razorpay') {
         // Create checkout session (handles both Razorpay only and Wallet+Razorpay)
-        const session = await createCheckoutSession(selectedPlan.id)
+        const useWallet = method === 'wallet+razorpay'
+        const session = await createCheckoutSession(selectedPlan.id, useWallet)
 
         if (!session.success) {
           toast({
