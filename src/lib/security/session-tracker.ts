@@ -137,10 +137,6 @@ export async function trackSession(data: SessionData): Promise<void> {
             if (process.env.NODE_ENV !== 'production') {
                 console.error('[TRACKER DEBUG] DB Upsert error:', error)
             }
-        } else {
-            if (process.env.NODE_ENV !== 'production') {
-                console.log('[TRACKER DEBUG] DB Upsert success, record ID:', upsertResult?.[0]?.id)
-            }
         }
     } catch (error) {
         if (process.env.NODE_ENV !== 'production') {
@@ -175,10 +171,14 @@ export async function logFailedLogin(userId: string, ipAddress?: string, userAge
             })
 
         if (error) {
-            console.error('Failed to log failed login:', error)
+            if (process.env.NODE_ENV !== 'production') {
+                console.error('Failed to log failed login:', error)
+            }
         }
     } catch (error) {
-        console.error('Failed login logging error:', error)
+        if (process.env.NODE_ENV !== 'production') {
+            console.error('Failed login logging error:', error)
+        }
     }
 }
 
@@ -196,9 +196,13 @@ export async function updateSessionActivity(sessionToken: string): Promise<void>
             .eq('session_token', hashedToken)
 
         if (error) {
-            console.error('Failed to update session activity:', error)
+            if (process.env.NODE_ENV !== 'production') {
+                console.error('Failed to update session activity:', error)
+            }
         }
     } catch (error) {
-        console.error('Session activity update error:', error)
+        if (process.env.NODE_ENV !== 'production') {
+            console.error('Session activity update error:', error)
+        }
     }
 }
