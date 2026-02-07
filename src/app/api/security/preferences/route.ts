@@ -82,7 +82,10 @@ export async function PATCH(request: NextRequest) {
             .select()
             .single()
 
-        if (error) throw error
+        if (error) {
+            if (error.code === 'PGRST116') return NextResponse.json({ error: 'Preferences record not found' }, { status: 404 })
+            throw error
+        }
 
         return NextResponse.json({
             success: true,
