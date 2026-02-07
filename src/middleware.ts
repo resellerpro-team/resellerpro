@@ -83,12 +83,15 @@ export async function middleware(request: NextRequest) {
           // Database replication/indexing might take a moment.
           // Use last_sign_in_at first, but fall back to session age calculation for OTP verification flows
           const lastSignInAt = session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at).getTime() : 0
-          // Calculate session creation time from expires_at (sessions typically last 1 hour)
+          // Calculate session creation time from expires_at (sessions typically last 1 hour to 30 days)
+          // Defensively assume a short session if expires_at is missing
           const expiresAt = session.expires_at ? session.expires_at * 1000 : 0
-          const sessionAge = expiresAt ? Date.now() - (expiresAt - 3600000) : Infinity // Assume 1hr session
-          const issuedAt = lastSignInAt || (expiresAt ? expiresAt - 3600000 : 0)
+          const issuedAtFallback = expiresAt ? (expiresAt - 3600000) : Date.now()
+          const issuedAt = lastSignInAt || issuedAtFallback
           const now = Date.now()
-          const isBrandNewSession = (now - issuedAt) < 30000 // 30s grace
+
+          // isBrandNewSession: True if issued in last 45s (including potential clock skew of ±15s)
+          const isBrandNewSession = Math.abs(now - issuedAt) < 45000
 
           if (!isBrandNewSession) {
             // Hash to match DB storage
@@ -102,19 +105,31 @@ export async function middleware(request: NextRequest) {
               .from('user_sessions')
               .select('id')
               .eq('session_token', hashedToken)
-              .single()
+              .maybeSingle() // Use maybeSingle to avoid 406/single error if multiple exist (though unlikely due to UNIQUE)
 
             // If session is missing from DB (revoked), force logout
             if (!dbSession || dbError) {
-              console.log(`[SECURITY] REJECTED: Revoked session for user ${user.id}`)
+              if (process.env.NODE_ENV !== 'production') {
+                console.warn(`[SECURITY] REJECTED: Revoked session for user ${session.user.id}. Reason: ${dbError ? 'DB Error' : 'No DB record found'}`)
+              }
               const url = request.nextUrl.clone()
               url.pathname = '/signin'
               url.searchParams.set('message', 'Security Alert: Your session was terminated from another device.')
 
               const redirectResponse = NextResponse.redirect(url)
-              // Clear auth cookies
-              const cookiePrefix = 'sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1].split('.')[0] + '-auth-token'
-              redirectResponse.cookies.delete(cookiePrefix)
+
+              // 🧹 AGGRESSIVE COOKIE CLEARING
+              // Supabase uses multiple cookies (chunking). We must try to clear them all.
+              const project = process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1].split('.')[0]
+              const baseName = `sb-${project}-auth-token`
+
+              // Delete common cookie patterns
+              request.cookies.getAll().forEach(cookie => {
+                if (cookie.name.includes(baseName)) {
+                  redirectResponse.cookies.delete(cookie.name)
+                }
+              })
+
               return redirectResponse
             }
           }
@@ -132,8 +147,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // 🔁 Redirect logged-in users away from login/signup (only if online)
-  if (user && !isOffline && (request.nextUrl.pathname === '/signin' || request.nextUrl.pathname === '/signup')) {
+  // 🔁 Redirect logged-in users away from login/signup/forgot-password/reset-password (only if online)
+  const isAuthPage =
+    request.nextUrl.pathname === '/signin' ||
+    request.nextUrl.pathname === '/signup' ||
+    request.nextUrl.pathname === '/forgot-password' ||
+    request.nextUrl.pathname === '/reset-password'
+
+  if (user && !isOffline && isAuthPage) {
+    // SPECIAL CASE: Allow /reset-password even if user exists (recovery session)
+    if (request.nextUrl.pathname === '/reset-password') {
+      return response
+    }
+
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
