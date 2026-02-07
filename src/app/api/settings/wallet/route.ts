@@ -19,6 +19,7 @@ export async function GET() {
         .single()
 
     if (profileError) {
+        if (profileError.code === 'PGRST116') return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
         return NextResponse.json({ error: profileError.message }, { status: 500 })
     }
 

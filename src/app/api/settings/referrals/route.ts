@@ -19,6 +19,7 @@ export async function GET() {
         .single()
 
     if (profileError) {
+        if (profileError.code === 'PGRST116') return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
         return NextResponse.json({ error: profileError.message }, { status: 500 })
     }
 
@@ -45,7 +46,7 @@ export async function GET() {
         created_at: r.created_at,
     }))
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')
     const referralLink = `${baseUrl}/signup?ref=${profile.referral_code}`
 
     return NextResponse.json({
