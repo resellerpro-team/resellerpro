@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { sendResetEmail } from './actions'
 import { Loader2, Mail, CheckCircle2 } from 'lucide-react'
@@ -13,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function ForgotPasswordPage() {
+  const router = useRouter()
   const { toast } = useToast()
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -21,22 +23,29 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const targetEmail = email.trim()
+    if (!targetEmail) return
+
     setIsLoading(true)
     setErrorMessage(null)
 
     try {
-      const formData = new FormData()
-      formData.append('email', email)
-
-      // We call the action directly since we moved away from useFormState
-      const result = await sendResetEmail({ success: false, message: '', errors: {} }, formData)
+      console.log('[FORGOT-PASSWORD] Sending reset instructions to:', targetEmail)
+      const result = await sendResetEmail(targetEmail)
+      console.log('[FORGOT-PASSWORD] Result:', result)
 
       if (result.success) {
-        setIsSuccess(true)
+        
+        // Show immediate success toast
         toast({
-          title: "Reset link sent! 📧",
-          description: "Please check your inbox for instructions.",
+          title: "Success! 📧",
+          description: "Check your email for the reset link.",
         })
+
+        // Give the user a moment to see the success state, then redirect
+        setTimeout(() => {
+          router.push(`/signin?message=Success! Check your email (${targetEmail}) for the reset link.`)
+        }, 3000)
       } else {
         setErrorMessage(result.message)
         toast({
@@ -46,7 +55,7 @@ export default function ForgotPasswordPage() {
         })
       }
     } catch (error: any) {
-      console.error('Password reset request error:', error)
+      console.error('[FORGOT-PASSWORD] unexpected error:', error)
       const msg = 'An unexpected error occurred. Please try again.'
       setErrorMessage(msg)
       toast({
@@ -72,9 +81,9 @@ export default function ForgotPasswordPage() {
               : "Enter your email to receive reset instructions."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6" key={isSuccess ? 'success-view' : 'input-view'}>
           {isSuccess ? (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <div className="flex flex-col items-center justify-center py-4 space-y-4 text-center">
                 <div className="h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center pulse-animation">
                   <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
