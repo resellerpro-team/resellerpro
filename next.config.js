@@ -4,6 +4,8 @@ const withPWA = require('next-pwa')({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
+  buildExcludes: [/middleware-manifest\.json$/],
+  publicExcludes: ['resellerpro-demo-audio.mp3'], // Stop caching this large file
 });
 
 const nextConfig = withPWA({

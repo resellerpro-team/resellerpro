@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -75,7 +76,7 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
   const [showControls, setShowControls] = useState(true)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [hoveredScene, setHoveredScene] = useState<number | null>(null)
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordedChunksRef = useRef<Blob[]>([])
   const contentRef = useRef<HTMLDivElement>(null)
@@ -84,31 +85,37 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const currentSceneDuration = VIDEO_SCENES[currentScene]?.duration || 4000
 
-  // Initialize audio
+  // Handle all audio logic in one place
   useEffect(() => {
-    const audio = new Audio('/resellerpro-demo-audio.mp3')
-    audio.loop = true
-    audio.volume = 0.3
-    setAudioElement(audio)
-
-    return () => {
-      audio.pause()
-      audio.src = ''
+    // Initialize if needed
+    if (!audioRef.current) {
+      const audio = new Audio('/resellerpro-demo-audio.mp3')
+      audio.loop = true
+      audio.volume = 0.3
+      audioRef.current = audio
     }
-  }, [])
 
-  // Handle audio playback based on isPlaying state
-  useEffect(() => {
-    if (audioElement) {
-      if (isPlaying && open) {
-        audioElement.play().catch(() => {
-          // Auto-play might be blocked by browser, user will need to interact
+    const audio = audioRef.current
+
+    if (open && isPlaying) {
+      const playPromise = audio.play()
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.warn('[DEMO-AUDIO] Playback prevented:', error.message)
         })
-      } else {
-        audioElement.pause()
+      }
+    } else {
+      audio.pause()
+    }
+
+    // Cleanup on unmount or modal close
+    return () => {
+      if (!open || !audioRef.current) {
+        // If unmounting OR modal closed, make sure it's paused
+        audio?.pause()
       }
     }
-  }, [isPlaying, open, audioElement])
+  }, [open, isPlaying])
 
   // Video auto-play
   useEffect(() => {
@@ -166,9 +173,9 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
   }
 
   const toggleMute = () => {
-    if (audioElement) {
-      audioElement.muted = !audioElement.muted
-      setIsMuted(!isMuted)
+    if (audioRef.current) {
+      audioRef.current.muted = !audioRef.current.muted
+      setIsMuted(audioRef.current.muted)
     }
   }
 
@@ -420,6 +427,9 @@ export function AnimatedDemoModal({ open, onClose }: DemoModalProps) {
         onMouseMove={showControlsTemporarily}
         onClick={() => { if (isPlaying) showControlsTemporarily() }}
       >
+        <VisuallyHidden>
+          <DialogTitle>ResellerPro Demo Video</DialogTitle>
+        </VisuallyHidden>
         <div
           className="relative h-full flex flex-col"
           onTouchStart={handleTouchStart}

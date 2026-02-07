@@ -13,26 +13,18 @@ export type ForgotPasswordFormState = {
     errors?: Record<string, string[] | undefined>
 }
 
-export async function sendResetEmail(
-    prevState: ForgotPasswordFormState,
-    formData: FormData
-): Promise<ForgotPasswordFormState> {
+export async function sendResetEmail(email: string) {
     const supabase = await createClient()
 
     // Validate input
-    const validatedFields = ForgotPasswordSchema.safeParse({
-        email: formData.get('email'),
-    })
+    const validatedFields = ForgotPasswordSchema.safeParse({ email })
 
     if (!validatedFields.success) {
         return {
             success: false,
             message: 'Invalid email address.',
-            errors: validatedFields.error.flatten().fieldErrors,
         }
     }
-
-    const { email } = validatedFields.data
 
     try {
         // Use simple redirect without PKCE - this works cross-browser!
