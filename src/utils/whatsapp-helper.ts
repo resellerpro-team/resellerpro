@@ -8,7 +8,7 @@ export function generateStatusMessage(
     trackingNumber?: string,
     courierName?: string,
     orderDetails?: { products: string[]; totalAmount: number } | null,
-    shopName: string = 'Your Store'
+    shopName: string = 'Our Store'
 ): string {
     const productList = orderDetails?.products?.length
         ? `\n\n*YOUR ORDER INCLUDES:*\n${orderDetails.products.map(p => `   • ${p}`).join('\n')}`
