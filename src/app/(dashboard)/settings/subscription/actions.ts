@@ -310,19 +310,25 @@ export async function verifyPaymentAndActivate(
     return { success: false, message: 'Transaction not found' }
   }
 
-  // Update Transaction
+  // 🛑 IDEMPOTENCY GUARD: Check if already processed
+  if (transaction.status === 'success') {
+    return { success: true, message: 'Payment already processed successfully' }
+  }
+
+  // Update Transaction status to 'success' first as a lock
   const { error: txUpdateError } = await adminSupabase
     .from('payment_transactions')
     .update({
       razorpay_payment_id: razorpayPaymentId,
       razorpay_signature: razorpaySignature,
       status: 'success',
+      updated_at: new Date().toISOString()
     })
     .eq('id', transaction.id)
 
   if (txUpdateError) {
     console.error('❌ Transaction update error:', txUpdateError)
-    return { success: false, message: 'Failed to update transaction' }
+    return { success: false, message: 'Failed to update transaction status' }
   }
 
   const planId = (transaction.metadata as any)?.plan_id
@@ -365,7 +371,22 @@ export async function verifyPaymentAndActivate(
 
   if (subUpdateError) {
     console.error('❌ Subscription update error:', subUpdateError)
-    return { success: false, message: 'Failed to update subscription' }
+
+    // 💰 ATOMIC ROLLBACK: Refund wallet if subscription update failed
+    if (walletApplied > 0) {
+      console.log(`[ROLLBACK] Refunding ₹${walletApplied} to user ${user.id} due to sub update failure`)
+      await adminSupabase.rpc('add_wallet_transaction', {
+        p_user_id: user.id,
+        p_amount: walletApplied,
+        p_type: 'signup_reward', // Borrowing type for refund visual or add a 'refund' type
+        p_description: 'Refund: Subscription update failed',
+      })
+    }
+
+    // Revert transaction status if possible so they can try again? 
+    // Actually, better to keep it success but return error so they contact support, 
+    // but with the refund, they are at least not out of pocket.
+    return { success: false, message: 'Failed to activate subscription. Wallet balance has been restored.' }
   }
 
   // Process referral rewards (credited ONLY after first successful paid subscription)

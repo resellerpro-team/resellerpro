@@ -47,7 +47,7 @@ export async function verifyLoginOtp(email: string, code: string) {
             type: 'magiclink',
             email: email,
             options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback`
+                redirectTo: `${(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')}/auth/callback`
             }
         })
 
