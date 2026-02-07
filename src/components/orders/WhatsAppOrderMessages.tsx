@@ -138,12 +138,12 @@ export function WhatsAppOrderMessages({
 
 Your order #${orderNumber} has been *CONFIRMED!*
 
-*Order Summary:*
+*Ordered Items:*
 ━━━━━━━━━━━━━━━━━
 ${productsFormatted}
 ━━━━━━━━━━━━━━━━━
 
-*Total Amount:* Rs.${totalAmount}
+*Total Amount* (including shipping cost) *:* Rs.${totalAmount}
 *Expected Delivery:* ${getDeliveryDate()}
 
 We'll keep you updated at every step!
@@ -158,7 +158,7 @@ Your order #${orderNumber} is ready!
 *Items:*
 ${productsFormatted}
 
-*PENDING PAYMENT:* Rs.${totalAmount}
+*PENDING PAYMENT*(including shipping cost): Rs.${totalAmount}
 
 Please complete the payment so we can ship your order.
 
@@ -182,7 +182,7 @@ Courier: ${courierService}` : ''}
 Track your order in real-time!` : `Tracking details will be shared soon.`}
 
 *Expected Delivery:* ${getDeliveryDate()}
-*Order Value:* Rs.${totalAmount}
+*Order Value*(including shipping cost): Rs.${totalAmount}
 
 Your order is on its way!
 
@@ -196,7 +196,7 @@ Fantastic news! Your order #${orderNumber} has been *DELIVERED SUCCESSFULLY!*
 *Delivered Items:*
 ${productsFormatted}
 
-*Order Value:* Rs.${totalAmount}
+*Order Value*   (including shipping cost): Rs.${totalAmount}
 
 We hope you absolutely love your purchase!
 
@@ -204,6 +204,7 @@ We hope you absolutely love your purchase!
 How was your experience with us?
 
 Please rate us (1-5 stars)
+
 Your feedback means a lot!
 
 Thank you for choosing *${shopName}*!
