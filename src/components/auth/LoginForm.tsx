@@ -173,13 +173,32 @@ export default function LoginForm() {
     }, 100)
   }, [toast])
 
-  // Check for email verification success
+  // Check for messages/alerts in URL
   useEffect(() => {
+    const message = searchParams.get('message')
+    if (message) {
+      const isSuccess = message.toLowerCase().includes('success')
+      toast({
+        title: isSuccess ? 'Success' : 'Security Alert',
+        description: message,
+        variant: isSuccess ? 'default' : 'destructive',
+      })
+
+      // Clean up URL to prevent "sticky" alerts on refresh
+      const url = new URL(window.location.href)
+      url.searchParams.delete('message')
+      window.history.replaceState({}, '', url.pathname + url.search)
+    }
+
     if (searchParams.get('verified') === 'true') {
       toast({
         title: 'Email verified 🎉',
         description: 'Your account is verified. Please sign in.',
       })
+      // Clean up verified param too
+      const url = new URL(window.location.href)
+      url.searchParams.delete('verified')
+      window.history.replaceState({}, '', url.pathname + url.search)
     }
   }, [searchParams, toast])
 
