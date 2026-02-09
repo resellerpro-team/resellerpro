@@ -53,7 +53,12 @@ export default function NewCustomerPage() {
 
     if (!formData.name.trim()) newErrors.name = 'Full name is required.'
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required.'
-    else if (!/^\d{10}$/.test(formData.phone)) newErrors.phone = 'Enter a valid 10-digit number.'
+    else if (!/^\d{10}$/.test(formData.phone)) newErrors.phone = 'Enter a valid 10-digit phone number.'
+
+    if (formData.whatsapp.trim() && !/^\d{10}$/.test(formData.whatsapp)) {
+      newErrors.whatsapp = 'Enter a valid 10-digit WhatsApp number.'
+    }
+
     if (!formData.address_line1.trim()) newErrors.address_line1 = 'Address Line 1 is required.'
     if (!formData.city.trim()) newErrors.city = 'City is required.'
     if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required.'
@@ -231,14 +236,42 @@ export default function NewCustomerPage() {
                 {/* Phone */}
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number <span className="text-red-500">*</span></Label>
-                  <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="10-digit mobile number" required />
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="10-digit mobile number"
+                    required
+                    maxLength={10}
+                    onInput={(e) => {
+                      const target = e.target as HTMLInputElement;
+                      target.value = target.value.replace(/[^0-9]/g, '');
+                    }}
+                  />
                   {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
                 </div>
 
                 {/* WhatsApp */}
                 <div className="space-y-2">
                   <Label htmlFor="whatsapp">WhatsApp Number</Label>
-                  <Input id="whatsapp" name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} placeholder="Same as phone (optional)" />
+                  <Input
+                    id="whatsapp"
+                    name="whatsapp"
+                    type="tel"
+                    inputMode="numeric"
+                    value={formData.whatsapp}
+                    onChange={handleInputChange}
+                    placeholder="Same as phone (optional)"
+                    maxLength={10}
+                    onInput={(e) => {
+                      const target = e.target as HTMLInputElement;
+                      target.value = target.value.replace(/[^0-9]/g, '');
+                    }}
+                  />
+                  {errors.whatsapp && <p className="text-sm text-red-500">{errors.whatsapp}</p>}
                 </div>
 
                 {/* Email */}
