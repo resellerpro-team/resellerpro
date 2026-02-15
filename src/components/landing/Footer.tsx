@@ -109,19 +109,6 @@ export default function Footer() {
               </li>
 
             </ul>
-
-            {/* Social Icons */}
-            <div className="flex space-x-4 mt-6">
-              {[Facebook, Instagram, MessageCircle].map((Icon, idx) => (
-                <a
-                  key={idx}
-                  href="#"
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-blue-100 transition-all shadow-sm hover:shadow-md"
-                >
-                  <Icon size={20} className="text-gray-700 hover:text-blue-600 transition-colors" />
-                </a>
-              ))}
-            </div>
           </div>
         </div>
 

@@ -192,7 +192,7 @@ export default function PricingSection() {
                 <HelpCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Is my data secure?</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Absolutely. We use enterprise-grade encryption to keep your customer data safe.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Absolutely. Your data is encrypted and stored securely on our platform.</p>
                 </div>
               </div>
             </div>

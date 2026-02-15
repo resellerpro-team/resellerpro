@@ -105,7 +105,7 @@ export default function HeroSection() {
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
               {[
                 { icon: Zap, text: 'Lightning Fast' },
-                { icon: ShieldCheck, text: 'Bank-grade Security' },
+                { icon: ShieldCheck, text: 'Encrypted & Secure' },
                 { icon: Users, text: '24/7 Support' },
               ].map((feature, i) => (
                 <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50 text-sm text-muted-foreground">
@@ -299,7 +299,7 @@ export default function HeroSection() {
                                   Jan 2026
                                 </div>
                               </div>
-                              <h3 className="text-[28px] font-bold tracking-tight leading-none">₹1,40,500</h3>
+                              <h3 className="text-[28px] font-bold tracking-tight leading-none">₹48,500</h3>
                               <div className="mt-3">
                                 <div className="flex justify-between items-center mb-1">
                                   <span className="text-[9px] text-blue-100">Monthly Goal</span>
@@ -315,9 +315,9 @@ export default function HeroSection() {
                           {/* Quick Stats Grid */}
                           <div className="grid grid-cols-3 gap-2 px-4 py-3">
                             {[
-                              { icon: ShoppingBag, value: '1,248', label: 'Orders', color: 'orange' },
-                              { icon: Users, value: '8.9K', label: 'Customers', color: 'cyan' },
-                              { icon: Wallet, value: '₹45K', label: 'Profit', color: 'green' },
+                              { icon: ShoppingBag, value: '156', label: 'Orders', color: 'orange' },
+                              { icon: Users, value: '847', label: 'Customers', color: 'cyan' },
+                              { icon: Wallet, value: '₹18K', label: 'Profit', color: 'green' },
                             ].map((stat, i) => (
                               <div key={i} className="bg-white p-2.5 rounded-[14px] shadow-sm border border-gray-100">
                                 <div className={`w-[28px] h-[28px] rounded-[10px] flex items-center justify-center mb-1.5 ${stat.color === 'orange' ? 'bg-orange-100' :
@@ -460,7 +460,7 @@ export default function HeroSection() {
                   </div>
                   <div className="h-4 w-px bg-gray-200" />
                   <div className="text-[11px]">
-                    <span className="font-bold text-gray-900">1,247</span>
+                    <span className="font-bold text-gray-900">156</span>
                     <span className="text-gray-500 ml-1">orders today</span>
                   </div>
                 </div>

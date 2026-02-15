@@ -145,7 +145,7 @@ export default function FAQSection() {
 
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Everything you need to know about Reseller Pro. Can't find what you're looking for?
-            <a href="mailto:resellerpro@gmail.com" className="text-blue-600 hover:text-blue-700 font-medium ml-1">
+            <a href="mailto:resellerpro.tech@gmail.com" className="text-blue-600 hover:text-blue-700 font-medium ml-1">
               Contact us
             </a>
           </p>
@@ -175,7 +175,7 @@ export default function FAQSection() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="mailto:resellerpro@gmail.com"
+              href="mailto:resellerpro.tech@gmail.com"
               className="px-8 py-4 bg-white text-blue-600 rounded-xl hover:bg-gray-50 transition-all font-semibold shadow-lg hover:shadow-xl"
             >
               Email Us
