@@ -5,7 +5,7 @@ import NextImage from 'next/image'
 
 export default function Navbar() {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div
@@ -21,7 +21,7 @@ export default function Navbar() {
                 className="h-16 w-16 object-contain mr-2"
               />
             </div>
-            <span className="text-2xl font-bold text-gray-900 tracking-tight group-hover:text-blue-600 transition-colors">
+            <span className="text-2xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
               ResellerPro
             </span>
           </div>

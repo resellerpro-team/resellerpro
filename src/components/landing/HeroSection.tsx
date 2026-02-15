@@ -62,7 +62,7 @@ export default function HeroSection() {
         <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-primary/30 via-primary/20 to-transparent rounded-full blur-[120px] animate-pulse-glow" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-gradient-to-tr from-secondary via-secondary/50 to-transparent rounded-full blur-[100px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
         <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] bg-primary/10 rounded-full blur-[80px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
         <div className="absolute top-[20%] left-[15%] w-2 h-2 bg-primary/40 rounded-full animate-float" />
         <div className="absolute top-[60%] right-[20%] w-3 h-3 bg-secondary/60 rounded-full animate-float-delay" />
         <div className="absolute bottom-[30%] left-[40%] w-1.5 h-1.5 bg-primary/30 rounded-full animate-float" style={{ animationDelay: '1s' }} />
@@ -415,13 +415,13 @@ export default function HeroSection() {
 
               {/* Top Right - Sales Notification */}
               <div className="absolute top-4 -right-4 lg:right-[-60px] z-20 animate-float">
-                <div className="bg-white/95 backdrop-blur-xl px-3.5 py-2.5 rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100">
+                <div className="bg-card/95 dark:bg-card/80 backdrop-blur-xl px-3.5 py-2.5 rounded-2xl shadow-xl shadow-primary/10 border border-border">
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
                       <TrendingUp className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-bold text-gray-900">Sales Up!</p>
+                      <p className="text-[11px] font-bold text-foreground">Sales Up!</p>
                       <p className="text-[10px] text-green-600 font-medium">+24% today</p>
                     </div>
                   </div>
@@ -430,7 +430,7 @@ export default function HeroSection() {
 
               {/* Bottom Left - Order Confirmed */}
               <div className="absolute bottom-20 -left-4 lg:left-[-60px] z-20 animate-float-delay">
-                <div className="bg-white/95 backdrop-blur-xl px-4 py-3 rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100">
+                <div className="bg-card/95 dark:bg-card/80 backdrop-blur-xl px-4 py-3 rounded-2xl shadow-xl shadow-primary/10 border border-border">
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/30">
@@ -441,8 +441,8 @@ export default function HeroSection() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-[12px] font-bold text-gray-900">Order Confirmed!</p>
-                      <p className="text-[10px] text-gray-500">₹2,450 received</p>
+                      <p className="text-[12px] font-bold text-foreground">Order Confirmed!</p>
+                      <p className="text-[10px] text-muted-foreground">₹2,450 received</p>
                     </div>
                   </div>
                 </div>
@@ -450,15 +450,15 @@ export default function HeroSection() {
 
               {/* Bottom Center - Live Stats */}
               <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20">
-                <div className="bg-white/95 backdrop-blur-xl px-5 py-2.5 rounded-full shadow-xl shadow-gray-200/50 border border-gray-100 flex items-center gap-3">
+                <div className="bg-card/95 dark:bg-card/80 backdrop-blur-xl px-5 py-2.5 rounded-full shadow-xl shadow-primary/10 border border-border flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     <div className="relative">
                       <div className="w-2.5 h-2.5 bg-green-500 rounded-full" />
                       <div className="absolute inset-0 w-2.5 h-2.5 bg-green-500 rounded-full animate-ping" />
                     </div>
-                    <span className="text-[11px] font-semibold text-gray-700">Live</span>
+                    <span className="text-[11px] font-semibold text-foreground">Live</span>
                   </div>
-                  <div className="h-4 w-px bg-gray-200" />
+                  <div className="h-4 w-px bg-border" />
                   <div className="text-[11px]">
                     <span className="font-bold text-gray-900">156</span>
                     <span className="text-gray-500 ml-1">orders today</span>

@@ -49,7 +49,7 @@ function PricingCard({ name, price, description, features, popular, index, isAnn
           </span>
         </div>
         {isAnnual && price !== 'Free' && (
-          <p className="text-xs text-green-600 font-medium mt-2 bg-green-50 inline-block px-2 py-1 rounded-md">
+          <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-2 bg-green-50 dark:bg-green-900/20 inline-block px-2 py-1 rounded-md">
             Save 20%
           </p>
         )}
