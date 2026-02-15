@@ -196,7 +196,7 @@ export default function FinalCTASection() {
 
             {/* 4. Subtext */}
             <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto leading-relaxed font-medium">
-              Join growing resellers who save 10+ hours every week.
+              Join growing resellers who save hours every week.
               Look professional, stay organized, and scale fast.
             </p>
 
@@ -209,7 +209,7 @@ export default function FinalCTASection() {
                 </button>
               </Link>
 
-              <button 
+              <button
                 onClick={() => setShowDemo(true)}
                 className="h-14 px-8 bg-white/10 text-white border border-white/20 rounded-full font-bold text-lg hover:bg-white/20 transition-all backdrop-blur-sm flex items-center gap-2"
               >

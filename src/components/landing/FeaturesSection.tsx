@@ -148,12 +148,12 @@ export default function FeaturesSection() {
             <h3 className="text-xl font-bold text-foreground mb-3">Secure by Design</h3>
 
             <p className="text-muted-foreground leading-relaxed mb-6 flex-grow">
-              Bank-grade encryption protects your business data. Your customers' information is always safe with us.
+              Industry-standard encryption protects your business data. Your customers' information is always safe with us.
             </p>
 
             {/* Security badges */}
             <div className="flex flex-wrap gap-2 mt-auto">
-              {['256-bit SSL', 'GDPR', 'SOC2'].map((badge, i) => (
+              {['256-bit SSL', 'Privacy Focused'].map((badge, i) => (
                 <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 rounded-full">
                   <Lock className="w-3 h-3 text-green-600" />
                   <span className="text-xs font-medium text-green-700 dark:text-green-400">{badge}</span>
