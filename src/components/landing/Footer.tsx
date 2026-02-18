@@ -47,18 +47,18 @@ export default function Footer() {
             <h3 className="text-lg font-semibold text-foreground mb-4">Navigation</h3>
             <ul className="space-y-3 text-muted-foreground">
               <li>
-                <Link href="/#features" className="hover:text-primary transition-colors">
+                <Link href="/features" className="hover:text-primary transition-colors">
                   Features
                 </Link>
               </li>
               <li>
-                <Link href="/#pricing" className="hover:text-primary transition-colors">
+                <Link href="/pricing" className="hover:text-primary transition-colors">
                   Pricing
                 </Link>
               </li>
               <li>
-                <Link href="/#workflow" className="hover:text-primary transition-colors">
-                  Workflow
+                <Link href="/contact" className="hover:text-primary transition-colors">
+                  Contact
                 </Link>
               </li>
               <li>
@@ -97,9 +97,9 @@ export default function Footer() {
             <ul className="space-y-4 text-muted-foreground">
               <li className="flex items-center space-x-3">
                 <Mail size={18} className="text-primary" />
-                <a href="mailto:resellerpro@gmail.com" className="hover:text-primary">
-                  resellerpro.tech@gmail.com
-                </a>
+                <Link href="/contact" className="hover:text-primary">
+                  support@resellerpro.in
+                </Link>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone size={18} className="text-primary" />
