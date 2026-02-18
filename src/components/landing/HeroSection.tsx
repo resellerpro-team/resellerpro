@@ -258,7 +258,7 @@ export default function HeroSection() {
                               </div>
                               <div>
                                 <p className="text-[11px] text-gray-500 leading-tight">Welcome back</p>
-                                <p className="text-[14px] font-semibold text-gray-900 leading-tight">Rahul Sharma</p>
+                                <p className="text-[14px] font-semibold text-gray-900 leading-tight">Rahul Krishnan</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -345,7 +345,7 @@ export default function HeroSection() {
                             <div className="space-y-2">
                               {[
                                 { name: 'Sports Jersey', customer: 'Amit K.', time: '2m', amount: '+₹1,450', color: 'orange', status: 'new' },
-                                { name: 'Running Shoes', customer: 'Priya S.', time: '15m', amount: '+₹2,890', color: 'blue', status: 'paid' },
+                                { name: 'Running Shoes', customer: 'Sanjay N.', time: '15m', amount: '+₹2,890', color: 'blue', status: 'paid' },
                                 { name: 'Fitness Band', customer: 'Rahul M.', time: '1h', amount: '+₹799', color: 'purple', status: 'shipped' },
                               ].map((order, i) => (
                                 <div key={i} className="flex items-center justify-between p-2 rounded-[12px] bg-gray-50/80">
