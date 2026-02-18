@@ -803,7 +803,7 @@ function Scene2SendFormat() {
         <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.6 }} className="bg-[#075E54] rounded-lg overflow-hidden shadow-xl sm:rounded-xl">
           <div className="bg-[#075E54] p-2 flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-[10px]">RK</div>
-            <div className="text-white font-semibold text-[11px] sm:text-sm">Rajesh Kumar</div>
+            <div className="text-white font-semibold text-[11px] sm:text-sm">Rajesh Nair</div>
           </div>
           <div className="bg-[#E5DDD5] p-2 min-h-[120px] sm:min-h-[300px]">
             <motion.div initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.9 }} className="bg-[#DCF8C6] rounded-lg rounded-tr-sm p-2 shadow shadow-black/10 ml-auto max-w-[85%]">
@@ -833,39 +833,39 @@ function Scene3CustomerResponse() {
         <div className="bg-[#075E54] p-2 flex items-center gap-2 sm:p-3 sm:gap-3">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-[9px] sm:w-10 sm:h-10 sm:text-sm">RK</div>
           <div>
-            <div className="text-white font-semibold text-[11px] sm:text-sm">Rajesh Kumar</div>
+            <div className="text-white font-semibold text-[11px] sm:text-sm">Rajesh Nair</div>
             <div className="text-[10px] text-green-200 sm:text-xs">typing...</div>
           </div>
         </div>
         <div className="bg-[#E5DDD5] p-2 min-h-[200px] sm:min-h-[400px] sm:p-4">
           <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.7 }} className="bg-white rounded-lg rounded-tl-sm p-2 shadow-sm max-w-[95%] sm:p-4">
             <div className="sm:hidden">
-              <pre className="font-mono text-[8px] whitespace-pre-wrap leading-tight">{`Name: Rajesh Kumar
+              <pre className="font-mono text-[8px] whitespace-pre-wrap leading-tight">{`Name: Rajesh Nair
 Address: Flat 301, Ocean View 
-Landmark: Station Road
-City: Mumbai
-PIN: 400063
+Landmark: Marine Drive
+City: Kochi
+PIN: 682001
 Phone: 9876543210`}</pre>
             </div>
             <div className="hidden sm:block">
               <pre className="font-mono text-xs whitespace-pre-wrap leading-relaxed">{`***********************
-Name              :- Rajesh Kumar
-
+Name              :- Rajesh Nair
+ 
 Full Address   :- Flat 301, Ocean View 
-                   Apartments, Link Road
-
+                   Apartments, Kochi 682001
+ 
 House name       :- Ocean View Apartments
-
-Landmark        :- Near Goregaon Station
-
-City                 :- Mumbai
-
-District             :- Mumbai  
-
-State                :- Maharashtra
-
-Pin code           :- 400063
-
+ 
+Landmark        :- Near Marine Drive
+ 
+City                 :- Kochi
+ 
+District             :- Ernakulam  
+ 
+State                :- Kerala
+ 
+Pin code           :- 682001
+ 
 Phone no         :- 9876543210
 ***********************`}</pre>
             </div>
@@ -900,7 +900,7 @@ function Scene4SmartPasteManual() {
           <div className="relative bg-[#075E54] rounded-lg overflow-hidden shadow-lg sm:rounded-xl">
             <div className="bg-[#075E54] p-2 flex items-center gap-2 sm:p-3 sm:gap-3">
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-[9px] sm:w-10 sm:h-10 sm:text-sm">RK</div>
-              <div className="text-white font-semibold text-[11px] sm:text-sm">Rajesh Kumar</div>
+              <div className="text-white font-semibold text-[11px] sm:text-sm">Rajesh Nair</div>
             </div>
             <div className="bg-[#E5DDD5] p-2 min-h-[140px] sm:min-h-[300px] relative sm:p-4">
               <div className="bg-white rounded-lg rounded-tl-sm p-2 shadow-sm max-w-[85%] sm:p-3">
@@ -911,11 +911,11 @@ Address: Flat 301,
 Mumbai`}</pre>
                 </div>
                 <div className="hidden sm:block">
-                  <pre className="font-mono text-xs whitespace-pre-wrap leading-relaxed">{`Name: Rajesh Kumar
+                  <pre className="font-mono text-xs whitespace-pre-wrap leading-relaxed">{`Name: Rajesh Nair
 Phone: 9876543210
 Address: Flat 301
-City: Mumbai
-PIN: 400063`}</pre>
+City: Kochi
+PIN: 682001`}</pre>
                 </div>
                 <div className="text-[8px] text-slate-400 mt-1 text-right sm:text-xs sm:mt-2">10:28 AM</div>
               </div>
@@ -972,11 +972,11 @@ PIN: 400063`}</pre>
                     <span className="sm:hidden">{`Name: Rajesh Kumar
 Phone: 9876543210
 Address: Mumbai`}</span>
-                    <span className="hidden sm:inline">{`Name: Rajesh Kumar
+                    <span className="hidden sm:inline">{`Name: Rajesh Nair
 Phone: 9876543210
 Address: Flat 301
-City: Mumbai
-PIN: 400063`}</span>
+City: Kochi
+PIN: 682001`}</span>
                   </motion.div>
                 </motion.div>
 
@@ -1025,14 +1025,14 @@ PIN: 400063`}</span>
 // SCENE 5: Smart Paste - Field by Field Animation
 function Scene5SmartPaste() {
   const fields = [
-    { icon: Users, label: 'Full Name', value: 'Rajesh Kumar' },
+    { icon: Users, label: 'Full Name', value: 'Rajesh Nair' },
     { icon: Phone, label: 'Phone Number', value: '9876543210' },
-    { icon: MapPin, label: 'Full Address', value: 'Flat 301, Ocean View Apartments, Link Road' },
+    { icon: MapPin, label: 'Full Address', value: 'Flat 301, Ocean View Apartments, Kochi' },
     { icon: MapPin, label: 'House/Building', value: 'Ocean View Apartments' },
-    { icon: MapPin, label: 'Landmark', value: 'Near Goregaon Station' },
-    { icon: MapPin, label: 'City', value: 'Mumbai' },
-    { icon: MapPin, label: 'State', value: 'Maharashtra' },
-    { icon: MapPin, label: 'PIN Code', value: '400063' },
+    { icon: MapPin, label: 'Landmark', value: 'Near Marine Drive' },
+    { icon: MapPin, label: 'City', value: 'Kochi' },
+    { icon: MapPin, label: 'State', value: 'Kerala' },
+    { icon: MapPin, label: 'PIN Code', value: '682001' },
   ]
 
   return (
@@ -1123,7 +1123,7 @@ function Scene6CreateOrderWithExport() {
             <CardHeader className="p-2 sm:p-6 pb-2 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-xs sm:text-base">Order #ORD-048</CardTitle>
-                <p className="text-[9px] text-muted-foreground mt-0.5 sm:text-xs">Rajesh Kumar</p>
+                <p className="text-[9px] text-muted-foreground mt-0.5 sm:text-xs">Rajesh Nair</p>
               </div>
 
               <motion.div
@@ -1338,7 +1338,7 @@ function Scene8UpdateOrderStatus() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xs sm:text-lg">Order #ORD-048</CardTitle>
-              <p className="text-[9px] text-muted-foreground sm:text-sm mt-0.5">Rajesh Kumar • ₹3,048</p>
+              <p className="text-[9px] text-muted-foreground sm:text-sm mt-0.5">Rajesh Nair • ₹3,048</p>
             </div>
 
             {/* Mobile simplified status */}
@@ -1474,7 +1474,7 @@ function Scene10WhatsAppUpdate() {
         <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.6 }} className="bg-[#075E54] rounded-lg overflow-hidden shadow-xl sm:rounded-2xl sm:shadow-2xl">
           <div className="bg-[#075E54] p-2 flex items-center gap-2 sm:p-4 sm:gap-4">
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-[9px] sm:w-11 sm:h-11 sm:text-base">RK</div>
-            <div className="text-white font-semibold text-[11px] sm:text-base">Rajesh Kumar</div>
+            <div className="text-white font-semibold text-[11px] sm:text-base">Rajesh Nair</div>
           </div>
           <div className="bg-[#E5DDD5] p-2 min-h-[140px] sm:min-h-[350px] sm:p-6">
             <motion.div initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.9 }} className="bg-[#DCF8C6] rounded-lg rounded-tr-sm p-2 shadow-sm ml-auto max-w-[85%] sm:p-4 sm:rounded-xl sm:shadow-lg">

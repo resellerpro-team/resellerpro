@@ -1,5 +1,6 @@
 
 import { useState } from 'react'
+import { MessageSquare } from 'lucide-react'
 import styles from '@/styles/EnquiryPopup.module.css'
 
 interface FormData {
@@ -119,7 +120,17 @@ export default function EnquiryForm() {
                 type="submit"
                 disabled={status === 'submitting'}
             >
-                {status === 'submitting' ? 'Sending...' : 'Start Chat'}
+                {status === 'submitting' ? (
+                    <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Sending...</span>
+                    </>
+                ) : (
+                    <>
+                        <MessageSquare className="w-5 h-5" />
+                        <span>Start Chat on WhatsApp</span>
+                    </>
+                )}
             </button>
 
             {status === 'error' && (
