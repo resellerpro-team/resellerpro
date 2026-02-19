@@ -9,10 +9,10 @@ const optionalText = z.string().transform(v => v || '')
 const CustomerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   phone: z.string()
-    .min(10, 'Phone number must be at least 10 digits.')
-    .transform(val => val.replace(/\s+/g, ''))
-    .pipe(z.string().regex(/^[0-9]{10,15}$/, 'Invalid phone number format.')),
-  whatsapp: optionalText.optional(),
+    .regex(/^[0-9]{10}$/, 'Enter a valid 10-digit phone number.'),
+  whatsapp: z.preprocess((val) => val === '' || val === null ? undefined : val, z.string()
+    .regex(/^[0-9]{10}$/, 'Enter a valid 10-digit WhatsApp number.')
+    .optional()),
   email: optionalText.optional(),
   address_line1: optionalText,
   address_line2: optionalText,
@@ -102,10 +102,13 @@ export async function createCustomer(
     console.error('Supabase error:', error)
     // Handle unique constraint violation (duplicate phone)
     if (error.code === '23505') {
+      const isWhatsApp = error.message?.toLowerCase().includes('whatsapp') || error.details?.toLowerCase().includes('whatsapp');
       return {
         success: false,
-        message: 'A customer with this phone number already exists.',
-        errors: { phone: ['This phone number is already registered.'] }
+        message: `A customer with this ${isWhatsApp ? 'WhatsApp' : 'phone'} number already exists.`,
+        errors: isWhatsApp
+          ? { whatsapp: ['This WhatsApp number is already registered.'] }
+          : { phone: ['This phone number is already registered.'] }
       }
     }
     return { success: false, message: 'Database Error: Failed to create customer.' }
@@ -220,10 +223,13 @@ export async function updateCustomer(
   if (error) {
     console.error('Supabase update error:', error)
     if (error.code === '23505') {
+      const isWhatsApp = error.message?.toLowerCase().includes('whatsapp') || error.details?.toLowerCase().includes('whatsapp');
       return {
         success: false,
-        message: 'A customer with this phone number already exists.',
-        errors: { phone: ['This phone number is already registered.'] }
+        message: `A customer with this ${isWhatsApp ? 'WhatsApp' : 'phone'} number already exists.`,
+        errors: isWhatsApp
+          ? { whatsapp: ['This WhatsApp number is already registered.'] }
+          : { phone: ['This phone number is already registered.'] }
       }
     }
     return { success: false, message: 'Database update failed.' }
