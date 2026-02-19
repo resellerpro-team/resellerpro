@@ -19,10 +19,13 @@ import { NotificationDrawer } from '@/components/notifications/NotificationDrawe
 import { GlobalSearch } from '@/components/layout/GlobalSearch'
 import { useOfflineQueue } from '@/lib/hooks/useOfflineQueue'
 import { RequireVerification } from '../shared/RequireVerification'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
+import { LimitReachedModal } from '../subscription/LimitReachedModal'
 
 export default function Header() {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const { checkLimit, limitModalProps } = usePlanLimits()
   const { isOnline } = useOfflineQueue() // ✅ Initialize hook globally
 
   return (
@@ -68,28 +71,29 @@ export default function Header() {
             <DropdownMenuLabel>Create New</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <RequireVerification>
-              <DropdownMenuItem onClick={() => router.push('/enquiries/new')}>
+              <DropdownMenuItem onClick={() => checkLimit('enquiries') && router.push('/enquiries/new')}>
                 New Enquiry
               </DropdownMenuItem>
             </RequireVerification>
             <RequireVerification>
-              <DropdownMenuItem onClick={() => router.push('/orders/new')}>
+              <DropdownMenuItem onClick={() => checkLimit('orders') && router.push('/orders/new')}>
                 New Order
               </DropdownMenuItem>
             </RequireVerification>
             <RequireVerification>
-              <DropdownMenuItem onClick={() => router.push('/products/new')}>
+              <DropdownMenuItem onClick={() => checkLimit('products') && router.push('/products/new')}>
                 New Product
               </DropdownMenuItem>
             </RequireVerification>
             <RequireVerification>
-              <DropdownMenuItem onClick={() => router.push('/customers/new')}>
+              <DropdownMenuItem onClick={() => checkLimit('customers') && router.push('/customers/new')}>
                 New Customer
               </DropdownMenuItem>
             </RequireVerification>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <LimitReachedModal {...limitModalProps} />
     </header>
   )
 }
