@@ -157,7 +157,7 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
                 name="email"
                 type="email"
                 defaultValue={customer.email || ''}
-                placeholder="e.g., email@example.com"
+                placeholder="e.g., email@exXXXX.com"
               />
               {state.errors?.email && (
                 <p className="text-sm text-red-600">{state.errors.email[0]}</p>

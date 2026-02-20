@@ -82,7 +82,7 @@ export default function FeaturesSection() {
                   {/* Simulated paste input */}
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 text-xs text-muted-foreground font-mono">
                     <p className="text-gray-500">Pasted from WhatsApp:</p>
-                    <p className="mt-2 text-foreground">"Sanjay Nair, 9876543210, Kochi 682001, sanjay@example.com"</p>
+                    <p className="mt-2 text-foreground">"Sanjay Nair, 98765XXXXX, Kochi 682001, sanjay@exXXXX.com"</p>
                   </div>
 
                   {/* Extracted data */}
@@ -93,9 +93,9 @@ export default function FeaturesSection() {
                     </div>
                     {[
                       { label: 'Name', value: 'Sanjay Nair' },
-                      { label: 'Phone', value: '9876543210' },
+                      { label: 'Phone', value: '98765XXXXX' },
                       { label: 'Location', value: 'Kochi 682001' },
-                      { label: 'Email', value: 'sanjay@example.com' },
+                      { label: 'Email', value: 'sanjay@exXXXX.com' },
                     ].map((item, i) => (
                       <div key={i} className="flex justify-between items-center bg-primary/5 rounded-lg px-3 py-2">
                         <span className="text-xs text-muted-foreground">{item.label}</span>

@@ -49,7 +49,7 @@
 //           id="adminEmail"
 //           name="adminEmail"
 //           type="email"
-//           defaultValue="admin@example.com"
+//           defaultValue="admin@exXXXX.com"
 //           placeholder="Enter admin email"
 //         />
 //       </div>
@@ -131,7 +131,7 @@ export function SettingsForm() {
           id="adminEmail"
           name="adminEmail"
           type="email"
-          defaultValue="admin@example.com"
+          defaultValue="admin@exXXXX.com"
           placeholder="Enter admin email"
           className="bg-white/[0.08] border border-white/[0.15] text-gray-100 placeholder:text-gray-500 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
         />
