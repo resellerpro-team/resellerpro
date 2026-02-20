@@ -193,7 +193,7 @@ export default function ContactPage() {
                                                 type="email"
                                                 value={formData.email}
                                                 onChange={handleChange}
-                                                placeholder="rahul@example.com"
+                                                placeholder="rahul@exXXXX.com"
                                                 className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
                                             />
                                         </div>

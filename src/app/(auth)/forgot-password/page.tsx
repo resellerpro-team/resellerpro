@@ -133,7 +133,7 @@ export default function ForgotPasswordPage() {
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder="you@exXXXX.com"
                       className="pl-11 h-12 bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 focus:ring-blue-500/20 transition-all"
                       required
                       value={email}

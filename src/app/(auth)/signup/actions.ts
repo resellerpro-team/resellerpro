@@ -22,7 +22,7 @@ const SignupSchema = z.object({
   // - min 5: Shortest valid email is "a@b.c" (5 characters)
   // - max 254: RFC 5321 standard for email length
   // - trim(): Remove accidental whitespace from copy-paste
-  // - toLowerCase(): Emails are case-insensitive, prevents duplicate accounts (User@example.com vs user@example.com)
+  // - toLowerCase(): Emails are case-insensitive, prevents duplicate accounts (User@exXXXX.com vs user@exXXXX.com)
   email: z.string()
     .trim()
     .toLowerCase()
