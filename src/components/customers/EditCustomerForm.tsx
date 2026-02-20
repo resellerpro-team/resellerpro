@@ -112,9 +112,16 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
               <Input
                 id="phone"
                 name="phone"
+                type="tel"
+                inputMode="numeric"
                 defaultValue={customer.phone}
                 placeholder="10-digit mobile number"
                 required
+                maxLength={10}
+                onInput={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  target.value = target.value.replace(/[^0-9]/g, '');
+                }}
               />
               {state.errors?.phone && (
                 <p className="text-sm text-red-600">{state.errors.phone[0]}</p>
@@ -127,9 +134,19 @@ export default function EditCustomerForm({ customer, customerId }: EditCustomerF
               <Input
                 id="whatsapp"
                 name="whatsapp"
+                type="tel"
+                inputMode="numeric"
                 defaultValue={customer.whatsapp || ''}
-                placeholder="Same as phone (optional)"
+                placeholder="10-digit whatsapp number"
+                maxLength={10}
+                onInput={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  target.value = target.value.replace(/[^0-9]/g, '');
+                }}
               />
+              {state.errors?.whatsapp && (
+                <p className="text-sm text-red-600">{state.errors.whatsapp[0]}</p>
+              )}
             </div>
 
             {/* Email */}

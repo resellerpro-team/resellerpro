@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { Check, Sparkles, Zap, Crown, ArrowRight, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
 
@@ -11,10 +10,9 @@ interface PricingCardProps {
   features: string[]
   popular?: boolean
   index: number
-  isAnnual: boolean
 }
 
-function PricingCard({ name, price, description, features, popular, index, isAnnual }: PricingCardProps) {
+function PricingCard({ name, price, description, features, popular, index }: PricingCardProps) {
   return (
     <div
       className={`relative p-8 lg:p-10 rounded-[2rem] transition-all duration-300 flex flex-col h-full ${popular
@@ -45,14 +43,9 @@ function PricingCard({ name, price, description, features, popular, index, isAnn
             {price}
           </span>
           <span className="text-muted-foreground font-medium">
-            /{isAnnual ? 'year' : 'mo'}
+            /mo
           </span>
         </div>
-        {isAnnual && price !== 'Free' && (
-          <p className="text-xs text-green-600 font-medium mt-2 bg-green-50 inline-block px-2 py-1 rounded-md">
-            Save 20%
-          </p>
-        )}
       </div>
 
       {/* Button */}
@@ -93,12 +86,10 @@ function PricingCard({ name, price, description, features, popular, index, isAnn
 }
 
 export default function PricingSection() {
-  const [isAnnual, setIsAnnual] = useState(false)
-
   const plans = [
     {
       name: 'Starter',
-      price: isAnnual ? '₹0' : '₹0',
+      price: '₹0',
       description: 'Perfect for testing the waters and organizing your first sales.',
       features: [
         '10 orders per month',
@@ -110,7 +101,7 @@ export default function PricingSection() {
     },
     {
       name: 'Pro',
-      price: isAnnual ? '₹9,999' : '₹999',
+      price: '₹999',
       description: 'For growing resellers who need automated workflows.',
       popular: true,
       features: [
@@ -124,7 +115,7 @@ export default function PricingSection() {
     },
     {
       name: 'Business',
-      price: isAnnual ? '₹19,999' : '₹1,999',
+      price: '₹1,999',
       description: 'Ultimate power for high-volume whatsapp sellers.',
       features: [
         'Everything in Pro',
@@ -166,7 +157,6 @@ export default function PricingSection() {
               key={plan.name}
               {...plan}
               index={index}
-              isAnnual={isAnnual}
             />
           ))}
         </div>
@@ -192,7 +182,7 @@ export default function PricingSection() {
                 <HelpCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-sm text-foreground">Is my data secure?</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Absolutely. We use enterprise-grade encryption to keep your customer data safe.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Absolutely. Your data is encrypted and stored securely on our platform.</p>
                 </div>
               </div>
             </div>

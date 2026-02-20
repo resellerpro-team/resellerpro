@@ -181,7 +181,7 @@ export async function getAvailablePlans() {
 // --------------------
 // Create Razorpay Order
 // --------------------
-export async function createCheckoutSession(planId: string) {
+export async function createCheckoutSession(planId: string, useWallet: boolean = true) {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -206,8 +206,8 @@ export async function createCheckoutSession(planId: string) {
 
     // Calculate wallet usage
     const walletBalance = parseFloat(profile?.wallet_balance || '0')
-    const planPrice = plan.price
-    const walletApplied = Math.min(walletBalance, planPrice)
+    const planPrice = plan.offer_price != null ? plan.offer_price : plan.price
+    const walletApplied = useWallet ? Math.min(walletBalance, planPrice) : 0
     const payableAmount = planPrice - walletApplied
 
     // If wallet covers entire amount, return special flag

@@ -54,4 +54,20 @@ export interface Enquiry {
     created_at: string;
     last_updated: string;
     source?: string;
+    // Follow-up automation fields
+    follow_up_date?: string | null;
+    follow_up_notes?: string | null;
+    priority?: "low" | "medium" | "high" | "urgent";
+    last_contacted_at?: string | null;
+    follow_up_count?: number;
+}
+
+export interface FollowUpActivity {
+    id: string;
+    enquiry_id: string;
+    user_id: string;
+    action: "whatsapp_sent" | "called" | "note_added" | "status_changed" | "follow_up_scheduled";
+    note?: string | null;
+    whatsapp_message?: string | null;
+    created_at: string;
 }

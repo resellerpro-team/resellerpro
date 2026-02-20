@@ -82,7 +82,7 @@ export default function FeaturesSection() {
                   {/* Simulated paste input */}
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 text-xs text-muted-foreground font-mono">
                     <p className="text-gray-500">Pasted from WhatsApp:</p>
-                    <p className="mt-2 text-foreground">"Priya Sharma, 9876543210, Mumbai 400001, priya@gmail.com"</p>
+                    <p className="mt-2 text-foreground">"Sanjay Nair, 9876543210, Kochi 682001, sanjay@example.com"</p>
                   </div>
 
                   {/* Extracted data */}
@@ -92,10 +92,10 @@ export default function FeaturesSection() {
                       <span className="text-green-600 font-medium">AI Extracted:</span>
                     </div>
                     {[
-                      { label: 'Name', value: 'Priya Sharma' },
+                      { label: 'Name', value: 'Sanjay Nair' },
                       { label: 'Phone', value: '9876543210' },
-                      { label: 'Location', value: 'Mumbai 400001' },
-                      { label: 'Email', value: 'priya@gmail.com' },
+                      { label: 'Location', value: 'Kochi 682001' },
+                      { label: 'Email', value: 'sanjay@example.com' },
                     ].map((item, i) => (
                       <div key={i} className="flex justify-between items-center bg-primary/5 rounded-lg px-3 py-2">
                         <span className="text-xs text-muted-foreground">{item.label}</span>
@@ -148,12 +148,12 @@ export default function FeaturesSection() {
             <h3 className="text-xl font-bold text-foreground mb-3">Secure by Design</h3>
 
             <p className="text-muted-foreground leading-relaxed mb-6 flex-grow">
-              Bank-grade encryption protects your business data. Your customers' information is always safe with us.
+              Industry-standard encryption protects your business data. Your customers' information is always safe with us.
             </p>
 
             {/* Security badges */}
             <div className="flex flex-wrap gap-2 mt-auto">
-              {['256-bit SSL', 'GDPR', 'SOC2'].map((badge, i) => (
+              {['256-bit SSL', 'Privacy Focused'].map((badge, i) => (
                 <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 rounded-full">
                   <Lock className="w-3 h-3 text-green-600" />
                   <span className="text-xs font-medium text-green-700 dark:text-green-400">{badge}</span>

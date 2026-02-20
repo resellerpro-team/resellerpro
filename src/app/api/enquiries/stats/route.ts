@@ -10,45 +10,83 @@ export async function GET() {
     }
 
     try {
-        // 1. Total Count
-        const totalPromise = supabase
-            .from('enquiries')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
+        const now = new Date()
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString()
+        const threeDaysLater = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 23, 59, 59).toISOString()
 
-        // 2. New
-        const newPromise = supabase
-            .from('enquiries')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('status', 'new')
+        // Run all stat queries in parallel
+        const [totalRes, newRes, followUpRes, convertedRes, overdueRes, dueTodayRes, dueIn3DaysRes] = await Promise.all([
+            // 1. Total Count
+            supabase
+                .from('enquiries')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('is_deleted', false),
 
-        // 3. Follow Up
-        const followUpPromise = supabase
-            .from('enquiries')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('status', 'needs_follow_up')
+            // 2. New
+            supabase
+                .from('enquiries')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('is_deleted', false)
+                .eq('status', 'new'),
 
-        // 4. Converted
-        const convertedPromise = supabase
-            .from('enquiries')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('status', 'converted')
+            // 3. Follow Up
+            supabase
+                .from('enquiries')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('is_deleted', false)
+                .eq('status', 'needs_follow_up'),
 
-        const [totalRes, newRes, followUpRes, convertedRes] = await Promise.all([
-            totalPromise,
-            newPromise,
-            followUpPromise,
-            convertedPromise
+            // 4. Converted
+            supabase
+                .from('enquiries')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('is_deleted', false)
+                .eq('status', 'converted'),
+
+            // 5. Overdue (follow_up_date < today AND still open)
+            supabase
+                .from('enquiries')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('is_deleted', false)
+                .in('status', ['new', 'needs_follow_up'])
+                .lt('follow_up_date', todayStart)
+                .not('follow_up_date', 'is', null),
+
+            // 6. Due Today
+            supabase
+                .from('enquiries')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('is_deleted', false)
+                .in('status', ['new', 'needs_follow_up'])
+                .gte('follow_up_date', todayStart)
+                .lte('follow_up_date', todayEnd),
+
+            // 7. Due in 3 Days
+            supabase
+                .from('enquiries')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('is_deleted', false)
+                .in('status', ['new', 'needs_follow_up'])
+                .gt('follow_up_date', todayEnd)
+                .lte('follow_up_date', threeDaysLater),
         ])
 
         return NextResponse.json({
             total: totalRes.count || 0,
             new: newRes.count || 0,
             followUp: followUpRes.count || 0,
-            converted: convertedRes.count || 0
+            converted: convertedRes.count || 0,
+            overdue: overdueRes.count || 0,
+            dueToday: dueTodayRes.count || 0,
+            dueIn3Days: dueIn3DaysRes.count || 0,
         })
 
     } catch (error: any) {

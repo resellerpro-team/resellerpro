@@ -19,7 +19,7 @@
 }
 
 .header {
-    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, #2563eb 100%);
     padding: 16px 20px;
     color: white;
     display: flex;
@@ -78,8 +78,8 @@
 }
 
 .input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsla(var(--primary) / 0.1);
 }
 
 .textarea {
@@ -89,20 +89,26 @@
 
 .submitButton {
     width: 100%;
-    background: #25D366;
-    /* WhatsApp Green */
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, #2563eb 100%);
     color: white;
     border: none;
-    padding: 12px;
-    border-radius: 8px;
-    font-weight: 600;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
-    transition: transform 0.1s, opacity 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .submitButton:hover {
-    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+    opacity: 1;
 }
 
 .submitButton:active {

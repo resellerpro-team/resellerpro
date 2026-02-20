@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEnquiries } from "@/lib/react-query/hooks/useEnquiries";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { useToast } from "@/hooks/use-toast";
+import { LimitReachedModal } from "@/components/subscription/LimitReachedModal";
 import { useEnquiriesStats } from "@/lib/react-query/hooks/stats-hooks";
 import { Pagination } from "@/components/shared/Pagination";
 import { EnquiriesSkeleton } from "@/components/shared/skeletons/EnquiriesSkeleton";
@@ -23,7 +24,10 @@ import {
     CheckCircle2,
     XCircle,
     Inbox,
-    Lock
+    Lock,
+    AlertTriangle,
+    CalendarClock,
+    Calendar,
 } from "lucide-react";
 import { ExportEnquiries } from '@/components/enquiries/ExportEnquiries';
 import { StatsCard } from "@/components/shared/StatsCard"
@@ -39,11 +43,12 @@ export function EnquiriesClient() {
     // URL Params
     const search = searchParams.get("search") || "";
     const statusFilter = searchParams.get("status") || "all";
+    const followUpFilter = searchParams.get("follow_up") || "";
     const [page, setPage] = useState(1);
     const [businessName, setBusinessName] = useState<string>('ResellerPro');
     const { toast } = useToast();
 
-    const { canCreateEnquiry, subscription } = usePlanLimits();
+    const { canCreateEnquiry, subscription, checkLimit, limitModalProps } = usePlanLimits();
     const planName = subscription?.plan?.display_name || 'Free Plan';
 
     // Fetch business name from user profile
@@ -75,8 +80,6 @@ export function EnquiriesClient() {
     const qs = params.toString();
 
     const { data: enquiriesData, isLoading } = useEnquiries(qs);
-    // Explicitly cast to any if necessary, or assume hook handles generic
-    // const enquiriesDataAny = enquiriesData as any; // No longer needed with types
 
     // Handle both old array format (safety) and new object format
     const enquiries = (Array.isArray(enquiriesData) ? enquiriesData : (enquiriesData as any)?.data || []) as Enquiry[];
@@ -84,7 +87,6 @@ export function EnquiriesClient() {
     const totalPages = Math.ceil(totalCount / 20);
 
     // Stats Calculation
-    // Global Stats (Server-side)
     const { data: statsData } = useEnquiriesStats();
 
     const stats = {
@@ -92,17 +94,20 @@ export function EnquiriesClient() {
         new: statsData?.new || 0,
         followUp: statsData?.followUp || 0,
         converted: statsData?.converted || 0,
+        overdue: statsData?.overdue || 0,
+        dueToday: statsData?.dueToday || 0,
+        dueIn3Days: statsData?.dueIn3Days || 0,
     };
 
     // Update URL helper
-    const updateURL = (params: Record<string, string>) => {
+    const updateURL = (newParams: Record<string, string>) => {
         setPage(1);
-        const newParams = new URLSearchParams(searchParams.toString());
-        Object.entries(params).forEach(([key, value]) => {
-            if (!value || value === "all") newParams.delete(key);
-            else newParams.set(key, value);
+        const urlParams = new URLSearchParams(searchParams.toString());
+        Object.entries(newParams).forEach(([key, value]) => {
+            if (!value || value === "all") urlParams.delete(key);
+            else urlParams.set(key, value);
         });
-        router.push(`/enquiries?${newParams.toString()}`);
+        router.push(`/enquiries?${urlParams.toString()}`);
     };
 
     return (
@@ -111,7 +116,7 @@ export function EnquiriesClient() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Enquiries</h1>
-                    <p className="text-muted-foreground">Manage ongoing customer convertions and leads</p>
+                    <p className="text-muted-foreground">Track leads, schedule follow-ups, and convert with smart WhatsApp messaging</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <ExportEnquiries enquiries={enquiries} businessName={businessName} className="w-full sm:w-auto" />
@@ -125,14 +130,7 @@ export function EnquiriesClient() {
                         <Button
                             variant="outline"
                             className="w-full sm:w-auto gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
-                            onClick={() => {
-                                toast({
-                                    title: "Limit Reached 🔒",
-                                    description: `You've reached your enquiry limit on the ${planName}. Upgrade to unlock more!`,
-                                    variant: "default",
-                                    action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
-                                })
-                            }}
+                            onClick={() => checkLimit('enquiries')}
                         >
                             <Lock className="mr-2 h-4 w-4" /> Add Enquiry
                         </Button>
@@ -140,7 +138,7 @@ export function EnquiriesClient() {
                 </div>
             </div>
 
-            {/* TWO: Stats Cards */}
+            {/* TWO: Stats Cards - Row 1 (Core Stats) */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatsCard
                     title="New Enquiries"
@@ -167,6 +165,50 @@ export function EnquiriesClient() {
                     className="text-gray-500"
                 />
             </div>
+
+            {/* TWO-B: Smart Alert Stats (Follow-Up Intelligence) */}
+            {(stats.overdue > 0 || stats.dueToday > 0 || stats.dueIn3Days > 0) && (
+                <div className="grid grid-cols-3 gap-4">
+                    <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${followUpFilter === 'overdue' ? 'ring-2 ring-red-500' : ''} ${stats.overdue > 0 ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10' : ''}`}
+                        onClick={() => updateURL({ follow_up: followUpFilter === 'overdue' ? '' : 'overdue' })}
+                    >
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <AlertTriangle className={`h-5 w-5 ${stats.overdue > 0 ? 'text-red-500' : 'text-muted-foreground'}`} />
+                            <div>
+                                <p className={`text-2xl font-bold ${stats.overdue > 0 ? 'text-red-600' : ''}`}>{stats.overdue}</p>
+                                <p className="text-xs text-muted-foreground">Overdue</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${followUpFilter === 'today' ? 'ring-2 ring-blue-500' : ''} ${stats.dueToday > 0 ? 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                        onClick={() => updateURL({ follow_up: followUpFilter === 'today' ? '' : 'today' })}
+                    >
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <CalendarClock className={`h-5 w-5 ${stats.dueToday > 0 ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                            <div>
+                                <p className={`text-2xl font-bold ${stats.dueToday > 0 ? 'text-blue-600' : ''}`}>{stats.dueToday}</p>
+                                <p className="text-xs text-muted-foreground">Due Today</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${followUpFilter === 'upcoming' ? 'ring-2 ring-orange-500' : ''} ${stats.dueIn3Days > 0 ? 'border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10' : ''}`}
+                        onClick={() => updateURL({ follow_up: followUpFilter === 'upcoming' ? '' : 'upcoming' })}
+                    >
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <Calendar className={`h-5 w-5 ${stats.dueIn3Days > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
+                            <div>
+                                <p className={`text-2xl font-bold ${stats.dueIn3Days > 0 ? 'text-orange-600' : ''}`}>{stats.dueIn3Days}</p>
+                                <p className="text-xs text-muted-foreground">Due in 3 Days</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             {/* THREE: Search & Filter */}
             <Card>
@@ -203,9 +245,9 @@ export function EnquiriesClient() {
             {isLoading ? (
                 <EnquiriesSkeleton />
             ) : enquiries.length === 0 ? (
-                search || statusFilter !== "all" ? (
+                search || statusFilter !== "all" || followUpFilter ? (
                     <FilteredEmptyState
-                        onClearFilters={() => updateURL({ search: "", status: "all" })}
+                        onClearFilters={() => updateURL({ search: "", status: "all", follow_up: "" })}
                     />
                 ) : (
                     <EmptyState
@@ -222,7 +264,7 @@ export function EnquiriesClient() {
             ) : (
                 <div className="space-y-4">
                     {enquiries.map((enquiry: Enquiry) => (
-                        <EnquiryRow key={enquiry.id} enquiry={enquiry} />
+                        <EnquiryRow key={enquiry.id} enquiry={enquiry} businessName={businessName} />
                     ))}
                 </div>
             )}
@@ -240,6 +282,7 @@ export function EnquiriesClient() {
                     />
                 </div>
             )}
+            <LimitReachedModal {...limitModalProps} />
         </div>
     );
 }

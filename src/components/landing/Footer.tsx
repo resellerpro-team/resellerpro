@@ -6,10 +6,10 @@ import NextImage from 'next/image'
 
 export default function Footer() {
   return (
-    <footer className="relative bg-gradient-to-b from-gray-50 via-white to-gray-50 pt-20 pb-10 overflow-hidden">
+    <footer className="relative bg-background pt-20 pb-10 overflow-hidden border-t border-border">
       {/* Background blobs */}
-      <div className="absolute top-10 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
-      <div className="absolute bottom-10 right-10 w-72 h-72 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+      <div className="absolute top-10 left-10 w-72 h-72 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+      <div className="absolute bottom-10 right-10 w-72 h-72 bg-blue-200/10 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         {/* Top Section */}
@@ -26,10 +26,10 @@ export default function Footer() {
                 height={64}
                 className="w-16 h-16"
               />
-              <span className="text-2xl font-bold text-gray-900">ResellerPro</span>
+              <span className="text-2xl font-bold text-foreground">ResellerPro</span>
             </div>
 
-            <p className="text-gray-600 leading-relaxed text-sm">
+            <p className="text-muted-foreground leading-relaxed text-sm">
               Your all-in-one platform to manage products, customers & orders. Built for modern
               resellers who want to grow faster.
             </p>
@@ -44,25 +44,25 @@ export default function Footer() {
 
           {/* Navigation */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Navigation</h3>
-            <ul className="space-y-3 text-gray-600">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Navigation</h3>
+            <ul className="space-y-3 text-muted-foreground">
               <li>
-                <Link href="/#features" className="hover:text-blue-600 transition-colors">
+                <Link href="/features" className="hover:text-primary transition-colors">
                   Features
                 </Link>
               </li>
               <li>
-                <Link href="/#pricing" className="hover:text-blue-600 transition-colors">
+                <Link href="/pricing" className="hover:text-primary transition-colors">
                   Pricing
                 </Link>
               </li>
               <li>
-                <Link href="/#workflow" className="hover:text-blue-600 transition-colors">
-                  Workflow
+                <Link href="/contact" className="hover:text-primary transition-colors">
+                  Contact
                 </Link>
               </li>
               <li>
-                <Link href="/#faq" className="hover:text-blue-600 transition-colors">
+                <Link href="/#faq" className="hover:text-primary transition-colors">
                   FAQ
                 </Link>
               </li>
@@ -71,20 +71,20 @@ export default function Footer() {
 
           {/* Company */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Company</h3>
-            <ul className="space-y-3 text-gray-600">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Company</h3>
+            <ul className="space-y-3 text-muted-foreground">
               <li>
-                <Link href="/about" className="hover:text-blue-600 transition-colors">
+                <Link href="/about" className="hover:text-primary transition-colors">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="/privacy-policy" className="hover:text-blue-600 transition-colors">
+                <Link href="/privacy-policy" className="hover:text-primary transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms-and-conditions" className="hover:text-blue-600 transition-colors">
+                <Link href="/terms-and-conditions" className="hover:text-primary transition-colors">
                   Terms & Conditions
                 </Link>
               </li>
@@ -93,41 +93,28 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact</h3>
-            <ul className="space-y-4 text-gray-600">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Contact</h3>
+            <ul className="space-y-4 text-muted-foreground">
               <li className="flex items-center space-x-3">
-                <Mail size={18} className="text-blue-600" />
-                <a href="mailto:resellerpro@gmail.com" className="hover:text-blue-600">
-                  resellerpro.tech@gmail.com
-                </a>
+                <Mail size={18} className="text-primary" />
+                <Link href="/contact" className="hover:text-primary">
+                  support@resellerpro.in
+                </Link>
               </li>
               <li className="flex items-center space-x-3">
-                <Phone size={18} className="text-blue-600" />
-                <a href="tel:+917736767759" className="hover:text-blue-600">
+                <Phone size={18} className="text-primary" />
+                <a href="tel:+917736767759" className="hover:text-primary">
                   +91 7736767759
                 </a>
               </li>
 
             </ul>
-
-            {/* Social Icons */}
-            <div className="flex space-x-4 mt-6">
-              {[Facebook, Instagram, MessageCircle].map((Icon, idx) => (
-                <a
-                  key={idx}
-                  href="#"
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-blue-100 transition-all shadow-sm hover:shadow-md"
-                >
-                  <Icon size={20} className="text-gray-700 hover:text-blue-600 transition-colors" />
-                </a>
-              ))}
-            </div>
           </div>
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-200 pt-6 text-center">
-          <p className="text-gray-500 text-sm">
+        <div className="border-t border-border pt-6 text-center">
+          <p className="text-muted-foreground text-sm">
             © {new Date().getFullYear()} ResellerPro. All rights reserved.
           </p>
         </div>

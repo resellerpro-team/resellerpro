@@ -38,7 +38,9 @@ export async function activateWithWallet(planId: string) {
 
         const walletBalance = parseFloat(profile?.wallet_balance || '0')
 
-        if (walletBalance < plan.price) {
+        const planPrice = plan.offer_price != null ? plan.offer_price : plan.price
+
+        if (walletBalance < planPrice) {
             return { success: false, message: 'Insufficient wallet balance' }
         }
 
@@ -63,7 +65,7 @@ export async function activateWithWallet(planId: string) {
         const { error: walletError } = await adminSupabase
             .rpc('add_wallet_transaction', {
                 p_user_id: user.id,
-                p_amount: -plan.price,
+                p_amount: -planPrice,
                 p_type: 'subscription_debit',
                 p_description: `Subscription payment - ${plan.display_name}`,
             })
@@ -153,7 +155,7 @@ export async function activateWithWallet(planId: string) {
             const pdfBuffer = await generateContractPdf({
                 userName: profile?.full_name || 'Valued User',
                 planName: plan.display_name,
-                amount: plan.price,
+                amount: planPrice,
                 startDate: format(now, 'dd MMM yyyy'),
                 endDate: format(periodEnd, 'dd MMM yyyy'),
             })

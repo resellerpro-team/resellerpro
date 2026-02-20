@@ -53,6 +53,7 @@ import { EmptyState, FilteredEmptyState } from "@/components/shared/EmptyState";
 import { RequireVerification } from "@/components/shared/RequireVerification";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { useToast } from "@/hooks/use-toast";
+import { LimitReachedModal } from "@/components/subscription/LimitReachedModal";
 
 // ---------------- TYPES ----------------
 export type Product = {
@@ -80,7 +81,7 @@ export function ProductsClient() {
   const [businessName, setBusinessName] = useState<string>('ResellerPro');
   const { toast } = useToast();
 
-  const { canCreateProduct, subscription } = usePlanLimits();
+  const { canCreateProduct, subscription, checkLimit, limitModalProps } = usePlanLimits();
   const planName = subscription?.plan?.display_name || 'Free Plan';
 
   // Fetch business name from user profile
@@ -188,14 +189,7 @@ export function ProductsClient() {
             <Button
               className="w-full sm:w-auto gap-2 border-dashed text-muted-foreground opacity-80 hover:bg-background"
               variant="outline"
-              onClick={() => {
-                toast({
-                  title: "Limit Reached 🔒",
-                  description: `You've reached your product limit on the ${planName}. Upgrade to grow your business!`,
-                  variant: "default",
-                  action: <Link href="/settings/subscription" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">Upgrade</Link>
-                })
-              }}
+              onClick={() => checkLimit('products')}
             >
               <Lock className="mr-2 h-4 w-4" /> Add Product
             </Button>
@@ -339,6 +333,7 @@ export function ProductsClient() {
           />
         </div>
       )}
+      <LimitReachedModal {...limitModalProps} />
     </div>
   );
 }
