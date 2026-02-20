@@ -17,6 +17,8 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search')
     const status = searchParams.get('status')
+    const priority = searchParams.get('priority')
+    const followUpFilter = searchParams.get('follow_up') // 'overdue', 'today', 'upcoming', 'none'
     const sort = searchParams.get('sort') || '-created_at'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -36,6 +38,34 @@ export async function GET(req: Request) {
 
     if (status && status !== 'all') {
         query = query.eq('status', status)
+    }
+
+    if (priority && priority !== 'all') {
+        query = query.eq('priority', priority)
+    }
+
+    // Follow-up date filters
+    if (followUpFilter) {
+        const now = new Date()
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString()
+        const threeDaysLater = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 23, 59, 59).toISOString()
+
+        switch (followUpFilter) {
+            case 'overdue':
+                query = query.lt('follow_up_date', todayStart).not('follow_up_date', 'is', null)
+                    .in('status', ['new', 'needs_follow_up'])
+                break
+            case 'today':
+                query = query.gte('follow_up_date', todayStart).lte('follow_up_date', todayEnd)
+                break
+            case 'upcoming':
+                query = query.gt('follow_up_date', todayEnd).lte('follow_up_date', threeDaysLater)
+                break
+            case 'none':
+                query = query.is('follow_up_date', null)
+                break
+        }
     }
 
     const ascending = !sort.startsWith('-')
@@ -98,22 +128,42 @@ export async function POST(req: Request) {
         }
     }
 
+    const insertData: any = {
+        user_id: user.id,
+        customer_name: body.customer_name,
+        phone: body.phone,
+        message: body.message,
+        source: body.source || 'whatsapp',
+        status: 'new',
+        priority: body.priority || 'medium',
+    }
+
+    // Optional follow-up fields
+    if (body.follow_up_date) {
+        insertData.follow_up_date = body.follow_up_date
+    }
+    if (body.follow_up_notes) {
+        insertData.follow_up_notes = body.follow_up_notes
+    }
 
     const { data, error } = await supabase
         .from('enquiries')
-        .insert({
-            user_id: user.id,
-            customer_name: body.customer_name,
-            phone: body.phone,
-            message: body.message,
-            source: 'whatsapp',
-            status: 'new',
-        })
+        .insert(insertData)
         .select()
         .single()
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+
+    // Log follow-up scheduling if date was set
+    if (body.follow_up_date) {
+        await supabase.from('enquiry_follow_ups').insert({
+            enquiry_id: data.id,
+            user_id: user.id,
+            action: 'follow_up_scheduled',
+            note: `Follow-up scheduled for ${new Date(body.follow_up_date).toLocaleDateString()}`,
+        })
     }
 
     return NextResponse.json(data)

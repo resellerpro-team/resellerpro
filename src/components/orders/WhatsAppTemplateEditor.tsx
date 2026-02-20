@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2, Sparkles, RotateCcw, Copy, Check, Layout, MessageSquare, Info, ChevronRight, Calculator } from 'lucide-react'
+import { Loader2, Sparkles, RotateCcw, Copy, Check, MessageSquare, Info, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 type MessageTemplate = 'order_confirmation' | 'payment_reminder' | 'shipped_update' | 'delivered_confirmation' | 'follow_up'
@@ -42,14 +41,14 @@ const TEMPLATE_NAMES: Record<MessageTemplate, string> = {
 }
 
 const AVAILABLE_VARIABLES = [
-  { key: '{customerName}', description: 'Customer full name' },
-  { key: '{firstName}', description: 'Customer first name' },
-  { key: '{orderNumber}', description: 'Order number/ID' },
-  { key: '{totalAmount}', description: 'Order total amount' },
-  { key: '{items}', description: 'Product list' },
-  { key: '{deliveryDate}', description: 'Expected delivery date' },
-  { key: '{trackingNumber}', description: 'Tracking number' },
-  { key: '{shopName}', description: 'Your business name' },
+  { key: '{customerName}', description: 'Full name', shortLabel: 'Name' },
+  { key: '{firstName}', description: 'First name', shortLabel: 'First' },
+  { key: '{orderNumber}', description: 'Order ID', shortLabel: 'Order#' },
+  { key: '{totalAmount}', description: 'Total amount', shortLabel: 'Amount' },
+  { key: '{items}', description: 'Product list', shortLabel: 'Items' },
+  { key: '{deliveryDate}', description: 'Delivery date', shortLabel: 'Date' },
+  { key: '{trackingNumber}', description: 'Tracking #', shortLabel: 'Track#' },
+  { key: '{shopName}', description: 'Business name', shortLabel: 'Shop' },
 ]
 
 export function WhatsAppTemplateEditor({
@@ -66,11 +65,24 @@ export function WhatsAppTemplateEditor({
   const [isSaving, setIsSaving] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [copiedVar, setCopiedVar] = useState<string | null>(null)
+  const [showPreview, setShowPreview] = useState(true)
+
+  // Ref for the textarea to track cursor position
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const cursorPosRef = useRef<number>(0)
+
+  // Track cursor position on every interaction
+  const updateCursorPos = useCallback(() => {
+    if (textareaRef.current) {
+      cursorPosRef.current = textareaRef.current.selectionStart
+    }
+  }, [])
 
   // Reset when template changes or dialog opens
   useEffect(() => {
     if (isOpen) {
       setCustomMessage(currentMessage || defaultMessage)
+      cursorPosRef.current = 0
     }
   }, [isOpen, currentMessage, defaultMessage, templateType])
 
@@ -110,16 +122,39 @@ export function WhatsAppTemplateEditor({
     }
   }
 
-  const insertVariable = (variable: string) => {
-    setCustomMessage((prev) => prev + variable)
-    toast.success(`Added ${variable}`)
-  }
+  // INSERT AT CURSOR POSITION — the core fix
+  const insertVariable = useCallback((variable: string) => {
+    const textarea = textareaRef.current
+    if (!textarea) {
+      // Fallback: append to end
+      setCustomMessage((prev) => prev + variable)
+      return
+    }
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const before = customMessage.substring(0, start)
+    const after = customMessage.substring(end)
+    const newMessage = before + variable + after
+    const newCursorPos = start + variable.length
+
+    setCustomMessage(newMessage)
+
+    // Restore cursor position AFTER React re-render
+    requestAnimationFrame(() => {
+      textarea.focus()
+      textarea.setSelectionRange(newCursorPos, newCursorPos)
+      cursorPosRef.current = newCursorPos
+    })
+
+    toast.success(`Inserted ${variable}`)
+  }, [customMessage])
 
   const copyVariable = (variable: string) => {
     navigator.clipboard.writeText(variable)
     setCopiedVar(variable)
     setTimeout(() => setCopiedVar(null), 2000)
-    toast.success('Variable copied!')
+    toast.success('Copied!')
   }
 
   const characterCount = customMessage.length
@@ -135,235 +170,208 @@ export function WhatsAppTemplateEditor({
     .replace(/{trackingNumber}/g, previewData?.trackingNumber || 'TRK123456789')
     .replace(/{shopName}/g, previewData?.shopName || 'Our Store')
 
-  const VariableCard = ({ variable }: { variable: { key: string; description: string } }) => (
-    <div
-      key={variable.key}
-      className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-all border-l-4 border-l-purple-500 shadow-sm"
-    >
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <code className="text-xs font-bold text-purple-600 dark:text-purple-400">
-          {variable.key}
-        </code>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 shrink-0"
-          onClick={() => copyVariable(variable.key)}
-        >
-          {copiedVar === variable.key ? (
-            <Check className="h-4 w-4 text-green-600" />
-          ) : (
-            <Copy className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
-      <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{variable.description}</p>
-      <Button
-        size="sm"
-        variant="outline"
-        className="w-full text-xs h-8 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/20 dark:hover:bg-purple-900/30 border-purple-100 dark:border-purple-800"
-        onClick={() => insertVariable(variable.key)}
-      >
-        Insert Variable
-      </Button>
-    </div>
-  )
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[95vh] p-0 overflow-hidden sm:rounded-2xl">
+      <DialogContent className="max-w-6xl max-h-[95vh] p-0 overflow-hidden sm:rounded-2xl">
         <div className="flex flex-col h-full max-h-[95vh]">
-          <DialogHeader className="p-6 pb-2 border-b">
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <DialogTitle className="flex items-center gap-2 text-xl">
-                  <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/30">
-                    <Sparkles className="h-5 w-5 text-purple-600" />
-                  </div>
-                  Customize {TEMPLATE_NAMES[templateType]}
-                </DialogTitle>
-                <DialogDescription className="hidden sm:block">
-                  Personalize your WhatsApp template with dynamic variables.
-                </DialogDescription>
+          {/* HEADER */}
+          <DialogHeader className="px-5 py-4 border-b bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/20">
+                  <MessageSquare className="h-4 w-4" />
+                </div>
+                <div>
+                  <DialogTitle className="text-base">
+                    {TEMPLATE_NAMES[templateType]}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs hidden sm:block">
+                    Edit template with dynamic variables
+                  </DialogDescription>
+                </div>
               </div>
-              <Badge variant="outline" className="h-7 bg-muted/30">
-                {characterCount} chars
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs tabular-nums h-6 px-2">
+                  {characterCount} chars
+                </Badge>
+                {isModified && (
+                  <Badge className="text-[10px] h-5 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800" variant="outline">
+                    Modified
+                  </Badge>
+                )}
+              </div>
             </div>
           </DialogHeader>
 
-          <Tabs defaultValue="editor" className="flex-1 flex flex-col min-h-0">
-            <div className="px-6 border-b bg-muted/10">
-              <TabsList className="h-12 w-full justify-start bg-transparent gap-6">
-                <TabsTrigger value="editor" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-2 gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Editor
-                </TabsTrigger>
-                <TabsTrigger value="preview" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-2 gap-2">
-                  <Layout className="h-4 w-4" />
-                  Preview
-                </TabsTrigger>
-                <TabsTrigger value="variables" className="md:hidden data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-2 gap-2">
-                  <Info className="h-4 w-4" />
-                  Variables
-                </TabsTrigger>
-              </TabsList>
-            </div>
+          {/* MAIN CONTENT — Side by Side on desktop, stacked on mobile */}
+          <div className="flex-1 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 h-full" style={{ minHeight: 0 }}>
 
-            <div className="flex-1 overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-12 h-full">
-                {/* Editor Section */}
-                <div className="md:col-span-8 flex flex-col h-full border-r">
-                  <TabsContent value="editor" className="flex-1 m-0 flex flex-col p-4 md:p-6 space-y-4 overflow-y-auto">
-                    <div className="flex-1 flex flex-col">
-                      <Label htmlFor="message" className="sr-only">Message Template</Label>
-                      <Textarea
-                        id="message"
-                        value={customMessage}
-                        onChange={(e) => setCustomMessage(e.target.value)}
-                        className="flex-1 min-h-[300px] md:min-h-full font-mono text-sm resize-none focus-visible:ring-purple-500 rounded-xl"
-                        placeholder="Type your WhatsApp message template here..."
-                      />
-                    </div>
-
-                    {/* Quick variables for mobile editor */}
-                    <div className="space-y-2 md:hidden">
-                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Insert</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {AVAILABLE_VARIABLES.slice(0, 6).map((v) => (
-                          <Button
-                            key={v.key}
-                            variant="secondary"
-                            size="sm"
-                            className="h-8 text-[11px] rounded-full px-3"
-                            onClick={() => insertVariable(v.key)}
-                          >
-                            {v.key}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="preview" className="md:block hidden flex-1 m-0 p-4 md:p-6 bg-muted/30 overflow-y-auto">
-                    <div className="max-w-md mx-auto h-full flex flex-col">
-                      <Label className="text-sm font-semibold mb-4 flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                        Live WhatsApp Preview
-                      </Label>
-
-                      {/* WhatsApp Phone Mockup */}
-                      <div className="flex-1 bg-[#e5ddd5] dark:bg-zinc-900/80 rounded-2xl border-4 border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col relative min-h-[400px]">
-                        {/* WhatsApp Header */}
-                        <div className="bg-[#075e54] text-white p-3 flex items-center gap-2 shadow-md z-10">
-                          <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center text-xs">
-                            {(previewData?.shopName || 'O').charAt(0)}
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold">{previewData?.shopName || 'Our Store'}</div>
-                            <div className="text-[10px] opacity-80 flex items-center gap-1">
-                              <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                              Online
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* WhatsApp Content Area */}
-                        <ScrollArea className="flex-1 p-4 relative bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat bg-[length:400px]">
-                          <div className="flex flex-col space-y-4">
-                            {/* Date info */}
-                            <div className="self-center bg-sky-100/80 dark:bg-zinc-800/80 px-3 py-1 rounded-lg text-[10px] font-medium text-zinc-600 dark:text-zinc-400 shadow-sm backdrop-blur-sm">
-                              TODAY
-                            </div>
-
-                            {/* Message Bubble */}
-                            <div className="self-start max-w-[85%] bg-white dark:bg-[#1f2c34] p-3 rounded-tr-xl rounded-br-xl rounded-bl-xl shadow-md relative text-sm border-l-0">
-                              <div className="whitespace-pre-wrap leading-relaxed dark:text-zinc-200">
-                                {renderedPreview}
-                              </div>
-                              <div className="text-[9px] text-zinc-400 mt-1 flex justify-end items-center gap-1">
-                                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                <Check className="h-3 w-3 text-sky-500" />
-                              </div>
-                              {/* Bubble tail */}
-                              <div className="absolute top-0 -left-2 w-0 h-0 border-t-[10px] border-t-white dark:border-t-[#1f2c34] border-l-[10px] border-l-transparent" />
-                            </div>
-                          </div>
-                        </ScrollArea>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="variables" className="md:hidden m-0 p-4 space-y-4 h-full overflow-y-auto">
-                    <div className="space-y-4">
-                      <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-800/30 flex gap-3">
-                        <Info className="h-5 w-5 text-purple-600 shrink-0" />
-                        <p className="text-xs text-purple-700 dark:text-purple-300 leading-relaxed">
-                          Tap <b>Insert</b> to add a variable to your message. These are placeholders that automatically fill with real customer or order data.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3">
-                        {AVAILABLE_VARIABLES.map((variable) => (
-                          <VariableCard key={variable.key} variable={variable} />
-                        ))}
-                      </div>
-                    </div>
-                  </TabsContent>
+              {/* LEFT: Editor + Variables */}
+              <div className="flex flex-col border-r overflow-hidden">
+                {/* Variable pills - compact inline row */}
+                <div className="px-4 py-2.5 border-b bg-muted/30">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Sparkles className="h-3 w-3 text-purple-500 shrink-0" />
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Insert Variable</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {AVAILABLE_VARIABLES.map((v) => (
+                      <button
+                        key={v.key}
+                        type="button"
+                        onClick={() => insertVariable(v.key)}
+                        title={`${v.key} — ${v.description}`}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium
+                          bg-purple-50 text-purple-700 border border-purple-200
+                          hover:bg-purple-100 hover:border-purple-300 hover:shadow-sm
+                          dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-700
+                          dark:hover:bg-purple-900/40
+                          transition-all cursor-pointer active:scale-95"
+                      >
+                        <span className="font-mono text-[10px]">{v.key}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); copyVariable(v.key); }}
+                          className="ml-0.5 opacity-50 hover:opacity-100 transition-opacity"
+                          title="Copy variable"
+                        >
+                          {copiedVar === v.key ? (
+                            <Check className="h-2.5 w-2.5 text-green-600" />
+                          ) : (
+                            <Copy className="h-2.5 w-2.5" />
+                          )}
+                        </button>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Sidebar Section (Desktop) */}
-                <div className="hidden md:block md:col-span-4 bg-muted/5 p-6 overflow-y-auto">
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-sm font-semibold mb-1 flex items-center gap-2">
-                        <Calculator className="h-4 w-4 text-primary" />
-                        Dynamic Variables
-                      </h4>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        Insert these into your template.
-                      </p>
+                {/* Editor textarea */}
+                <div className="flex-1 p-4 flex flex-col min-h-0">
+                  <Label htmlFor="message" className="sr-only">Message Template</Label>
+                  <Textarea
+                    ref={textareaRef}
+                    id="message"
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    onSelect={updateCursorPos}
+                    onClick={updateCursorPos}
+                    onKeyUp={updateCursorPos}
+                    className="flex-1 min-h-[200px] lg:min-h-0 font-mono text-sm resize-none
+                      focus-visible:ring-purple-500 rounded-xl border-2
+                      transition-colors"
+                    placeholder="Type your WhatsApp message template here..."
+                  />
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-[10px] text-muted-foreground">
+                      Use <code className="px-1 py-0.5 rounded bg-muted text-[10px]">*bold*</code>{' '}
+                      <code className="px-1 py-0.5 rounded bg-muted text-[10px]">_italic_</code>
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="lg:hidden h-7 text-xs gap-1"
+                      onClick={() => setShowPreview(!showPreview)}
+                    >
+                      {showPreview ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      {showPreview ? 'Hide' : 'Show'} Preview
+                    </Button>
+                  </div>
+                </div>
+              </div>
 
-                      <ScrollArea className="h-[430px] pr-3">
-                        <div className="space-y-3">
-                          {AVAILABLE_VARIABLES.map((variable) => (
-                            <VariableCard key={variable.key} variable={variable} />
-                          ))}
+              {/* RIGHT: Live Preview — always visible on desktop, toggleable on mobile */}
+              <div className={`flex flex-col overflow-hidden bg-muted/20 ${showPreview ? '' : 'hidden lg:flex'}`}>
+                <div className="px-4 py-2.5 border-b flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs font-semibold">Live Preview</span>
+                </div>
+
+                <div className="flex-1 p-4 overflow-y-auto">
+                  {/* WhatsApp Phone Mockup — compact and beautiful */}
+                  <div className="max-w-sm mx-auto">
+                    <div className="bg-[#e5ddd5] dark:bg-zinc-900/80 rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 shadow-xl overflow-hidden">
+                      {/* WhatsApp Header */}
+                      <div className="bg-[#075e54] text-white px-3 py-2.5 flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
+                          {(previewData?.shopName || 'O').charAt(0)}
                         </div>
-                      </ScrollArea>
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold leading-tight">{previewData?.shopName || 'Our Store'}</div>
+                          <div className="text-[10px] opacity-80 flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                            Online
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Chat area with background pattern */}
+                      <div className="p-3 min-h-[250px] lg:min-h-[350px] bg-[#dcd5c4] dark:bg-zinc-900/60 relative">
+                        {/* Date chip */}
+                        <div className="flex justify-center mb-3">
+                          <span className="bg-white/80 dark:bg-zinc-800/80 px-3 py-0.5 rounded-md text-[10px] font-medium text-zinc-600 dark:text-zinc-400 shadow-sm">
+                            TODAY
+                          </span>
+                        </div>
+
+                        {/* Message Bubble */}
+                        <div className="max-w-[90%] bg-white dark:bg-[#1f2c34] p-2.5 rounded-tr-xl rounded-br-xl rounded-bl-xl shadow-md relative">
+                          {/* Bubble tail */}
+                          <div className="absolute top-0 -left-2 w-0 h-0 border-t-[8px] border-t-white dark:border-t-[#1f2c34] border-l-[8px] border-l-transparent" />
+                          <div className="whitespace-pre-wrap text-[13px] leading-relaxed dark:text-zinc-200 break-words">
+                            {renderedPreview}
+                          </div>
+                          <div className="text-[9px] text-zinc-400 mt-1 flex justify-end items-center gap-0.5">
+                            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            <Check className="h-3 w-3 text-sky-500" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Input bar mockup */}
+                      <div className="bg-[#f0f0f0] dark:bg-zinc-800 px-3 py-2 flex items-center gap-2">
+                        <div className="flex-1 bg-white dark:bg-zinc-700 rounded-full px-3 py-1.5 text-xs text-zinc-400">
+                          Type a message
+                        </div>
+                        <div className="h-7 w-7 rounded-full bg-[#075e54] flex items-center justify-center">
+                          <svg className="h-3.5 w-3.5 text-white transform rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="p-4 rounded-xl border bg-card/50 space-y-2">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase">
-                        <Sparkles className="h-3 w-3" />
-                        Quick Tips
+                    {/* Info hint below phone */}
+                    <div className="mt-3 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed">
+                          Variables like <code className="font-mono text-[10px] bg-blue-100 dark:bg-blue-800/30 px-1 rounded">{'{customerName}'}</code> will be replaced with real data when the message is sent.
+                        </p>
                       </div>
-                      <ul className="text-[11px] space-y-2 text-muted-foreground list-disc pl-3 leading-relaxed">
-                        <li>Use *bold texts* for emphasis</li>
-                        <li>Use _italic texts_ for styling</li>
-                        <li>Keep messages clear and short</li>
-                        <li>Add expressive emojis 💼</li>
-                      </ul>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </Tabs>
+          </div>
 
-          <DialogFooter className="p-6 border-t bg-muted/5 sm:flex-row gap-2">
+          {/* FOOTER */}
+          <DialogFooter className="px-5 py-3 border-t bg-muted/5 sm:flex-row gap-2">
             <div className="flex-1 flex gap-2">
               {onReset && isModified && (
                 <Button
                   variant="ghost"
+                  size="sm"
                   onClick={handleReset}
                   disabled={isSaving || isResetting}
-                  className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/5"
+                  className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/5"
                 >
                   {isResetting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    <RotateCcw className="h-4 w-4" />
+                    <RotateCcw className="h-3.5 w-3.5" />
                   )}
                   <span className="hidden sm:inline">Reset to Default</span>
                   <span className="sm:hidden">Reset</span>
@@ -371,18 +379,19 @@ export function WhatsAppTemplateEditor({
               )}
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
-              <Button variant="outline" className="flex-1 sm:flex-none" onClick={onClose} disabled={isSaving || isResetting}>
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={onClose} disabled={isSaving || isResetting}>
                 Cancel
               </Button>
               <Button
+                size="sm"
                 onClick={handleSave}
                 disabled={isSaving || isResetting || !isModified}
-                className="flex-1 sm:flex-none gap-2 bg-primary hover:bg-primary/90"
+                className="flex-1 sm:flex-none gap-1.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md"
               >
                 {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Check className="h-4 w-4" />
+                  <Check className="h-3.5 w-3.5" />
                 )}
                 Save Template
               </Button>

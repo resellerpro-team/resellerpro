@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast"; // Fixed import path
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Save, Loader2, CalendarClock, Flag } from "lucide-react";
 import Link from "next/link";
 
 import { useCreateEnquiry } from "@/lib/react-query/hooks/useEnquiries";
@@ -30,6 +31,9 @@ export default function NewEnquiryForm() {
     const [phoneError, setPhoneError] = useState("");
     const [name, setName] = useState("");
     const [message, setMessage] = useState("");
+    const [followUpDate, setFollowUpDate] = useState("");
+    const [followUpNotes, setFollowUpNotes] = useState("");
+    const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,26 +62,33 @@ export default function NewEnquiryForm() {
             finalName = `Guest ${phone.slice(-4)}`;
         }
 
-        createEnquiry({
+        const enquiryData: any = {
             phone,
             message,
             customer_name: finalName,
-        }, {
+            priority,
+        };
+
+        if (followUpDate) {
+            enquiryData.follow_up_date = new Date(followUpDate).toISOString();
+        }
+        if (followUpNotes) {
+            enquiryData.follow_up_notes = followUpNotes;
+        }
+
+        createEnquiry(enquiryData, {
             onSuccess: () => {
                 toast({
                     title: "✅ Enquiry Saved Successfully",
-                    description: `Added enquiry from ${finalName}`,
+                    description: `Added enquiry from ${finalName}${followUpDate ? ' with follow-up scheduled' : ''}`,
                     duration: 4000,
                     className: "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-900",
                 });
-                // Invalidate enquiries query
                 queryClient.invalidateQueries({ queryKey: ["enquiries"] });
-
                 router.push("/enquiries");
                 router.refresh();
             },
             onError: (error) => {
-                // Fallback catch if server rejects
                 if (error.message.toLowerCase().includes('limit')) {
                     toast({
                         title: "Limit Reached 🔒",
@@ -105,7 +116,7 @@ export default function NewEnquiryForm() {
                 </Button>
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">New Enquiry</h1>
-                    <p className="text-muted-foreground">Quickly log a new customer question</p>
+                    <p className="text-muted-foreground">Log a customer enquiry with smart follow-up tracking</p>
                 </div>
             </div>
 
@@ -127,10 +138,8 @@ export default function NewEnquiryForm() {
                                 value={phone}
                                 onChange={(e) => {
                                     const value = e.target.value.replace(/\D/g, '');
-                                    // Restrict to max 10 digits
                                     if (value.length <= 10) {
                                         setPhone(value);
-                                        // Validate length
                                         if (value.length > 0 && value.length !== 10) {
                                             setPhoneError("Enter only 10 numbers");
                                         } else {
@@ -141,11 +150,8 @@ export default function NewEnquiryForm() {
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !isLoading) {
                                         e.preventDefault();
-                                        // Trigger form submission
                                         const form = e.currentTarget.form;
-                                        if (form) {
-                                            form.requestSubmit();
-                                        }
+                                        if (form) form.requestSubmit();
                                     }
                                 }}
                                 placeholder="10-digit mobile number"
@@ -160,16 +166,19 @@ export default function NewEnquiryForm() {
 
                         {/* Message (Required) */}
                         <div className="space-y-2">
-                            <Label htmlFor="message">Message / Question *</Label>
+                            <Label htmlFor="message">Message / What are they looking for? *</Label>
                             <Textarea
                                 id="message"
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
-                                placeholder="What is the customer asking?"
+                                placeholder="E.g., Customer wants red kurta in size L, will decide next week."
                                 rows={3}
                                 required
                                 disabled={isLoading}
                             />
+                            <p className="text-xs text-muted-foreground">
+                                💡 This description is used to auto-generate smart WhatsApp follow-up messages
+                            </p>
                         </div>
 
                         {/* Name (Optional) */}
@@ -182,6 +191,61 @@ export default function NewEnquiryForm() {
                                 placeholder="Leave blank to auto-generate"
                                 disabled={isLoading}
                             />
+                        </div>
+
+                        {/* Follow-Up Section */}
+                        <div className="border-t pt-4 mt-4">
+                            <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                                <CalendarClock className="h-4 w-4 text-orange-500" />
+                                Follow-Up Scheduling
+                            </h3>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* Follow-up Date */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="follow_up_date">Follow-Up Date</Label>
+                                    <Input
+                                        id="follow_up_date"
+                                        type="date"
+                                        value={followUpDate}
+                                        onChange={(e) => setFollowUpDate(e.target.value)}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        disabled={isLoading}
+                                    />
+                                </div>
+
+                                {/* Priority */}
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5">
+                                        <Flag className="h-3.5 w-3.5" />
+                                        Priority
+                                    </Label>
+                                    <Select value={priority} onValueChange={(val) => setPriority(val as any)} disabled={isLoading}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select priority" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="low">🟢 Low</SelectItem>
+                                            <SelectItem value="medium">🟡 Medium</SelectItem>
+                                            <SelectItem value="high">🟠 High</SelectItem>
+                                            <SelectItem value="urgent">🔴 Urgent</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Follow-up Notes */}
+                            <div className="space-y-2 mt-4">
+                                <Label htmlFor="follow_up_notes">Follow-Up Notes <span className="text-muted-foreground font-normal">(Optional)</span></Label>
+                                <Textarea
+                                    id="follow_up_notes"
+                                    value={followUpNotes}
+                                    onChange={(e) => setFollowUpNotes(e.target.value)}
+                                    placeholder="E.g., Call back after payment confirmation, show new collection..."
+                                    rows={2}
+                                    disabled={isLoading}
+                                />
+                            </div>
                         </div>
 
                     </CardContent>
