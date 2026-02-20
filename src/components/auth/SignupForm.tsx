@@ -489,7 +489,7 @@ export default function SignupForm() {
                           id="phone"
                           type="tel"
                           inputMode="numeric"
-                          placeholder="9876543210"
+                          placeholder="98765XXXXX"
                           className={`pl-11 h-11 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all ${focusedField === 'phone'
                             ? 'border-blue-600 ring-4 ring-blue-600/10'
                             : 'hover:border-slate-300 dark:hover:border-slate-600'

@@ -100,7 +100,7 @@ export default function EnquiryForm() {
                     type="email"
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="you@example.com"
+                    placeholder="you@exXXXX.com"
                 />
             </div>
 

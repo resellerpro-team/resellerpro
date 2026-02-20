@@ -845,7 +845,7 @@ Address: Flat 301, Ocean View
 Landmark: Marine Drive
 City: Kochi
 PIN: 682001
-Phone: 9876543210`}</pre>
+Phone: 98765XXXXX`}</pre>
             </div>
             <div className="hidden sm:block">
               <pre className="font-mono text-xs whitespace-pre-wrap leading-relaxed">{`***********************
@@ -866,7 +866,7 @@ State                :- Kerala
  
 Pin code           :- 682001
  
-Phone no         :- 9876543210
+Phone no         :- 98765XXXXX
 ***********************`}</pre>
             </div>
             <div className="text-[8px] text-slate-400 mt-1 text-right sm:text-xs sm:mt-3">10:28 AM</div>
@@ -912,7 +912,7 @@ Mumbai`}</pre>
                 </div>
                 <div className="hidden sm:block">
                   <pre className="font-mono text-xs whitespace-pre-wrap leading-relaxed">{`Name: Rajesh Nair
-Phone: 9876543210
+Phone: 98765XXXXX
 Address: Flat 301
 City: Kochi
 PIN: 682001`}</pre>
@@ -970,10 +970,10 @@ PIN: 682001`}</pre>
                     transition={{ delay: 3 }}
                   >
                     <span className="sm:hidden">{`Name: Rajesh Kumar
-Phone: 9876543210
+Phone: 98765XXXXX
 Address: Mumbai`}</span>
                     <span className="hidden sm:inline">{`Name: Rajesh Nair
-Phone: 9876543210
+Phone: 98765XXXXX
 Address: Flat 301
 City: Kochi
 PIN: 682001`}</span>
@@ -1026,7 +1026,7 @@ PIN: 682001`}</span>
 function Scene5SmartPaste() {
   const fields = [
     { icon: Users, label: 'Full Name', value: 'Rajesh Nair' },
-    { icon: Phone, label: 'Phone Number', value: '9876543210' },
+    { icon: Phone, label: 'Phone Number', value: '98765XXXXX' },
     { icon: MapPin, label: 'Full Address', value: 'Flat 301, Ocean View Apartments, Kochi' },
     { icon: MapPin, label: 'House/Building', value: 'Ocean View Apartments' },
     { icon: MapPin, label: 'Landmark', value: 'Near Marine Drive' },

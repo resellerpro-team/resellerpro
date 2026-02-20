@@ -87,7 +87,7 @@ export default function FeaturesPage() {
                                         <p className="text-sm">Hi, I want to order the Sports Jersey.</p>
                                     </div>
                                     <div className="bg-white dark:bg-slate-700 p-3 rounded-lg rounded-tl-none shadow-sm max-w-[80%]">
-                                        <p className="text-sm">Name: Sanjay Nair<br />Phone: 9876543210<br />Address: Flat 402, Skyline Heights, Kochi 682001<br />Email: sanjay@example.com</p>
+                                        <p className="text-sm">Name: Sanjay Nair<br />Phone: 98765XXXXX<br />Address: Flat 402, Skyline Heights, Kochi 682001<br />Email: sanjay@exXXXX.com</p>
                                     </div>
                                 </div>
                                 <div className="p-4 bg-white dark:bg-slate-900 border-t border-border">
@@ -102,7 +102,7 @@ export default function FeaturesPage() {
                                         </div>
                                         <div className="bg-primary/5 p-2 rounded-lg border border-primary/20">
                                             <p className="text-[10px] text-primary font-bold uppercase tracking-wider">Phone</p>
-                                            <p className="text-sm font-semibold">9876543210</p>
+                                            <p className="text-sm font-semibold">98765XXXXX</p>
                                         </div>
                                         <div className="bg-primary/5 p-2 rounded-lg border border-primary/20 col-span-2">
                                             <p className="text-[10px] text-primary font-bold uppercase tracking-wider">Address</p>
