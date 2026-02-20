@@ -88,19 +88,44 @@ export async function PATCH(
         }
     }
 
-    const { user_id, created_at, updated_at, ...updates } = body
+    // Separate protected fields from update payload
+    const { user_id, created_at, updated_at, id: _id, ...updates } = body
+
+    const updatePayload: any = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+    }
 
     const { data, error } = await supabase
         .from("enquiries")
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update(updatePayload)
         .eq("id", id)
         .eq("user_id", user.id)
         .select()
         .single()
 
-
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+
+    // Auto-log follow-up scheduling if date changed
+    if (body.follow_up_date) {
+        await supabase.from('enquiry_follow_ups').insert({
+            enquiry_id: id,
+            user_id: user.id,
+            action: 'follow_up_scheduled',
+            note: `Follow-up rescheduled to ${new Date(body.follow_up_date).toLocaleDateString()}`,
+        })
+    }
+
+    // Auto-log status changes
+    if (nextStatus && nextStatus !== currentStatus) {
+        await supabase.from('enquiry_follow_ups').insert({
+            enquiry_id: id,
+            user_id: user.id,
+            action: 'status_changed',
+            note: `Status changed from "${currentStatus}" to "${nextStatus}"`,
+        })
     }
 
     return NextResponse.json(data)
