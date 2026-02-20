@@ -46,7 +46,7 @@
 //           name="email"
 //           type="email"
 //           required
-//           placeholder="admin@example.com"
+//           placeholder="admin@exXXXX.com"
 //         />
 //       </div>
 //       <div className="space-y-2">
@@ -124,7 +124,7 @@ export default function AdminLoginForm() {
           name="email"
           type="email"
           required
-          placeholder="admin@example.com"
+          placeholder="admin@exXXXX.com"
           className="bg-white/[0.05] border-white/[0.1] text-gray-100 placeholder:text-gray-500 
                      focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200"
         />

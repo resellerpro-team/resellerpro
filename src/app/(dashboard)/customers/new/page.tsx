@@ -277,7 +277,7 @@ export default function NewCustomerPage() {
                 {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email (Optional)</Label>
-                  <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="e.g., email@example.com" />
+                  <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="e.g., email@exXXXX.com" />
                 </div>
               </div>
 
