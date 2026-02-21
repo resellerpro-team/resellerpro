@@ -345,7 +345,7 @@ export function WhatsAppShare({
             </TabsList>
 
             <AnimatePresence mode="wait">
-              <TabsContent value="image" className="space-y-6 mt-0">
+              <TabsContent key="image" value="image" className="space-y-6 mt-0">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -357,7 +357,7 @@ export function WhatsAppShare({
                       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
                         {allImages.map((img, idx) => (
                           <button
-                            key={idx}
+                            key={`${img || 'empty'}-${idx}`}
                             onClick={() => setSelectedImageIndex(idx)}
                             className={`relative min-w-[80px] h-[80px] rounded-xl overflow-hidden border-2 transition-all shrink-0 ${selectedImageIndex === idx ? "border-[#25D366] ring-4 ring-green-100 scale-95" : "border-white hover:border-slate-200"
                               }`}
@@ -463,7 +463,7 @@ export function WhatsAppShare({
                 </motion.div>
               </TabsContent>
 
-              <TabsContent value="text" className="space-y-6 mt-0">
+              <TabsContent key="text" value="text" className="space-y-6 mt-0">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
