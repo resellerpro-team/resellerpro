@@ -135,10 +135,8 @@ export function WhatsAppShare({
       message += `🏷️ *Category:* ${product.category}\n`;
     }
 
-    // Always use the production URL so WhatsApp previews (OG images) work, even when testing locally
-    const baseUrl = process.env.NODE_ENV === 'development'
-      ? 'https://www.resellerpro.in'
-      : window.location.origin;
+    // Use the current origin for the share link
+    const baseUrl = window.location.origin;
       
     const publicUrl = `${baseUrl}/p/${product.id}`;
     message += `\n🔗 *View Details:* ${publicUrl}\n`;
