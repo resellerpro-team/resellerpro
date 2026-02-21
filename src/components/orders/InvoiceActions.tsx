@@ -64,7 +64,11 @@ export function InvoiceActions({ orderNumber, contentId, customerPhone, customer
             const imgHeight = (canvas.height * imgWidth) / canvas.width
 
             pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, Math.min(imgHeight, pageHeight - 20))
-            pdf.save(`Invoice-${orderNumber}.pdf`)
+            const safeOrderNumber = orderNumber.replace(/[^a-zA-Z0-9-]/g, '')
+            const safeCustomerName = customerName ? `-${customerName.replace(/[^a-zA-Z0-9-]/g, '')}` : ''
+            const fileName = `Invoice-${safeOrderNumber}${safeCustomerName}.pdf`
+            
+            pdf.save(fileName)
 
             toast.success('Invoice downloaded successfully', { id: toastId })
         } catch (error) {
@@ -119,7 +123,9 @@ export function InvoiceActions({ orderNumber, contentId, customerPhone, customer
 
             // Convert PDF to blob
             const pdfBlob = pdf.output('blob')
-            const fileName = `Invoice-${orderNumber}.pdf`
+            const safeOrderNumber = orderNumber.replace(/[^a-zA-Z0-9-]/g, '')
+            const safeCustomerName = customerName ? `-${customerName.replace(/[^a-zA-Z0-9-]/g, '')}` : ''
+            const fileName = `Invoice-${safeOrderNumber}${safeCustomerName}.pdf`
 
             // Create file for sharing
             const file = new File([pdfBlob], fileName, { type: 'application/pdf' })
@@ -195,7 +201,9 @@ export function InvoiceActions({ orderNumber, contentId, customerPhone, customer
             pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, Math.min(imgHeight, pageHeight - 20))
 
             const pdfBlob = pdf.output('blob')
-            const fileName = `Invoice-${orderNumber}.pdf`
+            const safeOrderNumber = orderNumber.replace(/[^a-zA-Z0-9-]/g, '')
+            const safeCustomerName = customerName ? `-${customerName.replace(/[^a-zA-Z0-9-]/g, '')}` : ''
+            const fileName = `Invoice-${safeOrderNumber}${safeCustomerName}.pdf`
             const cleanNumber = customerPhone.replace(/[^\d+]/g, '').replace('+', '')
 
             if (canShareFiles) {
