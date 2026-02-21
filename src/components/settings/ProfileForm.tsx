@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast'
 import { Loader2, Upload, User, Mail, Phone, Building } from 'lucide-react'
 import { updateProfile, uploadAvatar } from '@/app/(dashboard)/settings/actions'
 import { ImageCropper } from '../shared/ImageCropper'
+import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 type UserData = {
   id: string
@@ -24,6 +26,7 @@ type UserData = {
 export default function ProfileForm({ user }: { user: UserData }) {
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [isPending, startTransition] = useTransition()
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [cropImage, setCropImage] = useState<string | null>(null)
@@ -32,6 +35,16 @@ export default function ProfileForm({ user }: { user: UserData }) {
     full_name: user?.full_name || '',
     phone: user?.phone || '',
   })
+
+  // Sync formData when React Query invalidates and fetches new user data
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        full_name: user.full_name || prev.full_name,
+        phone: user.phone || prev.phone,
+      }))
+    }
+  }, [user])
 
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '')
 
@@ -141,6 +154,10 @@ export default function ProfileForm({ user }: { user: UserData }) {
           title: 'Success',
           description: 'Profile updated successfully',
         })
+        
+        // Invalidate React Query to ensure it fetches updated data from the server
+        queryClient.invalidateQueries({ queryKey: ['profile'] })
+        
         router.refresh()
       } else {
         toast({
