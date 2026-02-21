@@ -98,6 +98,35 @@ export function WhatsAppShare({
     }
   };
 
+  const [businessProfile, setBusinessProfile] = useState<{ businessName: string; phone: string } | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('business_name, phone')
+            .eq('id', user.id)
+            .single();
+          
+          if (data) {
+            setBusinessProfile({
+              businessName: data.business_name || 'Our Store',
+              phone: data.phone || ''
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching profile", err);
+      }
+    };
+    if (open) {
+      fetchProfile();
+    }
+  }, [open]);
+
   const handleCustomerSelect = (customerId: string) => {
     setSelectedCustomer(customerId);
     const customer = customers.find((c) => c.id === customerId);
@@ -135,11 +164,16 @@ export function WhatsAppShare({
       message += `🏷️ *Category:* ${product.category}\n`;
     }
 
-    // Use the current origin for the share link
     const baseUrl = window.location.origin;
-      
     const publicUrl = `${baseUrl}/p/${product.id}`;
-    message += `\n🔗 *View Details:* ${publicUrl}\n`;
+    
+    // Create the message the customer should send back to the business
+    const waMessage = encodeURIComponent(`Hi ${businessProfile?.businessName || 'there'}, I'm interested in "${product.name}" (Price: ₹${product.selling_price.toLocaleString()}). Is it available?`);
+    const waLink = businessProfile?.phone 
+      ? `https://wa.me/${businessProfile.phone.replace(/[^\d]/g, '')}?text=${waMessage}`
+      : `https://wa.me/?text=${waMessage}`;
+
+    message += `\n🔗 *View Details or Order:* ${publicUrl}\n`;
 
     message += `\n━━━━━━━━━━━━━━━━━━━\n`;
     message += `*Interested? Reply to order!* 📱`;
