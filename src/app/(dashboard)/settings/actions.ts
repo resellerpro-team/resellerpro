@@ -41,6 +41,11 @@ export async function updateProfile(formData: FormData) {
 
     if (error) {
       console.error('Profile update error:', error)
+
+      if (error.code === '23505' && error.message.includes('profiles_phone_unique')) {
+        return { success: false, message: 'This phone number is already registered to another account' }
+      }
+
       return { success: false, message: error.message }
     }
 
@@ -242,6 +247,9 @@ export async function updateBusinessInfo(formData: FormData) {
 
     if (error) {
       console.error('Business update error:', error)
+      if (error.code === '23505' && error.message.includes('profiles_business_phone_unique')) {
+        return { success: false, message: 'This business phone number is already registered' }
+      }
       return { success: false, message: error.message }
     }
 
