@@ -41,7 +41,7 @@ export default async function PublicProductPage({ params }: Props) {
   const supabase = await createAdminClient()
   const { data: product, error } = await supabase
     .from('products')
-    .select('*, profiles(business_name, phone)')
+    .select('*')
     .eq('id', id)
     .single()
 
@@ -53,8 +53,19 @@ export default async function PublicProductPage({ params }: Props) {
       ? [product.image_url]
       : []
 
-  const businessName = (product.profiles as any)?.business_name || 'ResellerPro Store'
-  const businessPhone = (product.profiles as any)?.phone || ''
+  // Fetch profile separately to avoid PGRST200 relationship errors
+  let profile = null;
+  if (product.user_id) {
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('business_name, phone')
+      .eq('id', product.user_id)
+      .single()
+    profile = p
+  }
+
+  const businessName = profile?.business_name || 'ResellerPro Store'
+  const businessPhone = profile?.phone || ''
 
   // Format WhatsApp Link
   const waMessage = encodeURIComponent(`Hi ${businessName}, I'm interested in "${product.name}" (Price: ₹${product.selling_price.toLocaleString()}). Is it available?`)
