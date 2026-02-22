@@ -47,10 +47,6 @@ export async function createNotification(params: CreateNotificationParams) {
                 entity_type: params.entityType,
                 entity_id: params.entityId,
                 priority: params.priority || 'normal',
-                metadata: {
-                    action_url: params.actionUrl,
-                    action_label: params.actionLabel
-                }
             })
 
         if (error) {
