@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Printer, Download, Loader2, Share2, MessageCircle } from 'lucide-react'
 import html2canvas from 'html2canvas'
@@ -8,7 +8,7 @@ import jsPDF from 'jspdf'
 import { toast } from 'sonner'
 
 interface InvoiceActionsProps {
-    orderNumber: string
+    orderNumber: string | number
     contentId: string
     customerPhone?: string
     customerName?: string
@@ -19,10 +19,10 @@ export function InvoiceActions({ orderNumber, contentId, customerPhone, customer
     const [isSharing, setIsSharing] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
 
-    // Detect mobile device
-    useState(() => {
+    // Detect mobile device safely (client-side only)
+    useEffect(() => {
         setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
-    })
+    }, [])
 
     const handlePrint = () => {
         window.print()
@@ -64,7 +64,7 @@ export function InvoiceActions({ orderNumber, contentId, customerPhone, customer
             const imgHeight = (canvas.height * imgWidth) / canvas.width
 
             pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, Math.min(imgHeight, pageHeight - 20))
-            const safeOrderNumber = orderNumber.replace(/[^a-zA-Z0-9-]/g, '')
+            const safeOrderNumber = String(orderNumber).replace(/[^a-zA-Z0-9-]/g, '')
             const safeCustomerName = customerName ? `-${customerName.replace(/[^a-zA-Z0-9-]/g, '')}` : ''
             const fileName = `Invoice-${safeOrderNumber}${safeCustomerName}.pdf`
             
@@ -123,7 +123,7 @@ export function InvoiceActions({ orderNumber, contentId, customerPhone, customer
 
             // Convert PDF to blob
             const pdfBlob = pdf.output('blob')
-            const safeOrderNumber = orderNumber.replace(/[^a-zA-Z0-9-]/g, '')
+            const safeOrderNumber = String(orderNumber).replace(/[^a-zA-Z0-9-]/g, '')
             const safeCustomerName = customerName ? `-${customerName.replace(/[^a-zA-Z0-9-]/g, '')}` : ''
             const fileName = `Invoice-${safeOrderNumber}${safeCustomerName}.pdf`
 
@@ -201,7 +201,7 @@ export function InvoiceActions({ orderNumber, contentId, customerPhone, customer
             pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, Math.min(imgHeight, pageHeight - 20))
 
             const pdfBlob = pdf.output('blob')
-            const safeOrderNumber = orderNumber.replace(/[^a-zA-Z0-9-]/g, '')
+            const safeOrderNumber = String(orderNumber).replace(/[^a-zA-Z0-9-]/g, '')
             const safeCustomerName = customerName ? `-${customerName.replace(/[^a-zA-Z0-9-]/g, '')}` : ''
             const fileName = `Invoice-${safeOrderNumber}${safeCustomerName}.pdf`
             const cleanNumber = customerPhone.replace(/[^\d+]/g, '').replace('+', '')

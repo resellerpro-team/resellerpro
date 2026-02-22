@@ -243,6 +243,65 @@ export function PremiumProductView({ product, businessName, businessLogo, waLink
                </div>
             </div>
 
+            {/* Video Section */}
+            {product.video_url && (() => {
+              const url = product.video_url as string
+              // Detect YouTube URLs and convert to embed
+              const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+              const isYouTube = !!youtubeMatch
+
+              return (
+                <div className="space-y-3">
+                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
+                    Product Video
+                  </h2>
+                  <div className="rounded-2xl overflow-hidden border border-slate-200/60 shadow-sm bg-black aspect-video">
+                    {isYouTube ? (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${youtubeMatch![1]}?rel=0&modestbranding=1`}
+                        title="Product video"
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={url}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-contain"
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Audio Section */}
+            {product.audio_url && (
+              <div className="space-y-3">
+                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+                  Audio Description
+                </h2>
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-200/60 shadow-sm">
+                  <audio
+                    src={product.audio_url}
+                    controls
+                    preload="metadata"
+                    className="w-full h-10"
+                    style={{ borderRadius: '12px' }}
+                  >
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+              </div>
+            )}
+
             {/* Trust Banner */}
             <div className="bg-gradient-to-r from-slate-100 to-white rounded-2xl p-5 border border-slate-200 flex items-center gap-5 relative overflow-hidden group">
                <div className="absolute right-0 top-0 w-32 h-32 bg-slate-200 rounded-full blur-3xl opacity-50 group-hover:bg-indigo-100 transition-colors" />
