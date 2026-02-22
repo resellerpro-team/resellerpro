@@ -174,8 +174,8 @@ export function WhatsAppShare({
       ? `https://wa.me/${businessProfile.phone.replace(/[^\d]/g, '')}?text=${waMessage}`
       : `https://wa.me/?text=${waMessage}`;
 
-    // Place URL on the same line so WhatsApp parses it reliably for the rich link preview
-    message += `\n🔗 *View Details or Order:* ${publicUrl}\n`;
+    // Place URL on its own line so WhatsApp parses it reliably for the rich link preview (Large Image mode)
+    message += `\n🔗 *View Details or Order:*\n${publicUrl}\n`;
 
     message += `\n━━━━━━━━━━━━━━━━━━━\n`;
     message += `*Interested? Reply to order!* 📱`;
