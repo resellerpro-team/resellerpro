@@ -78,20 +78,29 @@ export async function middleware(request: NextRequest) {
       if (isSensitivePath) {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
-          // 🏁 RACE CONDITION PREVENTION (Grace Period)
-          // If the session was issued in the last 30 seconds, let it through. 
-          // Database replication/indexing might take a moment.
-          // Use last_sign_in_at first, but fall back to session age calculation for OTP verification flows
-          const lastSignInAt = session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at).getTime() : 0
-          // Calculate session creation time from expires_at (sessions typically last 1 hour to 30 days)
-          // Defensively assume a short session if expires_at is missing
-          const expiresAt = session.expires_at ? session.expires_at * 1000 : 0
-          const issuedAtFallback = expiresAt ? (expiresAt - 3600000) : Date.now()
-          const issuedAt = lastSignInAt || issuedAtFallback
+          // 🏁 SESSION RACE CONDITION PREVENTION (Grace Period)
+          // If the session was issued in the last 60 seconds, let it through without DB check.
+          // This allows SessionTracker on the client time to register the session in the DB.
+          let issuedAt = session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at).getTime() : 0
+
+          // Accurately extract 'iat' (Issued At) from the JWT payload as fallback
+          if (!issuedAt && session.access_token) {
+            try {
+              const payload = JSON.parse(atob(session.access_token.split('.')[1]))
+              if (payload.iat) issuedAt = payload.iat * 1000
+            } catch (e) {
+              // ignore decode errors
+            }
+          }
+          // Ultimate fallback to user creation time
+          if (!issuedAt) {
+            issuedAt = session.user.created_at ? new Date(session.user.created_at).getTime() : Date.now()
+          }
+
           const now = Date.now()
 
-          // isBrandNewSession: True if issued in last 45s (including potential clock skew of ±15s)
-          const isBrandNewSession = Math.abs(now - issuedAt) < 45000
+          // isBrandNewSession: True if issued in last 60s (including potential clock skew of ±15s)
+          const isBrandNewSession = Math.abs(now - issuedAt) < 60000
 
           if (!isBrandNewSession) {
             // Hash to match DB storage
