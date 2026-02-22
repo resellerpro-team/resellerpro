@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { ThemeProvider } from '../components/providers/theme-provider'
 import { Providers } from './providers'
+import { AuthProvider } from '@/components/providers/AuthProvider'
 import { OfflineBanner } from '@/components/shared/OfflineBanner'
 import { Analytics } from "@vercel/analytics/next"
 import Script from "next/script";
@@ -139,12 +140,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={inter.className}>
         {/* <AppLoader /> */}
         <Providers>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <OfflineBanner />
-            {children}
-            <Analytics />
-            <Toaster />
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <OfflineBanner />
+              {children}
+              <Analytics />
+              <Toaster />
+            </ThemeProvider>
+          </AuthProvider>
         </Providers>
       </body>
     </html>
