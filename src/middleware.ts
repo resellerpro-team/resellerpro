@@ -79,12 +79,13 @@ export async function middleware(request: NextRequest) {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           // 🏁 SESSION RACE CONDITION PREVENTION (Grace Period)
-          // If the session was issued in the last 60 seconds, let it through without DB check.
-          // This allows SessionTracker on the client time to register the session in the DB.
-          let issuedAt = session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at).getTime() : 0
+          // If the token was issued in the last 60 seconds, let it through without a strict DB check.
+          // This gives the client-side AuthProvider time to register the new token hash in the DB.
+          let issuedAt = 0
 
-          // Accurately extract 'iat' (Issued At) from the JWT payload as fallback
-          if (!issuedAt && session.access_token) {
+          // First Priority: Accurately extract 'iat' (Issued At) from the actual JWT payload
+          // This is critical because token refreshes change 'iat' but NOT 'last_sign_in_at'
+          if (session.access_token) {
             try {
               const payload = JSON.parse(atob(session.access_token.split('.')[1]))
               if (payload.iat) issuedAt = payload.iat * 1000
@@ -92,9 +93,11 @@ export async function middleware(request: NextRequest) {
               // ignore decode errors
             }
           }
-          // Ultimate fallback to user creation time
+
+          // Fallbacks if JWT decode fails
           if (!issuedAt) {
-            issuedAt = session.user.created_at ? new Date(session.user.created_at).getTime() : Date.now()
+            issuedAt = session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at).getTime() :
+              (session.user.created_at ? new Date(session.user.created_at).getTime() : Date.now())
           }
 
           const now = Date.now()
