@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createAdminClient()
   const { data: product } = await supabase
     .from('products')
-    .select('name, description, image_url, images')
+    .select('name, description, selling_price, image_url, images')
     .eq('id', id)
     .single()
 
@@ -24,8 +24,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Use first array image if exists, fallback to legacy image_url
   const primaryImage = (product.images && product.images.length > 0) ? product.images[0] : product.image_url
   
-  // WhatsApp crawler safely respects truncated descriptions (avoids throwing away metadata if text is too huge)
-  const descriptionText = (product.description || `Check out ${product.name} on ResellerPro`).slice(0, 200)
+  // Sanitize the description text heavily to prevent WhatsApp crawler from choking on broken emojis
+  // (We use a safe hardcoded format with name and price instead of raw product.description)
+  const safePrice = product.selling_price ? ` for ₹${product.selling_price.toLocaleString('en-IN')}` : ''
+  const descriptionText = `Check out ${product.name}${safePrice} on ResellerPro Store.`
 
   return {
     title: `${product.name} | ResellerPro`,
