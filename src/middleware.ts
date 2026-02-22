@@ -107,10 +107,19 @@ export async function middleware(request: NextRequest) {
               .eq('session_token', hashedToken)
               .maybeSingle() // Use maybeSingle to avoid 406/single error if multiple exist (though unlikely due to UNIQUE)
 
-            // If session is missing from DB (revoked), force logout
-            if (!dbSession || dbError) {
+            // ONLY force logout if session is DEFINITIVELY missing:
+            // - No DB error (we got a clean response)
+            // - AND the result is explicitly null (session was revoked/deleted)
+            // If there's a DB error (network blip, latency), fail-open to prevent random logouts
+            if (dbError) {
               if (process.env.NODE_ENV !== 'production') {
-                console.warn(`[SECURITY] REJECTED: Revoked session for user ${session.user.id}. Reason: ${dbError ? 'DB Error' : 'No DB record found'}`)
+                console.warn(`[SECURITY] DB error during session check (fail-open): ${dbError.message}`)
+              }
+              // Fail-open: allow access on transient DB errors
+            } else if (!dbSession) {
+              // Session definitively revoked - force logout
+              if (process.env.NODE_ENV !== 'production') {
+                console.warn(`[SECURITY] REJECTED: Revoked session for user ${session.user.id}. Reason: No DB record found`)
               }
               const url = request.nextUrl.clone()
               url.pathname = '/signin'

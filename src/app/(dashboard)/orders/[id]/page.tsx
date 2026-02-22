@@ -145,14 +145,16 @@ export default async function OrderDetailsPage({
             />
           </div>
 
-          {/* Hidden capture target for PDF/Print */}
-          <div id="hidden-invoice-capture" className="fixed -left-[9999px] top-0 pointer-events-none w-[1200px]">
-            <InvoiceLayout
-              order={order}
-              profile={profile}
-              businessEmail={profile?.business_email || user?.email || ''}
-              displayName={profile?.business_name || profile?.full_name || 'Your Business'}
-            />
+          {/* Hidden capture target for PDF generation - uses absolute + clip to stay in DOM flow for html2canvas */}
+          <div style={{ position: 'absolute', left: '-9999px', top: 0, width: '1200px', overflow: 'hidden', pointerEvents: 'none', opacity: 1 }} aria-hidden="true">
+            <div id="hidden-invoice-capture" style={{ width: '1200px', background: '#ffffff' }}>
+              <InvoiceLayout
+                order={order}
+                profile={profile}
+                businessEmail={profile?.business_email || user?.email || ''}
+                displayName={profile?.business_name || profile?.full_name || 'Your Business'}
+              />
+            </div>
           </div>
         </div>
       </div>
