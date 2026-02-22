@@ -15,20 +15,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createAdminClient()
   const { data: product } = await supabase
     .from('products')
-    .select('name, description, image_url')
+    .select('name, description, image_url, images')
     .eq('id', id)
     .single()
 
   if (!product) return { title: 'Product Not Found' }
 
+  // Use first array image if exists, fallback to legacy image_url
+  const primaryImage = (product.images && product.images.length > 0) ? product.images[0] : product.image_url
+  
+  // WhatsApp crawler safely respects truncated descriptions (avoids throwing away metadata if text is too huge)
+  const descriptionText = (product.description || `Check out ${product.name} on ResellerPro`).slice(0, 200)
+
   return {
     title: `${product.name} | ResellerPro`,
-    description: product.description || `Check out ${product.name} on ResellerPro`,
+    description: descriptionText,
     openGraph: {
       title: product.name,
-      description: product.description,
-      images: product.image_url ? [{ url: product.image_url }] : [],
+      description: descriptionText,
+      url: `https://www.resellerpro.in/p/${id}`,
+      siteName: 'ResellerPro',
+      images: primaryImage ? [
+        {
+          url: primaryImage,
+          width: 800,
+          height: 800,
+          alt: product.name,
+        }
+      ] : [],
+      type: 'website',
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: product.name,
+      description: descriptionText,
+      images: primaryImage ? [primaryImage] : [],
+    }
   }
 }
 

@@ -165,6 +165,7 @@ export function WhatsAppShare({
     }
 
     const baseUrl = window.location.origin;
+    // Removed ?share=wa cache buster because WhatsApp often drops previews for links with tracking-like query params
     const publicUrl = `${baseUrl}/p/${product.id}`;
     
     // Create the message the customer should send back to the business
@@ -173,6 +174,7 @@ export function WhatsAppShare({
       ? `https://wa.me/${businessProfile.phone.replace(/[^\d]/g, '')}?text=${waMessage}`
       : `https://wa.me/?text=${waMessage}`;
 
+    // Place URL on the same line so WhatsApp parses it reliably for the rich link preview
     message += `\n🔗 *View Details or Order:* ${publicUrl}\n`;
 
     message += `\n━━━━━━━━━━━━━━━━━━━\n`;

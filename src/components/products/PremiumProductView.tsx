@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { MessageCircle, Share2, ArrowRight, ShieldCheck, Tag, ShoppingBag, Box, CheckCircle2 } from 'lucide-react'
+import { MessageCircle, Share2, ArrowRight, ShieldCheck, Tag, ShoppingBag, Box, CheckCircle2, Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 
@@ -19,8 +19,20 @@ interface PremiumProductViewProps {
 
 export function PremiumProductView({ product, businessName, businessLogo, waLink, allImages }: PremiumProductViewProps) {
   const [activeImage, setActiveImage] = useState(0)
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  // Navigate lightbox images
+  const nextImage = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setActiveImage((prev) => (prev === allImages.length - 1 ? 0 : prev + 1))
+  }
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setActiveImage((prev) => (prev === 0 ? allImages.length - 1 : prev - 1))
+  }
 
   // Handle header blur effect on scroll
   useEffect(() => {
@@ -134,15 +146,27 @@ export function PremiumProductView({ product, businessName, businessLogo, waLink
                 onScroll={handleScrollImage}
               >
                 {allImages.map((img, idx) => (
-                  <div key={idx} className={`w-full h-full flex-shrink-0 snap-center relative transition-transform duration-700 ${idx === activeImage ? 'scale-100' : 'scale-95 opacity-50'} lg:scale-100 lg:opacity-100 lg:absolute lg:inset-0 ${idx === activeImage ? 'lg:z-10' : 'lg:z-0 lg:opacity-0'}`}>
+                  <div 
+                    key={idx} 
+                    onClick={() => {
+                      setActiveImage(idx)
+                      setIsLightboxOpen(true)
+                    }}
+                    className={`w-full h-full flex-shrink-0 snap-center relative transition-transform duration-700 ${idx === activeImage ? 'scale-100' : 'scale-95 opacity-50'} lg:scale-100 lg:opacity-100 lg:absolute lg:inset-0 ${idx === activeImage ? 'lg:z-10' : 'lg:z-0 lg:opacity-0'} cursor-pointer group`}
+                  >
                     <Image
                       src={img}
                       alt={`${product.name} - Image ${idx + 1}`}
                       fill
-                      className="object-cover lg:object-contain bg-slate-50"
+                      className="object-cover lg:object-contain bg-slate-50 transition-transform duration-500 group-hover:scale-105"
                       priority={idx === 0}
                       quality={90}
                     />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-center justify-center">
+                      <div className="bg-white/80 backdrop-blur-sm p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-xl transform scale-90 group-hover:scale-100 hidden lg:flex">
+                        <Maximize2 className="w-5 h-5 text-slate-700" />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -369,6 +393,98 @@ export function PremiumProductView({ product, businessName, businessLogo, waLink
            </Link>
         </div>
       </div>
+
+      {/* 
+        ======================================================================
+        FULLSCREEN LIGHTBOX OVERLAY
+        ======================================================================
+      */}
+      <AnimatePresence>
+        {isLightboxOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 sm:p-8"
+            onClick={() => setIsLightboxOpen(false)}
+          >
+            {/* Close Button */}
+            <button 
+              className="absolute top-4 sm:top-8 right-4 sm:right-8 z-50 p-2 sm:p-3 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-colors shadow-lg"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsLightboxOpen(false)
+              }}
+            >
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+
+            {/* Navigation Buttons (Hidden if only 1 image) */}
+            {allImages.length > 1 && (
+              <>
+                <button 
+                  className="absolute left-2 sm:left-8 z-50 p-3 sm:p-4 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md transition-colors shadow-xl border border-white/10 hidden sm:block"
+                  onClick={prevImage}
+                >
+                  <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
+                </button>
+                <button 
+                  className="absolute right-2 sm:right-8 z-50 p-3 sm:p-4 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md transition-colors shadow-xl border border-white/10 hidden sm:block"
+                  onClick={nextImage}
+                >
+                  <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
+                </button>
+              </>
+            )}
+
+            {/* Main Image Container */}
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-5xl h-[85vh] sm:h-[90vh] flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={allImages[activeImage]}
+                alt={`${product.name} - Fullscreen Image ${activeImage + 1}`}
+                fill
+                className="object-contain"
+                priority
+                quality={100}
+              />
+            </motion.div>
+
+            {/* Mobile Paging Indicators & Instructions */}
+            <div className="absolute bottom-6 sm:bottom-12 inset-x-0 flex flex-col items-center justify-center z-50 pointer-events-none">
+              <p className="text-white/50 text-xs mb-4 font-medium tracking-widest uppercase">
+                {activeImage + 1} / {allImages.length}
+              </p>
+              {allImages.length > 1 && (
+                <div className="flex gap-2">
+                  {allImages.map((_, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`h-1.5 rounded-full transition-all duration-300 ${idx === activeImage ? 'bg-white w-8 shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'bg-white/30 w-2'}`} 
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Hidden mobile invisible areas for tapping left/right */}
+            {allImages.length > 1 && (
+              <>
+                <div className="absolute inset-y-0 left-0 w-1/3 z-40 sm:hidden" onClick={prevImage} />
+                <div className="absolute inset-y-0 right-0 w-1/3 z-40 sm:hidden" onClick={nextImage} />
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   )
 }
