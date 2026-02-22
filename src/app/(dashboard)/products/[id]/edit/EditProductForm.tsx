@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
-import { Save, Upload, X, Loader2, Trash2, AlertTriangle, Lock } from 'lucide-react'
+import { Save, Upload, X, Loader2, Trash2, AlertTriangle, Lock, Video, Music, Trash } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -59,6 +59,9 @@ export default function EditProductForm({ product }: { product: any }) {
   const [sellingPrice, setSellingPrice] = useState(product.selling_price.toString())
   const [stockQuantity, setStockQuantity] = useState(product.stock_quantity?.toString() || '0')
   const [stockStatus, setStockStatus] = useState(product.stock_status)
+  const [videoUrl, setVideoUrl] = useState(product.video_url || '')
+  const [audioFile, setAudioFile] = useState<File | null>(null)
+  const [existingAudioUrl, setExistingAudioUrl] = useState<string>(product.audio_url || '')
 
   // Calculate profit
   const profit = parseFloat(sellingPrice || '0') - parseFloat(costPrice || '0')
@@ -244,6 +247,8 @@ export default function EditProductForm({ product }: { product: any }) {
           selling_price: selling,
           stock_quantity: parseInt(stockQuantity),
           stock_status: stockStatus,
+          video_url: videoUrl.trim() || null,
+          audio_url: existingAudioUrl || null, // Will be updated below if new file
           image_url: allImages[0],
           images: allImages,
           updated_at: new Date().toISOString(),
@@ -263,6 +268,20 @@ export default function EditProductForm({ product }: { product: any }) {
 
       // Delete removed images from storage
       await deleteUnusedImages()
+
+      // Upload new audio file if provided
+      if (audioFile) {
+        const ext = audioFile.name.split('.').pop()
+        const audioFileName = `${user.id}/audio-${Date.now()}.${ext}`
+        const { error: audioUploadError } = await supabase.storage
+          .from('product-images')
+          .upload(audioFileName, audioFile)
+        if (!audioUploadError) {
+          const { data: audioData } = supabase.storage.from('product-images').getPublicUrl(audioFileName)
+          // Update the audio_url separately
+          await supabase.from('products').update({ audio_url: audioData.publicUrl }).eq('id', product.id)
+        }
+      }
 
       toast({
         title: 'Success! 🎉',
@@ -636,6 +655,118 @@ export default function EditProductForm({ product }: { product: any }) {
             <p className="text-xs text-muted-foreground">
               Optional unique identifier for inventory tracking
             </p>
+          </div>
+
+          {/* Media (Optional) */}
+          <div className="border-t pt-6 mt-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2 mb-4">
+              <Video className="h-4 w-4 text-purple-500" />
+              Media
+              <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="video_url" className="flex items-center gap-1.5">
+                  <Video className="h-3.5 w-3.5" />
+                  Video URL
+                </Label>
+                <Input
+                  id="video_url"
+                  type="url"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="YouTube or direct video link"
+                  disabled={isLoading}
+                />
+                <p className="text-xs text-muted-foreground">Paste a YouTube link or direct .mp4 URL</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Music className="h-3.5 w-3.5" />
+                  Product Audio
+                </Label>
+                {/* Show existing audio if present */}
+                {existingAudioUrl && !audioFile && (
+                  <div className="space-y-2">
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
+                      <audio src={existingAudioUrl} controls preload="metadata" className="w-full h-8" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setExistingAudioUrl('')}
+                      className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+                    >
+                      <Trash className="h-3 w-3" /> Remove audio
+                    </button>
+                  </div>
+                )}
+                {/* Show new audio file preview */}
+                {audioFile && (
+                  <div className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <Music className="h-4 w-4 text-purple-600 shrink-0" />
+                    <span className="text-sm truncate flex-1">{audioFile.name}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {(audioFile.size / (1024 * 1024)).toFixed(1)}MB
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAudioFile(null)}
+                      className="p-1 hover:bg-red-100 rounded-full transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5 text-red-500" />
+                    </button>
+                  </div>
+                )}
+                {/* Upload button (show if no existing and no new file) */}
+                {!existingAudioUrl && !audioFile && (
+                  <label className="flex items-center gap-3 p-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Upload audio file</span>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          if (file.size > 10 * 1024 * 1024) {
+                            toast({ title: 'File too large', description: 'Audio must be less than 10MB', variant: 'destructive' })
+                            return
+                          }
+                          setAudioFile(file)
+                          setExistingAudioUrl('') // replace existing
+                        }
+                      }}
+                      className="hidden"
+                      disabled={isLoading}
+                    />
+                  </label>
+                )}
+                {/* Replace button (show if existing audio but no new file) */}
+                {existingAudioUrl && !audioFile && (
+                  <label className="text-xs text-primary hover:underline cursor-pointer flex items-center gap-1">
+                    <Upload className="h-3 w-3" /> Replace with new file
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          if (file.size > 10 * 1024 * 1024) {
+                            toast({ title: 'File too large', description: 'Audio must be less than 10MB', variant: 'destructive' })
+                            return
+                          }
+                          setAudioFile(file)
+                          setExistingAudioUrl('')
+                        }
+                      }}
+                      className="hidden"
+                      disabled={isLoading}
+                    />
+                  </label>
+                )}
+                <p className="text-xs text-muted-foreground">MP3, WAV, OGG — max 10MB</p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

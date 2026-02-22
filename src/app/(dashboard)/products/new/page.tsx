@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeft, Save, Upload, X, Loader2, WifiOff, Lock } from 'lucide-react'
+import { ArrowLeft, Save, Upload, X, Loader2, WifiOff, Lock, Video, Music } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
@@ -45,6 +45,8 @@ export default function NewProductPage() {
   const [sellingPrice, setSellingPrice] = useState('')
   const [stockQuantity, setStockQuantity] = useState('10')
   const [stockStatus, setStockStatus] = useState('in_stock')
+  const [videoUrl, setVideoUrl] = useState('')
+  const [audioFile, setAudioFile] = useState<File | null>(null)
 
   const handleCostPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -225,6 +227,8 @@ export default function NewProductPage() {
       formData.append('selling_price', sellingPrice)
       formData.append('stock_quantity', stockQuantity)
       formData.append('stock_status', stockStatus)
+      if (videoUrl) formData.append('video_url', videoUrl)
+      if (audioFile) formData.append('audio_file', audioFile)
 
       // Append images
       images.forEach((file, index) => {
@@ -485,6 +489,76 @@ export default function NewProductPage() {
                   placeholder="e.g., WE-BLK-001"
                   disabled={isLoading}
                 />
+              </div>
+
+              {/* Media (Optional) */}
+              <div className="border-t pt-6 mt-2">
+                <h3 className="text-sm font-semibold flex items-center gap-2 mb-4">
+                  <Video className="h-4 w-4 text-purple-500" />
+                  Media
+                  <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="video_url" className="flex items-center gap-1.5">
+                      <Video className="h-3.5 w-3.5" />
+                      Video URL
+                    </Label>
+                    <Input
+                      id="video_url"
+                      type="url"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="YouTube or direct video link"
+                      disabled={isLoading}
+                    />
+                    <p className="text-xs text-muted-foreground">Paste a YouTube link or direct .mp4 URL</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      <Music className="h-3.5 w-3.5" />
+                      Product Audio
+                    </Label>
+                    {audioFile ? (
+                      <div className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                        <Music className="h-4 w-4 text-purple-600 shrink-0" />
+                        <span className="text-sm truncate flex-1">{audioFile.name}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {(audioFile.size / (1024 * 1024)).toFixed(1)}MB
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setAudioFile(null)}
+                          className="p-1 hover:bg-red-100 rounded-full transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5 text-red-500" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex items-center gap-3 p-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                        <Upload className="h-5 w-5 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Upload audio file</span>
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              if (file.size > 10 * 1024 * 1024) {
+                                toast({ title: 'File too large', description: 'Audio must be less than 10MB', variant: 'destructive' })
+                                return
+                              }
+                              setAudioFile(file)
+                            }
+                          }}
+                          className="hidden"
+                          disabled={isLoading}
+                        />
+                      </label>
+                    )}
+                    <p className="text-xs text-muted-foreground">MP3, WAV, OGG — max 10MB</p>
+                  </div>
+                </div>
               </div>
 
               {/* Actions */}

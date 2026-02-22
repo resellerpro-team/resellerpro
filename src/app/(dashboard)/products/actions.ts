@@ -12,6 +12,7 @@ const ProductSchema = z.object({
   sku: z.string().optional(),
   stock_quantity: z.coerce.number().min(0),
   stock_status: z.enum(["in_stock", "low_stock", "out_of_stock"]),
+  video_url: z.string().url().optional().or(z.literal('')),
 });
 
 export type FormState = {
@@ -102,9 +103,32 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
     }
   }
 
+  // ---- upload audio file ----
+  let audioUrl: string | null = null;
+  const audioFile = formData.get('audio_file') as File | null;
+  if (audioFile && audioFile.size > 0) {
+    // Validate audio file (max 10MB, audio/* types)
+    if (audioFile.size > 10 * 1024 * 1024) {
+      return { success: false, message: "Audio file must be less than 10MB" };
+    }
+    const ext = audioFile.name.split(".").pop();
+    const audioFileName = `${user.id}/audio-${Date.now()}.${ext}`;
+    const { error: audioUploadError } = await supabase.storage
+      .from("product-images")
+      .upload(audioFileName, audioFile);
+    if (!audioUploadError) {
+      const { data } = supabase.storage.from("product-images").getPublicUrl(audioFileName);
+      audioUrl = data.publicUrl;
+    } else {
+      console.error(`[STORAGE] Audio upload failed:`, audioUploadError.message);
+    }
+  }
+
   // --- insert product ---
   const { error } = await supabase.from("products").insert({
     ...input,
+    video_url: input.video_url || null,
+    audio_url: audioUrl,
     user_id: user.id,
     image_url: imageUrls[0] || null,
     images: imageUrls.length ? imageUrls : null,
