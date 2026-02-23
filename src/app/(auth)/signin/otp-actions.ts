@@ -40,9 +40,8 @@ export async function verifyLoginOtp(email: string, code: string) {
             return { success: false, message: 'Invalid or expired OTP.' }
         }
 
-        // Generate a session link to log the user in
+        // 1️⃣ Generate a session link to log the user in (this also verifies if user exists)
         const supabase = await createAdminClient()
-
         const { data, error } = await supabase.auth.admin.generateLink({
             type: 'magiclink',
             email: email,
@@ -57,6 +56,19 @@ export async function verifyLoginOtp(email: string, code: string) {
             }
             throw error
         }
+
+        if (!data.user) {
+            throw new Error('Could not generate login link: User not found.')
+        }
+
+        // 2️⃣ Mark email as verified in profiles
+        await supabase
+            .from('profiles')
+            .update({
+                email_verified: true,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', data.user.id)
 
         if (!data.properties?.action_link) {
             throw new Error('Could not generate login link.')
