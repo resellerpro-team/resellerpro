@@ -18,10 +18,12 @@ interface PremiumProductViewProps {
   // Base product page URL (e.g. https://www.resellerpro.in/p/<id>)
   productPageUrl: string
   allImages: string[]
+  // Pre-select a specific image on load (used when navigating from /p/[id]/[imgIndex])
+  initialActiveImage?: number
 }
 
-export function PremiumProductView({ product, businessName, businessLogo, businessPhone, productPageUrl, allImages }: PremiumProductViewProps) {
-  const [activeImage, setActiveImage] = useState(0)
+export function PremiumProductView({ product, businessName, businessLogo, businessPhone, productPageUrl, allImages, initialActiveImage = 0 }: PremiumProductViewProps) {
+  const [activeImage, setActiveImage] = useState(initialActiveImage)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -38,15 +40,11 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
   }
 
   // Dynamically build the WhatsApp link whenever the active image changes.
-  // We append ?img=N to the product page URL so the OG meta image served by
-  // Next.js matches the image the user is currently viewing.
+  // Uses clean sub-route URLs: /p/[id]/1, /p/[id]/2, etc.
+  // Image 0 (default) uses the base product URL — no sub-path needed.
   const waLink = useMemo(() => {
-    // Build the product page URL with the active image URL as ?imgUrl= param.
-    // The server reads this in generateMetadata and uses it as the og:image directly,
-    // so WhatsApp's link preview shows the exact image the user is viewing.
-    const activeImageUrl = allImages[activeImage]
-    const pageUrl = activeImageUrl && activeImage > 0
-      ? `${productPageUrl}?imgUrl=${encodeURIComponent(activeImageUrl)}`
+    const pageUrl = activeImage > 0
+      ? `${productPageUrl}/${activeImage}`
       : productPageUrl
     const message = `Hi ${businessName}, I'm interested in "${product.name}" (Price: \u20b9${product.selling_price.toLocaleString()}). Is it available?\n\n${pageUrl}`
     const encoded = encodeURIComponent(message)
@@ -54,7 +52,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
     return cleanPhone
       ? `https://wa.me/${cleanPhone}?text=${encoded}`
       : `https://wa.me/?text=${encoded}`
-  }, [activeImage, allImages, businessName, businessPhone, product.name, product.selling_price, productPageUrl])
+  }, [activeImage, businessName, businessPhone, product.name, product.selling_price, productPageUrl])
 
   // Handle header blur effect on scroll
   useEffect(() => {
