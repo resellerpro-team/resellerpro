@@ -8,10 +8,12 @@ export const dynamic = 'force-dynamic'
 
 interface Props {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ img?: string }>
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { id } = await params
+  const { img } = await searchParams
   const supabase = await createAdminClient()
   const { data: product } = await supabase
     .from('products')
@@ -21,11 +23,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!product) return { title: 'Product Not Found' }
 
-  // Use first array image if exists, fallback to legacy image_url
-  const primaryImage = (product.images && product.images.length > 0) ? product.images[0] : product.image_url
+  // Build image list same way as the client side
+  const allImages: string[] = (product.images && product.images.length > 0)
+    ? product.images
+    : product.image_url
+      ? [product.image_url]
+      : []
+
+  // Use ?img=N query param to select the image for OG (used by WhatsApp link preview)
+  const imgIndex = img !== undefined ? Math.min(Math.max(parseInt(img, 10) || 0, 0), allImages.length - 1) : 0
+  const primaryImage = allImages[imgIndex] || null
   
   // Sanitize the description text heavily to prevent WhatsApp crawler from choking on broken emojis
-  // (We use a safe hardcoded format with name and price instead of raw product.description)
   const safePrice = product.selling_price ? ` for ₹${product.selling_price.toLocaleString('en-IN')}` : ''
   const descriptionText = `Check out ${product.name}${safePrice} on ResellerPro Store.`
 
@@ -88,18 +97,17 @@ export default async function PublicProductPage({ params }: Props) {
   const businessPhone = profile?.phone || ''
   const businessLogo = profile?.avatar_url || ''
 
-  // Format WhatsApp Link
-  const waMessage = encodeURIComponent(`Hi ${businessName}, I'm interested in "${product.name}" (Price: ₹${product.selling_price.toLocaleString()}). Is it available?`)
-  const waLink = businessPhone 
-    ? `https://wa.me/${businessPhone.replace(/[^\d]/g, '')}?text=${waMessage}`
-    : `https://wa.me/?text=${waMessage}`
+  // We pass phone + productId to the client so it can build the waLink dynamically
+  // based on whichever image the user is currently viewing.
+  const productPageUrl = `https://www.resellerpro.in/p/${id}`
 
   return (
     <PremiumProductView 
       product={product} 
       businessName={businessName} 
+      businessPhone={businessPhone}
       businessLogo={businessLogo}
-      waLink={waLink} 
+      productPageUrl={productPageUrl}
       allImages={allImages} 
     />
   )
