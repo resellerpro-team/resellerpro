@@ -3,15 +3,15 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { PremiumProductView } from '@/components/products/PremiumProductView'
 
-// This page is public and doesn't require authentication
+// Public, no auth required
 export const dynamic = 'force-dynamic'
 
 interface Props {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string; imgIndex: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params
+  const { id, imgIndex } = await params
   const supabase = await createAdminClient()
   const { data: product } = await supabase
     .from('products')
@@ -21,10 +21,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!product) return { title: 'Product Not Found' }
 
-  // Use first image as default OG image (for base product page)
-  const primaryImage = (product.images && product.images.length > 0)
-    ? product.images[0]
-    : product.image_url || null
+  const allImages: string[] = (product.images && product.images.length > 0)
+    ? product.images
+    : product.image_url
+      ? [product.image_url]
+      : []
+
+  // Pick the specific image for the WhatsApp OG preview
+  const idx = Math.min(Math.max(parseInt(imgIndex, 10) || 0, 0), allImages.length - 1)
+  const primaryImage = allImages[idx] || null
 
   const safePrice = product.selling_price ? ` for ₹${product.selling_price.toLocaleString('en-IN')}` : ''
   const descriptionText = `Check out ${product.name}${safePrice} on ResellerPro Store.`
@@ -35,6 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: product.name,
       description: descriptionText,
+      // Canonical URL stays as the base product page
       url: `https://www.resellerpro.in/p/${id}`,
       siteName: 'ResellerPro',
       images: primaryImage ? [
@@ -56,8 +62,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function PublicProductPage({ params }: Props) {
-  const { id } = await params
+export default async function PublicProductImagePage({ params }: Props) {
+  const { id, imgIndex } = await params
   const supabase = await createAdminClient()
   const { data: product, error } = await supabase
     .from('products')
@@ -67,14 +73,16 @@ export default async function PublicProductPage({ params }: Props) {
 
   if (error || !product) return notFound()
 
-  const allImages = product.images && product.images.length > 0
+  const allImages: string[] = product.images && product.images.length > 0
     ? product.images
     : product.image_url
       ? [product.image_url]
       : []
 
-  // Fetch profile separately to avoid PGRST200 relationship errors
-  let profile = null;
+  // Clamp index
+  const idx = Math.min(Math.max(parseInt(imgIndex, 10) || 0, 0), allImages.length - 1)
+
+  let profile = null
   if (product.user_id) {
     const { data: p } = await supabase
       .from('profiles')
@@ -87,19 +95,17 @@ export default async function PublicProductPage({ params }: Props) {
   const businessName = profile?.business_name || 'ResellerPro Store'
   const businessPhone = profile?.phone || ''
   const businessLogo = profile?.avatar_url || ''
-
-  // We pass phone + productId to the client so it can build the waLink dynamically
-  // based on whichever image the user is currently viewing.
   const productPageUrl = `https://www.resellerpro.in/p/${id}`
 
   return (
-    <PremiumProductView 
-      product={product} 
-      businessName={businessName} 
+    <PremiumProductView
+      product={product}
+      businessName={businessName}
       businessPhone={businessPhone}
       businessLogo={businessLogo}
       productPageUrl={productPageUrl}
-      allImages={allImages} 
+      allImages={allImages}
+      initialActiveImage={idx}
     />
   )
 }
