@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import { PremiumProductView } from '@/components/products/PremiumProductView'
 
@@ -12,6 +13,11 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, imgIndex } = await params
+  const headerList = await headers()
+  const host = headerList.get('host') || 'www.resellerpro.in'
+  const protocol = host.includes('localhost') ? 'http' : 'https'
+  const baseUrl = `${protocol}://${host}`
+  
   const supabase = await createAdminClient()
   const { data: product } = await supabase
     .from('products')
@@ -41,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: product.name,
       description: descriptionText,
       // Canonical URL stays as the base product page
-      url: `https://www.resellerpro.in/p/${id}`,
+      url: `${baseUrl}/p/${id}`,
       siteName: 'ResellerPro',
       images: primaryImage ? [
         {
@@ -95,7 +101,11 @@ export default async function PublicProductImagePage({ params }: Props) {
   const businessName = profile?.business_name || 'ResellerPro Store'
   const businessPhone = profile?.phone || ''
   const businessLogo = profile?.avatar_url || ''
-  const productPageUrl = `https://www.resellerpro.in/p/${id}`
+  
+  const headerList = await headers()
+  const host = headerList.get('host') || 'www.resellerpro.in'
+  const protocol = host.includes('localhost') ? 'http' : 'https'
+  const productPageUrl = `${protocol}://${host}/p/${id}`
 
   return (
     <PremiumProductView
