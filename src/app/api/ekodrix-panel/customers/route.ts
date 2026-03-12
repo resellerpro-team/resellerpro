@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
             .select('*', { count: 'exact' })
 
         if (search) {
-            query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,business_name.ilike.%${search}%`)
+            query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,business_name.ilike.%${search}%,phone.ilike.%${search}%`)
         }
 
         // Apply filters - if filtering by subscription status, we might need a semi-join
