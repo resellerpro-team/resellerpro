@@ -8,12 +8,12 @@ export const dynamic = 'force-dynamic'
 
 interface Props {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ img?: string }>
+  searchParams: Promise<{ imgUrl?: string }>
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { id } = await params
-  const { img } = await searchParams
+  const { imgUrl } = await searchParams
   const supabase = await createAdminClient()
   const { data: product } = await supabase
     .from('products')
@@ -23,18 +23,14 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
   if (!product) return { title: 'Product Not Found' }
 
-  // Build image list same way as the client side
-  const allImages: string[] = (product.images && product.images.length > 0)
-    ? product.images
-    : product.image_url
-      ? [product.image_url]
-      : []
+  // If ?imgUrl= is provided, use it directly as the OG image (used by WhatsApp link preview).
+  // This is the URL of the image the user is currently viewing in the gallery.
+  // Fallback to first product image when no specific image is requested.
+  const fallbackImage = (product.images && product.images.length > 0)
+    ? product.images[0]
+    : product.image_url || null
+  const primaryImage = imgUrl ? decodeURIComponent(imgUrl) : fallbackImage
 
-  // Use ?img=N query param to select the image for OG (used by WhatsApp link preview)
-  const imgIndex = img !== undefined ? Math.min(Math.max(parseInt(img, 10) || 0, 0), allImages.length - 1) : 0
-  const primaryImage = allImages[imgIndex] || null
-  
-  // Sanitize the description text heavily to prevent WhatsApp crawler from choking on broken emojis
   const safePrice = product.selling_price ? ` for ₹${product.selling_price.toLocaleString('en-IN')}` : ''
   const descriptionText = `Check out ${product.name}${safePrice} on ResellerPro Store.`
 
