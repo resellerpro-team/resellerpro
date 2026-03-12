@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
@@ -13,11 +13,14 @@ interface PremiumProductViewProps {
   product: any
   businessName: string
   businessLogo?: string
-  waLink: string
+  // Pass the business phone so the client can build dynamic waLinks
+  businessPhone: string
+  // Base product page URL (e.g. https://www.resellerpro.in/p/<id>)
+  productPageUrl: string
   allImages: string[]
 }
 
-export function PremiumProductView({ product, businessName, businessLogo, waLink, allImages }: PremiumProductViewProps) {
+export function PremiumProductView({ product, businessName, businessLogo, businessPhone, productPageUrl, allImages }: PremiumProductViewProps) {
   const [activeImage, setActiveImage] = useState(0)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
@@ -33,6 +36,21 @@ export function PremiumProductView({ product, businessName, businessLogo, waLink
     e.stopPropagation()
     setActiveImage((prev) => (prev === 0 ? allImages.length - 1 : prev - 1))
   }
+
+  // Dynamically build the WhatsApp link whenever the active image changes.
+  // We append ?img=N to the product page URL so the OG meta image served by
+  // Next.js matches the image the user is currently viewing.
+  const waLink = useMemo(() => {
+    const pageUrl = activeImage > 0
+      ? `${productPageUrl}?img=${activeImage}`
+      : productPageUrl
+    const message = `Hi ${businessName}, I'm interested in "${product.name}" (Price: \u20b9${product.selling_price.toLocaleString()}). Is it available?\n\n${pageUrl}`
+    const encoded = encodeURIComponent(message)
+    const cleanPhone = businessPhone.replace(/[^\d]/g, '')
+    return cleanPhone
+      ? `https://wa.me/${cleanPhone}?text=${encoded}`
+      : `https://wa.me/?text=${encoded}`
+  }, [activeImage, businessName, businessPhone, product.name, product.selling_price, productPageUrl])
 
   // Handle header blur effect on scroll
   useEffect(() => {
