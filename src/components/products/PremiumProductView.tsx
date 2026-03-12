@@ -41,8 +41,12 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
   // We append ?img=N to the product page URL so the OG meta image served by
   // Next.js matches the image the user is currently viewing.
   const waLink = useMemo(() => {
-    const pageUrl = activeImage > 0
-      ? `${productPageUrl}?img=${activeImage}`
+    // Build the product page URL with the active image URL as ?imgUrl= param.
+    // The server reads this in generateMetadata and uses it as the og:image directly,
+    // so WhatsApp's link preview shows the exact image the user is viewing.
+    const activeImageUrl = allImages[activeImage]
+    const pageUrl = activeImageUrl && activeImage > 0
+      ? `${productPageUrl}?imgUrl=${encodeURIComponent(activeImageUrl)}`
       : productPageUrl
     const message = `Hi ${businessName}, I'm interested in "${product.name}" (Price: \u20b9${product.selling_price.toLocaleString()}). Is it available?\n\n${pageUrl}`
     const encoded = encodeURIComponent(message)
@@ -50,7 +54,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
     return cleanPhone
       ? `https://wa.me/${cleanPhone}?text=${encoded}`
       : `https://wa.me/?text=${encoded}`
-  }, [activeImage, businessName, businessPhone, product.name, product.selling_price, productPageUrl])
+  }, [activeImage, allImages, businessName, businessPhone, product.name, product.selling_price, productPageUrl])
 
   // Handle header blur effect on scroll
   useEffect(() => {
