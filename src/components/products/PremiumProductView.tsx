@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
@@ -13,12 +13,17 @@ interface PremiumProductViewProps {
   product: any
   businessName: string
   businessLogo?: string
-  waLink: string
+  // Pass the business phone so the client can build dynamic waLinks
+  businessPhone: string
+  // Base product page URL (e.g. https://www.resellerpro.in/p/<id>)
+  productPageUrl: string
   allImages: string[]
+  // Pre-select a specific image on load (used when navigating from /p/[id]/[imgIndex])
+  initialActiveImage?: number
 }
 
-export function PremiumProductView({ product, businessName, businessLogo, waLink, allImages }: PremiumProductViewProps) {
-  const [activeImage, setActiveImage] = useState(0)
+export function PremiumProductView({ product, businessName, businessLogo, businessPhone, productPageUrl, allImages, initialActiveImage = 0 }: PremiumProductViewProps) {
+  const [activeImage, setActiveImage] = useState(initialActiveImage)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -33,6 +38,21 @@ export function PremiumProductView({ product, businessName, businessLogo, waLink
     e.stopPropagation()
     setActiveImage((prev) => (prev === 0 ? allImages.length - 1 : prev - 1))
   }
+
+  // Dynamically build the WhatsApp link whenever the active image changes.
+  // Uses clean sub-route URLs: /p/[id]/1, /p/[id]/2, etc.
+  // Image 0 (default) uses the base product URL — no sub-path needed.
+  const waLink = useMemo(() => {
+    const pageUrl = activeImage > 0
+      ? `${productPageUrl}/${activeImage}`
+      : productPageUrl
+    const message = `Hi ${businessName}, I'm interested in "${product.name}" (Price: \u20b9${product.selling_price.toLocaleString()}). Is it available?\n\n${pageUrl}`
+    const encoded = encodeURIComponent(message)
+    const cleanPhone = businessPhone.replace(/[^\d]/g, '')
+    return cleanPhone
+      ? `https://wa.me/${cleanPhone}?text=${encoded}`
+      : `https://wa.me/?text=${encoded}`
+  }, [activeImage, businessName, businessPhone, product.name, product.selling_price, productPageUrl])
 
   // Handle header blur effect on scroll
   useEffect(() => {

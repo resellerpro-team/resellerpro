@@ -24,10 +24,7 @@ export async function GET(request: NextRequest) {
 
         let query = supabase
             .from('payment_transactions')
-            .select(`
-                *,
-                profile:profiles(full_name, email)
-            `, { count: 'exact' })
+            .select('*', { count: 'exact' })
 
         // Apply search if provided
         if (search) {
@@ -56,6 +53,24 @@ export async function GET(request: NextRequest) {
 
         if (error) throw error
 
+        // Enrich transactions with profile data (no FK exists, so we fetch separately)
+        let enrichedTransactions = transactions || []
+        if (enrichedTransactions.length > 0) {
+            const userIds = [...new Set(enrichedTransactions.map(t => t.user_id).filter(Boolean))]
+            if (userIds.length > 0) {
+                const { data: profiles } = await supabase
+                    .from('profiles')
+                    .select('id, full_name, email')
+                    .in('id', userIds)
+
+                const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+                enrichedTransactions = enrichedTransactions.map(tx => ({
+                    ...tx,
+                    profile: profileMap.get(tx.user_id) || null,
+                }))
+            }
+        }
+
         // Revenue Summary (Successful only)
         const { data: successfulTx } = await supabase
             .from('payment_transactions')
@@ -66,7 +81,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            data: transactions || [],
+            data: enrichedTransactions,
             summary: {
                 totalVolume: count || 0,
                 successRevenue: totalRevenue,
