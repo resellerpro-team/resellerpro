@@ -43,9 +43,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
   // Uses clean sub-route URLs: /p/[id]/1, /p/[id]/2, etc.
   // Image 0 (default) uses the base product URL — no sub-path needed.
   const waLink = useMemo(() => {
-    const pageUrl = activeImage > 0
-      ? `${productPageUrl}/${activeImage}`
-      : productPageUrl
+    const pageUrl = `${productPageUrl}/${activeImage}`
     const message = `Hi ${businessName}, I'm interested in "${product.name}" (Price: \u20b9${product.selling_price.toLocaleString()}). Is it available?\n\n${pageUrl}`
     const encoded = encodeURIComponent(message)
     const cleanPhone = businessPhone.replace(/[^\d]/g, '')
@@ -111,7 +109,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      
+
       {/* 
         ======================================================================
         DYNAMIC HEADER (Visible on both Mobile + Desktop)
@@ -134,9 +132,9 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
               <p className={`text-[10px] uppercase font-bold tracking-widest mt-0.5 ${isScrolled ? 'text-slate-500' : 'text-white/80 lg:text-slate-500'}`}>Official Store</p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className={`rounded-full transition-colors duration-300 gap-2 border-0 ${isScrolled ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md lg:bg-slate-100 lg:hover:bg-slate-200 lg:text-slate-700'}`}
             onClick={handleNativeShare}
           >
@@ -152,22 +150,22 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
         ======================================================================
       */}
       <main className="max-w-7xl mx-auto min-h-screen lg:pt-28 lg:px-8 lg:pb-12 flex flex-col lg:flex-row gap-0 lg:gap-12 xl:gap-20">
-        
+
         {/* --- LEFT COL: IMAGE GALLERY --- */}
         <section className="relative w-full lg:w-[55%] xl:w-[60%] flex-shrink-0 h-[65vh] sm:h-[70vh] lg:h-[calc(100vh-8rem)] lg:max-h-[800px] bg-slate-100 lg:rounded-[2rem] overflow-hidden lg:shadow-2xl border border-transparent lg:border-slate-200/50 group">
-          
+
           {allImages.length > 0 ? (
             <>
               {/* Mobile/Touch Swipe Container */}
-              <div 
+              <div
                 ref={scrollContainerRef}
                 className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-none lg:snap-none"
                 style={{ scrollBehavior: 'smooth' }}
                 onScroll={handleScrollImage}
               >
                 {allImages.map((img, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     onClick={() => {
                       setActiveImage(idx)
                       setIsLightboxOpen(true)
@@ -190,16 +188,16 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
                   </div>
                 ))}
               </div>
-              
+
               {/* Image Navigation (Desktop Thumbs & Mobile Dots) */}
               {allImages.length > 1 && (
                 <>
                   {/* Mobile Dots */}
                   <div className="absolute bottom-10 inset-x-0 flex justify-center gap-2 z-20 lg:hidden pointer-events-none">
                     {allImages.map((_, idx) => (
-                      <div 
-                        key={idx} 
-                        className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${idx === activeImage ? 'bg-white w-6 shadow-black/20' : 'bg-white/50 w-2'}`} 
+                      <div
+                        key={idx}
+                        className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${idx === activeImage ? 'bg-white w-6 shadow-black/20' : 'bg-white/50 w-2'}`}
                       />
                     ))}
                   </div>
@@ -207,12 +205,12 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
                   {/* Desktop Thumbnails (Floating Left) */}
                   <div className="hidden lg:flex absolute left-6 top-1/2 -translate-y-1/2 flex-col gap-3 z-30">
                     {allImages.map((img, idx) => (
-                      <button 
+                      <button
                         key={idx}
                         onClick={() => setActiveImage(idx)}
                         className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 shadow-lg ${idx === activeImage ? 'border-primary ring-4 ring-primary/20 scale-110' : 'border-white/50 hover:border-white opacity-70 hover:opacity-100 hover:scale-105'}`}
                       >
-                         <Image src={img} alt="" fill className="object-cover" />
+                        <Image src={img} alt="" fill className="object-cover" />
                       </button>
                     ))}
                   </div>
@@ -237,7 +235,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
 
         {/* --- RIGHT COL: PRODUCT DETAILS --- */}
         <section className="flex-1 px-5 pt-8 pb-32 sm:px-8 lg:px-0 lg:py-4 flex flex-col justify-between relative z-20 bg-slate-50 lg:bg-transparent -mt-8 lg:mt-0 rounded-t-[2.5rem] lg:rounded-none">
-          
+
           <div className="space-y-8">
             {/* Title & Price Headings */}
             <div className="space-y-4">
@@ -249,12 +247,12 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
               <h1 className="text-4xl sm:text-5xl lg:text-5xl font-black text-slate-900 leading-[1.1] tracking-tight">
                 {product.name}
               </h1>
-              
+
               <div className="flex items-baseline gap-3 pt-2">
-                 <span className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tighter">
-                   {formatPrice(product.selling_price)}
-                 </span>
-                 <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Pricing</span>
+                <span className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tighter">
+                  {formatPrice(product.selling_price)}
+                </span>
+                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Pricing</span>
               </div>
             </div>
 
@@ -263,28 +261,28 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
             {/* Description */}
             {product.description && (
               <div className="space-y-4">
-                 <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                   <Box className="w-4 h-4" /> Product Details
-                 </h2>
-                 <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
-                   {product.description}
-                 </p>
+                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <Box className="w-4 h-4" /> Product Details
+                </h2>
+                <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
+                  {product.description}
+                </p>
               </div>
             )}
 
             {/* Spec Grid */}
             <div className="grid grid-cols-2 gap-4">
-               <div className="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Item Code / SKU</p>
-                  <p className="font-mono text-base font-bold text-slate-800">{product.sku || 'N/A'}</p>
-               </div>
-               <div className="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Availability</p>
-                  <div className="flex items-center gap-2">
-                     <div className={`w-3 h-3 rounded-full shadow-sm ${product.stock_status === 'in_stock' ? 'bg-emerald-500' : product.stock_status === 'low_stock' ? 'bg-amber-500' : 'bg-rose-500'}`} />
-                     <p className="text-base font-bold text-slate-800">{stockInfo.label}</p>
-                  </div>
-               </div>
+              <div className="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Item Code / SKU</p>
+                <p className="font-mono text-base font-bold text-slate-800">{product.sku || 'N/A'}</p>
+              </div>
+              <div className="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Availability</p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full shadow-sm ${product.stock_status === 'in_stock' ? 'bg-emerald-500' : product.stock_status === 'low_stock' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                  <p className="text-base font-bold text-slate-800">{stockInfo.label}</p>
+                </div>
+              </div>
             </div>
 
             {/* Video Section */}
@@ -348,14 +346,14 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
 
             {/* Trust Banner */}
             <div className="bg-gradient-to-r from-slate-100 to-white rounded-2xl p-5 border border-slate-200 flex items-center gap-5 relative overflow-hidden group">
-               <div className="absolute right-0 top-0 w-32 h-32 bg-slate-200 rounded-full blur-3xl opacity-50 group-hover:bg-indigo-100 transition-colors" />
-               <div className="w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center text-slate-700 shrink-0 relative z-10">
-                 <ShieldCheck className="w-6 h-6" />
-               </div>
-               <div className="relative z-10">
-                  <p className="text-sm font-black text-slate-900 tracking-tight">Verified Merchant</p>
-                  <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">Ordering directly via WhatsApp is fast and secure with {businessName}.</p>
-               </div>
+              <div className="absolute right-0 top-0 w-32 h-32 bg-slate-200 rounded-full blur-3xl opacity-50 group-hover:bg-indigo-100 transition-colors" />
+              <div className="w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center text-slate-700 shrink-0 relative z-10">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-sm font-black text-slate-900 tracking-tight">Verified Merchant</p>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">Ordering directly via WhatsApp is fast and secure with {businessName}.</p>
+              </div>
             </div>
           </div>
 
@@ -365,19 +363,19 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
             ======================================================================
           */}
           <div className="hidden lg:block mt-12 mb-4">
-             <Link href={waLink} target="_blank" className="group block">
-                <Button 
-                  size="lg" 
-                  className="w-full h-16 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-2xl shadow-green-600/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border border-[#25D366]/50 relative overflow-hidden"
-                >
-                   <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
-                   <div className="flex items-center justify-center gap-3 relative z-10 w-full">
-                     <MessageCircle className="w-6 h-6 fill-white" />
-                     <span className="font-extrabold text-lg tracking-tight">Buy via WhatsApp</span>
-                     <ArrowRight className="w-5 h-5 ml-2 opacity-70 group-hover:translate-x-2 transition-transform" />
-                   </div>
-                </Button>
-             </Link>
+            <Link href={waLink} target="_blank" className="group block">
+              <Button
+                size="lg"
+                className="w-full h-16 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-2xl shadow-green-600/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border border-[#25D366]/50 relative overflow-hidden"
+              >
+                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
+                <div className="flex items-center justify-center gap-3 relative z-10 w-full">
+                  <MessageCircle className="w-6 h-6 fill-white" />
+                  <span className="font-extrabold text-lg tracking-tight">Buy via WhatsApp</span>
+                  <ArrowRight className="w-5 h-5 ml-2 opacity-70 group-hover:translate-x-2 transition-transform" />
+                </div>
+              </Button>
+            </Link>
           </div>
         </section>
       </main>
@@ -390,27 +388,27 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
       <div className="fixed bottom-0 inset-x-0 p-4 pb-6 bg-gradient-to-t from-white via-white to-transparent pt-12 z-50 lg:hidden pointer-events-none">
         {/* We place the button explicitly ABOVE the gradient to avoid touch issues */}
         <div className="max-w-lg w-full mx-auto pointer-events-auto shadow-2xl rounded-2xl">
-           <Link href={waLink} target="_blank" className="block group">
-              <Button 
-                size="lg" 
-                className="w-full h-16 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white transition-all duration-300 active:scale-[0.98] border border-[#25D366]/50 relative overflow-hidden"
-              >
-                 <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
-                 
-                 <div className="flex items-center justify-center gap-4 relative z-10 w-full">
-                   <div className="bg-white/20 p-2.5 rounded-full backdrop-blur-sm group-hover:scale-110 transition-transform">
-                     <MessageCircle className="w-6 h-6 fill-white/10" />
-                   </div>
-                   <div className="flex flex-col items-start">
-                     <span className="font-bold text-lg tracking-tight leading-none mb-1">Buy via WhatsApp</span>
-                     <span className="text-[10px] font-black text-white/80 tracking-widest uppercase">Fast & Secure</span>
-                   </div>
-                   <div className="ml-auto opacity-90 p-2 bg-white/10 rounded-full">
-                     <ArrowRight className="w-5 h-5" />
-                   </div>
-                 </div>
-              </Button>
-           </Link>
+          <Link href={waLink} target="_blank" className="block group">
+            <Button
+              size="lg"
+              className="w-full h-16 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white transition-all duration-300 active:scale-[0.98] border border-[#25D366]/50 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
+
+              <div className="flex items-center justify-center gap-4 relative z-10 w-full">
+                <div className="bg-white/20 p-2.5 rounded-full backdrop-blur-sm group-hover:scale-110 transition-transform">
+                  <MessageCircle className="w-6 h-6 fill-white/10" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="font-bold text-lg tracking-tight leading-none mb-1">Buy via WhatsApp</span>
+                  <span className="text-[10px] font-black text-white/80 tracking-widest uppercase">Fast & Secure</span>
+                </div>
+                <div className="ml-auto opacity-90 p-2 bg-white/10 rounded-full">
+                  <ArrowRight className="w-5 h-5" />
+                </div>
+              </div>
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -421,7 +419,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
       */}
       <AnimatePresence>
         {isLightboxOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -430,7 +428,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
             onClick={() => setIsLightboxOpen(false)}
           >
             {/* Close Button */}
-            <button 
+            <button
               className="absolute top-4 sm:top-8 right-4 sm:right-8 z-50 p-2 sm:p-3 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-colors shadow-lg"
               onClick={(e) => {
                 e.stopPropagation()
@@ -443,13 +441,13 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
             {/* Navigation Buttons (Hidden if only 1 image) */}
             {allImages.length > 1 && (
               <>
-                <button 
+                <button
                   className="absolute left-2 sm:left-8 z-50 p-3 sm:p-4 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md transition-colors shadow-xl border border-white/10 hidden sm:block"
                   onClick={prevImage}
                 >
                   <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
                 </button>
-                <button 
+                <button
                   className="absolute right-2 sm:right-8 z-50 p-3 sm:p-4 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md transition-colors shadow-xl border border-white/10 hidden sm:block"
                   onClick={nextImage}
                 >
@@ -459,7 +457,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
             )}
 
             {/* Main Image Container */}
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
@@ -485,9 +483,9 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
               {allImages.length > 1 && (
                 <div className="flex gap-2">
                   {allImages.map((_, idx) => (
-                    <div 
-                      key={idx} 
-                      className={`h-1.5 rounded-full transition-all duration-300 ${idx === activeImage ? 'bg-white w-8 shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'bg-white/30 w-2'}`} 
+                    <div
+                      key={idx}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${idx === activeImage ? 'bg-white w-8 shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'bg-white/30 w-2'}`}
                     />
                   ))}
                 </div>
