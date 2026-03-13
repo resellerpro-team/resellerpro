@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter, usePathname, useParams } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { MessageCircle, Share2, ArrowRight, ShieldCheck, Tag, ShoppingBag, Box, CheckCircle2, Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -24,6 +25,9 @@ interface PremiumProductViewProps {
 
 export function PremiumProductView({ product, businessName, businessLogo, businessPhone, productPageUrl, allImages, initialActiveImage = 0 }: PremiumProductViewProps) {
   const [activeImage, setActiveImage] = useState(initialActiveImage)
+  const router = useRouter()
+  const pathname = usePathname()
+  const params = useParams()
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -39,11 +43,29 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
     setActiveImage((prev) => (prev === 0 ? allImages.length - 1 : prev - 1))
   }
 
+  // Sync state with initialActiveImage prop (for browser back/forward)
+  useEffect(() => {
+    setActiveImage(initialActiveImage)
+  }, [initialActiveImage])
+
+  // Update URL when activeImage changes
+  useEffect(() => {
+    const id = params.id as string
+    if (!id) return
+
+    const targetPath = activeImage === 0 
+      ? `/p/${id}` 
+      : `/p/${id}/${activeImage}`
+
+    if (pathname !== targetPath) {
+      router.push(targetPath, { scroll: false })
+    }
+  }, [activeImage, pathname, router, params.id])
+
   // Dynamically build the WhatsApp link whenever the active image changes.
-  // Uses clean sub-route URLs: /p/[id]/1, /p/[id]/2, etc.
-  // Image 0 (default) uses the base product URL — no sub-path needed.
+  // Uses clean sub-route URLs: /p/[id]/1, /p/[id]/2, etc. (Index 0 uses base URL)
   const waLink = useMemo(() => {
-    const pageUrl = `${productPageUrl}/${activeImage}`
+    const pageUrl = activeImage === 0 ? productPageUrl : `${productPageUrl}/${activeImage}`
     const message = `Hi ${businessName}, I'm interested in "${product.name}" (Price: \u20b9${product.selling_price.toLocaleString()}). Is it available?\n\n${pageUrl}`
     const encoded = encodeURIComponent(message)
     const cleanPhone = businessPhone.replace(/[^\d]/g, '')
