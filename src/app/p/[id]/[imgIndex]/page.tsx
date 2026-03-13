@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, imgIndex } = await params
   const headerList = await headers()
   const host = headerList.get('host') || 'www.resellerpro.in'
-  const protocol = host.includes('localhost') ? 'http' : 'https'
+  const protocol = headerList.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https')
   const baseUrl = `${protocol}://${host}`
   
   const supabase = await createAdminClient()
@@ -46,15 +46,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: product.name,
       description: descriptionText,
-      // Canonical URL stays as the base product page
-      url: `${baseUrl}/p/${id}`,
+      // Fixed: og:url must match the actual sub-route URL so WhatsApp crawler doesn't ignore this specific metadata
+      url: `${baseUrl}/p/${id}/${imgIndex}`,
       siteName: 'ResellerPro',
       images: primaryImage ? [
         {
           url: primaryImage,
+          secureUrl: primaryImage.startsWith('https') ? primaryImage : undefined,
           width: 800,
           height: 800,
           alt: product.name,
+          type: 'image/jpeg', // Standard for products
         }
       ] : [],
       type: 'website',
@@ -104,7 +106,7 @@ export default async function PublicProductImagePage({ params }: Props) {
   
   const headerList = await headers()
   const host = headerList.get('host') || 'www.resellerpro.in'
-  const protocol = host.includes('localhost') ? 'http' : 'https'
+  const protocol = headerList.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https')
   const productPageUrl = `${protocol}://${host}/p/${id}`
 
   return (
