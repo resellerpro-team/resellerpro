@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const headerList = await headers()
   const host = headerList.get('host') || 'www.resellerpro.in'
-  const protocol = host.includes('localhost') ? 'http' : 'https'
+  const protocol = headerList.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https')
   const baseUrl = `${protocol}://${host}`
   
   const supabase = await createAdminClient()
@@ -46,9 +46,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: primaryImage ? [
         {
           url: primaryImage,
+          secureUrl: primaryImage.startsWith('https') ? primaryImage : undefined,
           width: 800,
           height: 800,
           alt: product.name,
+          type: 'image/jpeg',
         }
       ] : [],
       type: 'website',
@@ -97,7 +99,7 @@ export default async function PublicProductPage({ params }: Props) {
   // Dynamically detect base URL to support dev/prod environments correctly
   const headerList = await headers()
   const host = headerList.get('host') || 'www.resellerpro.in'
-  const protocol = host.includes('localhost') ? 'http' : 'https'
+  const protocol = headerList.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https')
   const productPageUrl = `${protocol}://${host}/p/${id}`
 
   return (
