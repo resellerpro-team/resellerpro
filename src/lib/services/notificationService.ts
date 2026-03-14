@@ -3,7 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 export type NotificationType =
     | 'enquiry_followup_due'
     | 'wallet_credited'
-    | 'subscription_expiring_soon'
+    | 'subscription_7_day'
+    | 'subscription_3_day'
+    | 'subscription_1_day'
+    | 'subscription_expired'
     | 'low_stock'
     | 'system_alert'
 
@@ -26,6 +29,7 @@ export interface CreateNotificationParams {
     priority?: Priority
     actionUrl?: string
     actionLabel?: string
+    data?: any
 }
 
 /**
@@ -47,6 +51,7 @@ export async function createNotification(params: CreateNotificationParams) {
                 entity_type: params.entityType,
                 entity_id: params.entityId,
                 priority: params.priority || 'normal',
+                data: params.data || {}
             })
 
         if (error) {
@@ -222,7 +227,7 @@ export async function checkTimeBasedNotifications(userId: string) {
 
                         await createNotification({
                             userId,
-                            type: 'subscription_expiring_soon',
+                            type: 'subscription_7_day', // Just as a fallback or remove entirely if redundant
                             title: urgencyTitle,
                             message: urgencyMessage,
                             entityType: 'subscription',
