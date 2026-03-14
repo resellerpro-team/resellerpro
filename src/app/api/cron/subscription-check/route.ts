@@ -37,18 +37,40 @@ export async function GET(req: NextRequest) {
     if (actuallyExpired.length > 0 && freePlan) {
         console.log(`[CRON] Downgrading ${actuallyExpired.length} expired subscriptions`)
         for (const sub of actuallyExpired) {
-            // Perform downgrade in user_subscriptions (primary source of truth)
+            // 1. Perform downgrade in user_subscriptions
             await supabase
                 .from('user_subscriptions')
                 .update({
                     plan_id: freePlan.id,
-                    status: 'active', // Free is always active
+                    status: 'active', // Keep active for free plan to maintain feature access
                     current_period_start: today.toISOString(),
                     current_period_end: new Date(today.getTime() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString(),
                     cancel_at_period_end: false,
                     updated_at: today.toISOString()
                 })
                 .eq('user_id', sub.user_id)
+
+            // 2. Create "Subscription Expired" notification
+            // Note: sub.id comes from the query if we update it, but let's make sure we have sub details
+            const { data: subDetails } = await supabase
+                .from('user_subscriptions')
+                .select('id')
+                .eq('user_id', sub.user_id)
+                .single()
+
+            if (subDetails) {
+                await supabase
+                    .from('notifications')
+                    .insert({
+                        user_id: sub.user_id,
+                        type: 'subscription_expired',
+                        title: 'Subscription Expired',
+                        message: 'Your subscription has expired. Your account has been downgraded to the free plan.',
+                        entity_type: 'subscription',
+                        entity_id: subDetails.id,
+                        priority: 'high'
+                    })
+            }
         }
     }
 
@@ -57,7 +79,9 @@ export async function GET(req: NextRequest) {
     const { data: subscriptions, error } = await supabase
         .from('user_subscriptions')
         .select(`
+            id,
             current_period_end,
+            user_id,
             profile:profiles (
                 email,
                 full_name
@@ -86,38 +110,79 @@ export async function GET(req: NextRequest) {
         const daysUntilExpiry = differenceInDays(expiryDate, today)
         const expiryString = format(expiryDate, 'dd MMM yyyy')
 
-        // We only care about 7, 3, and 1 days before expiry
+        // We care about 7, 3, and 1 days before expiry
         if (![7, 3, 1].includes(daysUntilExpiry)) continue
 
-        // Check if we already sent this specific reminder
-        // We use metadata to track: type, specific daysLeft, and for which expiry date
-        const { data: existingLogs } = await supabase
-            .from('email_logs')
-            .select('id')
-            .eq('recipient', profile.email)
-            .contains('metadata', {
-                type: 'subscription_reminder',
-                daysLeft: daysUntilExpiry,
-                expiryDate: expiryString
-            })
-            .limit(1)
+        // Determine notification type and metadata
+        let notificationType: any = null
+        let title = ""
+        let message = ""
 
-        const alreadySent = existingLogs && existingLogs.length > 0
+        if (daysUntilExpiry === 7) {
+            notificationType = 'subscription_7_day'
+            title = 'Subscription expires in 7 days'
+            message = `Your plan expires on ${expiryString}. Renew now to keep your benefits.`
+        } else if (daysUntilExpiry === 3) {
+            notificationType = 'subscription_3_day'
+            title = '⚠️ 3 Days Remaining'
+            message = `Urgent: Your subscription expires in 3 days (${expiryString}).`
+        } else if (daysUntilExpiry === 1) {
+            notificationType = 'subscription_1_day'
+            title = '🔴 Final Notice: 1 Day Left'
+            message = 'Your subscription expires tomorrow. Act now to avoid service interruption!'
+        }
 
-        if (!alreadySent) {
-            const { success, error: sendError } = await MailService.sendSubscriptionReminder(
-                profile.email,
-                profile.full_name || 'User',
-                daysUntilExpiry,
-                expiryString
-            )
+        if (notificationType) {
+            // Create in-app notification
+            const { error: notifError } = await supabase
+                .from('notifications')
+                .insert({
+                    user_id: sub.user_id,
+                    type: notificationType,
+                    title,
+                    message,
+                    entity_type: 'subscription',
+                    entity_id: sub.id,
+                    priority: daysUntilExpiry <= 3 ? 'high' : 'normal',
+                    data: { daysLeft: daysUntilExpiry, expiryDate: expiryString }
+                })
+            
+            if (notifError && (notifError as any).code !== '23505') { // Ignore unique constraint violation
+                console.error(`Failed to create in-app notification for ${profile.email}:`, notifError)
+            }
+        }
 
-            if (success) {
-                if (daysUntilExpiry === 7) results.sent7d++
-                if (daysUntilExpiry === 3) results.sent3d++
-                if (daysUntilExpiry === 1) results.sent1d++
-            } else {
-                console.error(`Failed to send reminder to ${profile.email}:`, sendError)
+        // Email Reminders (Existing Logic for 7, 3, 1)
+        if ([7, 3, 1].includes(daysUntilExpiry)) {
+            // Check if we already sent this specific reminder
+            const { data: existingLogs } = await supabase
+                .from('email_logs')
+                .select('id')
+                .eq('recipient', profile.email)
+                .contains('metadata', {
+                    type: 'subscription_reminder',
+                    daysLeft: daysUntilExpiry,
+                    expiryDate: expiryString
+                })
+                .limit(1)
+
+            const alreadySent = existingLogs && existingLogs.length > 0
+
+            if (!alreadySent) {
+                const { success, error: sendError } = await MailService.sendSubscriptionReminder(
+                    profile.email,
+                    profile.full_name || 'User',
+                    daysUntilExpiry,
+                    expiryString
+                )
+
+                if (success) {
+                    if (daysUntilExpiry === 7) results.sent7d++
+                    if (daysUntilExpiry === 3) results.sent3d++
+                    if (daysUntilExpiry === 1) results.sent1d++
+                } else {
+                    console.error(`Failed to send email reminder to ${profile.email}:`, sendError)
+                }
             }
         }
     }
