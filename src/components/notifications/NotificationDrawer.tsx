@@ -422,8 +422,13 @@ function NotificationCard({
                 return { icon: MessageSquare, color: "bg-blue-500/10 text-blue-500 border-blue-500/20", glow: "" }
             case 'wallet_credited':
                 return { icon: Wallet, color: "bg-green-500/10 text-green-500 border-green-500/20", glow: "" }
-            case 'subscription_expiring_soon':
+            case 'subscription_7_day':
                 return { icon: AlertCircle, color: "bg-amber-500/10 text-amber-500 border-amber-500/20", glow: "" }
+            case 'subscription_3_day':
+            case 'subscription_1_day':
+                return { icon: AlertCircle, color: "bg-red-500/10 text-red-500 border-red-500/20", glow: "shadow-[0_0_12px_rgba(239,68,68,0.2)]" }
+            case 'subscription_expired':
+                return { icon: X, color: "bg-gray-500/10 text-gray-500 border-gray-500/20", glow: "" }
             case 'low_stock':
                 return { icon: PackageIcon, color: "bg-red-500/10 text-red-500 border-red-500/20", glow: "" }
             case 'new_order':
