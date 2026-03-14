@@ -20,6 +20,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[AUTH] Event: ${event}, Session: ${session ? 'Active' : 'None'}`);
+      }
+
       // If a token is naturally refreshed while the user is active,
       // or if they just signed in, we must sync the new session hash
       // to the DB immediately to prevent the middleware from kicking them out.
@@ -43,8 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // If they sign out completely, flush the router cache
+      // 🛡️ SECURITY: Guard refresh to prevent infinite loops on 404/Error pages
       if (event === "SIGNED_OUT") {
-        router.refresh();
+        const isErrorPage = window.location.pathname.includes('/404') || 
+                           document.title.toLowerCase().includes('not found') ||
+                           document.title.toLowerCase().includes('error');
+        
+        if (!isErrorPage) {
+          router.refresh();
+        } else {
+          console.warn("[AUTH] Suppressed refresh loop on error page");
+        }
       }
     });
 

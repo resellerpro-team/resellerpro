@@ -10,6 +10,7 @@ import {
   Wallet,
   Gift,
   ShieldCheck,
+  Store,
 } from "lucide-react"
 import Link from 'next/link'
 import { usePathname } from "next/navigation"
@@ -26,6 +27,11 @@ const settingsNavItems = [
     title: "Business",
     href: "/settings/business",
     icon: Building,
+  },
+  {
+    title: "Shop Settings",
+    href: "/settings/shop",
+    icon: Store,
   },
   {
     title: "Subscription",
