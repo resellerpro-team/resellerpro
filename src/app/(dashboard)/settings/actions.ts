@@ -230,6 +230,25 @@ export async function updateBusinessInfo(formData: FormData) {
       }
     }
 
+    // Generate or update shop slug if name changed
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('shop_slug, business_name')
+      .eq('id', userId)
+      .single()
+
+    let shopSlug = currentProfile?.shop_slug
+    const oldBusinessName = currentProfile?.business_name
+
+    // If no slug exists or business name changed significantly, generate a new one
+    // (We only auto-generate if it's currently null or if the user hasn't manually overridden it yet,
+    // but the prompt says "if second abc store create then display like baseurl/abcstore1"
+    // which implies auto-generation is important)
+    if (!shopSlug || (business_name && business_name.trim() !== oldBusinessName)) {
+      const { generateUniqueShopSlug } = await import('@/utils/slugify')
+      shopSlug = await generateUniqueShopSlug(supabase, business_name.trim(), userId)
+    }
+
     // Update profile with business information
     const { error } = await supabase
       .from('profiles')
@@ -241,6 +260,7 @@ export async function updateBusinessInfo(formData: FormData) {
         business_email: business_email.trim() || null,
         business_website: business_website.trim() || null,
         pan_number: pan_number.trim().toUpperCase() || null,
+        shop_slug: shopSlug,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId)
@@ -421,5 +441,80 @@ export async function deleteAccount(userId: string, confirmation: string) {
   } catch (error: any) {
     console.error('Unexpected error:', error)
     return { success: false, message: error.message || 'Account deletion failed' }
+  }
+}
+
+// ========================================================
+// UPDATE SHOP SETTINGS (Theme & Description)
+// ========================================================
+export async function updateShopSettings(formData: FormData) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, message: 'Authentication required' }
+  }
+
+  try {
+    const userId = formData.get('userId') as string
+    const shop_description = formData.get('shop_description') as string
+    const shop_theme = formData.get('shop_theme') as string // JSON string
+    const shop_slug = formData.get('shop_slug') as string
+
+    // Verify user
+    if (userId !== user.id) {
+      return { success: false, message: 'Unauthorized' }
+    }
+
+    // Validate slug if provided
+    if (shop_slug) {
+      const sanitizedSlug = shop_slug.toLowerCase().replace(/\s+/g, '').replace(/[^\w-]+/g, '')
+      if (sanitizedSlug !== shop_slug) {
+        return { success: false, message: 'Invalid slug format. Use only letters, numbers and hyphens' }
+      }
+
+      // Check uniqueness
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('shop_slug', shop_slug)
+        .neq('id', userId)
+        .single()
+
+      if (existing) {
+        return { success: false, message: 'This shop URL is already taken' }
+      }
+    }
+
+    const updateData: any = {
+      shop_description: shop_description?.trim() || null,
+      updated_at: new Date().toISOString(),
+    }
+
+    if (shop_theme) {
+      updateData.shop_theme = JSON.parse(shop_theme)
+    }
+
+    if (shop_slug) {
+      updateData.shop_slug = shop_slug
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', userId)
+
+    if (error) {
+      console.error('Shop settings update error:', error)
+      return { success: false, message: error.message }
+    }
+
+    revalidatePath('/settings/shop')
+    revalidatePath('/[shopSlug]', 'layout')
+
+    return { success: true, message: 'Shop settings updated successfully' }
+  } catch (error: any) {
+    console.error('Unexpected error:', error)
+    return { success: false, message: error.message || 'Something went wrong' }
   }
 }
