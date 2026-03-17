@@ -136,6 +136,32 @@ export default function NewProductPage() {
     return uploadedUrls
   }
 
+  const uploadAudio = async (userId: string): Promise<string | null> => {
+    if (!audioFile) return null
+
+    const fileExt = audioFile.name.split('.').pop()
+    const fileName = `audio-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    const filePath = `${userId}/${fileName}`
+
+    const { error } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, audioFile, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (error) {
+      console.error('Audio upload error:', error)
+      return null
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath)
+
+    return urlData.publicUrl
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -170,7 +196,19 @@ export default function NewProductPage() {
     setIsLoading(true)
 
     try {
-      // If offline, queue the action
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'You must be logged in',
+          variant: 'destructive',
+        })
+        setIsLoading(false)
+        return
+      }
+
+      // If offline, queue the action (Offline path)
       if (!isOnline) {
         const payload = {
           name,
@@ -185,10 +223,10 @@ export default function NewProductPage() {
 
         queueAction('CREATE_PRODUCT', payload)
 
-        if (images.length > 0) {
+        if (images.length > 0 || audioFile) {
           toast({
             title: 'Product queued (Text only) 📌',
-            description: 'Images cannot be saved while offline. Please edit the product later to add images.',
+            description: 'Images and audio cannot be saved while offline. Please edit the product later to add media.',
             duration: 5000,
           })
         } else {
@@ -205,16 +243,16 @@ export default function NewProductPage() {
         return
       }
 
-      // Get current user (Online path)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        toast({
-          title: 'Error',
-          description: 'You must be logged in',
-          variant: 'destructive',
-        })
-        setIsLoading(false)
-        return
+      // Online path: Upload files directly from client to avoid Server Action payload limits
+      let uploadedImageUrls: string[] = []
+      let uploadedAudioUrl: string | null = null
+
+      if (images.length > 0) {
+        uploadedImageUrls = await uploadImages(user.id)
+      }
+
+      if (audioFile) {
+        uploadedAudioUrl = await uploadAudio(user.id)
       }
 
       // Construct FormData for Server Action
@@ -228,24 +266,20 @@ export default function NewProductPage() {
       formData.append('stock_quantity', stockQuantity)
       formData.append('stock_status', stockStatus)
       if (videoUrl) formData.append('video_url', videoUrl)
-      if (audioFile) formData.append('audio_file', audioFile)
 
-      // Append images
-      images.forEach((file, index) => {
-        formData.append(`image_${index}`, file)
-      })
+      // Send the uploaded URLs instead of the raw files
+      if (uploadedImageUrls.length > 0) {
+        formData.append('image_urls_json', JSON.stringify(uploadedImageUrls))
+      }
+      if (uploadedAudioUrl) {
+        formData.append('audio_url', uploadedAudioUrl)
+      }
 
       // Call Server Action
       const result = await createProduct({ success: false, message: '' }, formData)
 
       if (!result.success) {
         console.error('Create product failed:', result.message)
-
-        // Check if it's a limit error (contains "limit")
-        if (result.message.toLowerCase().includes('limit')) {
-          // We could trigger the limit modal here if we want, or just show the toast
-          // For now, consistent toast
-        }
 
         toast({
           title: 'Error',
