@@ -130,9 +130,10 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
   }
 
   // --- insert product ---
+  const { image_urls_json, audio_url: _unused_audio, ...dbInput } = input;
   const { error } = await supabase.from("products").insert({
-    ...input,
-    video_url: input.video_url || null,
+    ...dbInput,
+    video_url: dbInput.video_url || null,
     audio_url: audioUrl,
     user_id: user.id,
     image_url: imageUrls[0] || null,
