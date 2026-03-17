@@ -13,6 +13,8 @@ const ProductSchema = z.object({
   stock_quantity: z.coerce.number().min(0),
   stock_status: z.enum(["in_stock", "low_stock", "out_of_stock"]),
   video_url: z.string().url().optional().or(z.literal('')),
+  image_urls_json: z.string().optional(), // New field for client-side uploaded images
+  audio_url: z.string().optional(),       // New field for client-side uploaded audio
 });
 
 export type FormState = {
@@ -68,59 +70,62 @@ export async function createProduct(prev: FormState, formData: FormData): Promis
 
   const input = valid.data;
 
-  // ---- upload images ----
-  const imageUrls: string[] = [];
-  const maxImages = limits.productImages; // Limit based on plan
+  // ---- handle images ----
+  let imageUrls: string[] = [];
+  const maxImages = limits.productImages;
 
-  // Iterate up to a reasonable max number of potential file inputs (e.g. 10)
-  // But ONLY process up to maxImages valid files.
-  let uploadedCount = 0;
-
-  // We'll check indices 0 to 9 (assuming frontend sends image_0, image_1...)
-  // But strictly stop once we have `maxImages` successful uploads.
-  for (let i = 0; i < 10; i++) {
-    if (uploadedCount >= maxImages) {
-      console.log(`[SECURITY] Max images (${maxImages}) reached for product creation. Skipping image_${i}.`);
-      break;
-    }
-
-    const file = formData.get(`image_${i}`) as File | null;
-    if (!file || file.size === 0) continue;
-
-    const ext = file.name.split(".").pop();
-    const name = `${user.id}/${Date.now()}-${i}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("product-images")
-      .upload(name, file);
-
-    if (!uploadError) {
-      const { data } = supabase.storage.from("product-images").getPublicUrl(name);
-      imageUrls.push(data.publicUrl);
-      uploadedCount++;
-    } else {
-      console.error(`[STORAGE] Image upload failed for image_${i}:`, uploadError.message);
+  // Use client-side uploaded URLs if provided
+  if (input.image_urls_json) {
+    try {
+      imageUrls = JSON.parse(input.image_urls_json);
+      console.log(`[STORAGE] Using ${imageUrls.length} client-side uploaded images`);
+    } catch (e) {
+      console.error("[STORAGE] Failed to parse image_urls_json");
     }
   }
 
-  // ---- upload audio file ----
-  let audioUrl: string | null = null;
-  const audioFile = formData.get('audio_file') as File | null;
-  if (audioFile && audioFile.size > 0) {
-    // Validate audio file (max 10MB, audio/* types)
-    if (audioFile.size > 10 * 1024 * 1024) {
-      return { success: false, message: "Audio file must be less than 10MB" };
+  // Fallback / Supplemental: upload images from formData if client didn't upload or sent additional
+  // (Though primarily we want client-side upload now)
+  if (imageUrls.length === 0) {
+    let uploadedCount = 0;
+    for (let i = 0; i < 10; i++) {
+        if (uploadedCount >= maxImages) break;
+        const file = formData.get(`image_${i}`) as File | null;
+        if (!file || file.size === 0) continue;
+
+        const ext = file.name.split(".").pop();
+        const name = `${user.id}/${Date.now()}-${i}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(name, file);
+
+        if (!uploadError) {
+        const { data } = supabase.storage.from("product-images").getPublicUrl(name);
+        imageUrls.push(data.publicUrl);
+        uploadedCount++;
+        }
     }
-    const ext = audioFile.name.split(".").pop();
-    const audioFileName = `${user.id}/audio-${Date.now()}.${ext}`;
-    const { error: audioUploadError } = await supabase.storage
-      .from("product-images")
-      .upload(audioFileName, audioFile);
-    if (!audioUploadError) {
-      const { data } = supabase.storage.from("product-images").getPublicUrl(audioFileName);
-      audioUrl = data.publicUrl;
-    } else {
-      console.error(`[STORAGE] Audio upload failed:`, audioUploadError.message);
+  }
+
+  // ---- handle audio file ----
+  let audioUrl: string | null = input.audio_url || null;
+
+  if (!audioUrl) {
+    const audioFile = formData.get('audio_file') as File | null;
+    if (audioFile && audioFile.size > 0) {
+        if (audioFile.size > 10 * 1024 * 1024) {
+        return { success: false, message: "Audio file must be less than 10MB" };
+        }
+        const ext = audioFile.name.split(".").pop();
+        const audioFileName = `${user.id}/audio-${Date.now()}.${ext}`;
+        const { error: audioUploadError } = await supabase.storage
+        .from("product-images")
+        .upload(audioFileName, audioFile);
+        if (!audioUploadError) {
+        const { data } = supabase.storage.from("product-images").getPublicUrl(audioFileName);
+        audioUrl = data.publicUrl;
+        }
     }
   }
 
