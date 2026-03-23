@@ -32,6 +32,16 @@ export function ShopClient({ profile, products, categories }: ShopClientProps) {
   const categoryShowcase = theme.categoryShowcase !== false
   const chatWidgetEnabled = theme.chatWidgetEnabled !== false
 
+  // Derived state MUST be before any early returns
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const matchesCategory = activeCategory ? p.category === activeCategory : true
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (p.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+      return matchesCategory && matchesSearch
+    })
+  }, [products, activeCategory, searchQuery])
+
   // Store Status Screens
   if (storeStatus === 'closed') {
     return (
@@ -62,16 +72,6 @@ export function ShopClient({ profile, products, categories }: ShopClientProps) {
       </div>
     )
   }
-
-  // Derived state
-  const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
-      const matchesCategory = activeCategory ? p.category === activeCategory : true
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (p.description || '').toLowerCase().includes(searchQuery.toLowerCase())
-      return matchesCategory && matchesSearch
-    })
-  }, [products, activeCategory, searchQuery])
 
   // Trust Badges Map
   const trustBadgeIcons: Record<string, { icon: any, label: string }> = {

@@ -26,8 +26,8 @@ export async function GET() {
 
         // Get subscription data for each shop user
         const shopUserIds = shopProfiles?.map(p => p.id) || []
-        let subscriptionMap = new Map<string, any>()
-        let productCountMap = new Map<string, number>()
+        const subscriptionMap = new Map<string, any>()
+        const productCountMap = new Map<string, number>()
 
         if (shopUserIds.length > 0) {
             // Fetch subscriptions
