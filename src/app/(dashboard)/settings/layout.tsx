@@ -11,6 +11,7 @@ import {
   Gift,
   ShieldCheck,
   Store,
+  Sparkles,
 } from "lucide-react"
 import Link from 'next/link'
 import { usePathname } from "next/navigation"
@@ -29,9 +30,10 @@ const settingsNavItems = [
     icon: Building,
   },
   {
-    title: "Shop Settings",
+    title: "Shop Store",
     href: "/settings/shop",
     icon: Store,
+    badge: "NEW",
   },
   {
     title: "Subscription",
@@ -154,6 +156,11 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                 >
                   <Icon className="h-4 w-4" />
                   <span>{item.title}</span>
+                  {(item as any).badge && (
+                    <span className="text-[8px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full leading-none">
+                      {(item as any).badge}
+                    </span>
+                  )}
                 </Link>
               )
             })}

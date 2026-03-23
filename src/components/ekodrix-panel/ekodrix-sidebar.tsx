@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Bell,
   Wallet,
+  Store,
 } from 'lucide-react'
 
 export function SidebarContent({ pathname, handleLogout }: { pathname: string; handleLogout: () => void }) {
@@ -32,6 +33,7 @@ export function SidebarContent({ pathname, handleLogout }: { pathname: string; h
       items: [
         { href: '/ekodrix-panel/customers', label: 'Customers', icon: Users },
         { href: '/ekodrix-panel/subscriptions', label: 'Subscriptions', icon: CreditCard },
+        { href: '/ekodrix-panel/shops', label: 'Shop Stores', icon: Store },
         { href: '/ekodrix-panel/wallets', label: 'Wallets', icon: Wallet },
       ],
     },
