@@ -21,15 +21,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createAdminClient()
   const { data: profile } = await supabase
     .from('profiles')
-    .select('business_name, shop_description')
+    .select('business_name, shop_description, shop_theme')
     .eq('shop_slug', shopSlug)
     .single()
 
   if (!profile) return { title: 'Shop Not Found | ResellerPro' }
 
+  const theme = profile.shop_theme || {}
+
   return {
-    title: `${profile.business_name} | ResellerPro Store`,
-    description: profile.shop_description || `Check out products from ${profile.business_name} on ResellerPro.`,
+    title: theme.seoTitle || `${profile.business_name} | ResellerPro Store`,
+    description: theme.seoDescription || profile.shop_description || `Check out products from ${profile.business_name} on ResellerPro.`,
   }
 }
 
@@ -85,16 +87,22 @@ export default async function ShopPage({ params }: Props) {
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false })
 
-  const initialProducts = products || []
-  const categories = Array.from(new Set(initialProducts.map(p => p.category).filter(Boolean))) as string[]
-  const maxPrice = Math.max(...initialProducts.map(p => p.selling_price), 1000)
+  // Extract unique categories
+  const categoriesMap = new Map()
+  if (products) {
+    products.forEach(p => {
+      if (p.category && !categoriesMap.has(p.category)) {
+        categoriesMap.set(p.category, { id: p.category, name: p.category })
+      }
+    })
+  }
+  const categories = Array.from(categoriesMap.values())
 
   return (
     <ShopClient 
-      initialProducts={initialProducts}
+      profile={profile} 
+      products={products || []} 
       categories={categories}
-      maxPrice={maxPrice}
-      profile={profile}
     />
   )
 }

@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import { ProductCard } from './ProductCard'
+import { cn } from '@/lib/utils'
 
 interface ProductGridProps {
   products: any[]
@@ -11,6 +12,8 @@ interface ProductGridProps {
 }
 
 export function ProductGrid({ products, businessPhone, businessName, theme }: ProductGridProps) {
+  const layout = theme?.layout || 'grid'
+
   if (!products || products.length === 0) {
     return (
       <div className="text-center py-24 bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden relative">
@@ -27,14 +30,21 @@ export function ProductGrid({ products, businessPhone, businessName, theme }: Pr
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+    <div className={cn(
+      layout === 'list'
+        ? 'flex flex-col gap-3'
+        : layout === 'compact'
+        ? 'grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3'
+        : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6'
+    )}>
       {products.map((product) => (
-        <ProductCard 
-          key={product.id} 
-          product={product} 
+        <ProductCard
+          key={product.id}
+          product={product}
           businessPhone={businessPhone}
           businessName={businessName}
           theme={theme}
+          layout={layout}
         />
       ))}
     </div>
