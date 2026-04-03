@@ -51,7 +51,7 @@ export function ShopClient({ profile, products, categories }: ShopClientProps) {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPrice])
 
   const filteredProducts = useMemo(() => {
-    let result = products.filter((p) => {
+    const result = products.filter((p) => {
       const matchesCategory = activeCategory !== 'all' ? p.category === activeCategory : true
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             (p.description || '').toLowerCase().includes(searchQuery.toLowerCase())
