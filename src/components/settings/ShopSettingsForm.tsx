@@ -11,8 +11,8 @@ import { Switch } from '@/components/ui/switch'
 import {
   Loader2, Palette, Globe, Info, ExternalLink, Sparkles,
   Crown, Lock, ShoppingBag, Layout, Type, Image as ImageIcon,
-  Share2, Search, Bell, Eye, Rocket, ArrowRight, Check,
-  Instagram, Facebook, Twitter, MessageCircle,
+  Share2, Search, Bell, Eye, Rocket, ArrowRight, Check, X,
+  Instagram, Facebook, Youtube, MessageCircle,
   Star, MapPin, Mail, Phone, Clock, Zap,
   Monitor, Smartphone, PanelTop, Quote, Shield,
   Truck, RotateCcw, HeartHandshake, ChevronRight,
@@ -20,6 +20,15 @@ import {
 import { updateShopSettings } from '@/app/(dashboard)/settings/actions'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { ShopClient } from '@/components/shop/ShopClient'
+
+const MOCK_CATEGORIES = [{id: 'c1', name: 'Electronics'}, {id: 'c2', name: 'Fashion'}, {id: 'c3', name: 'Home'}]
+const MOCK_PRODUCTS = [
+  {id: 'p1', name: 'Premium Wireless Headphones', category: 'Electronics', description: 'Experience the ultimate sound.', selling_price: 2999, original_price: 4999, image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800'},
+  {id: 'p2', name: 'Minimalist Lether Watch', category: 'Fashion', description: 'Timeless elegance for your wrist.', selling_price: 1499, original_price: 2499, image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'},
+  {id: 'p3', name: 'Smart Fitness Band', category: 'Electronics', description: 'Track your health and stay active.', selling_price: 999, original_price: 1999, image_url: 'https://images.unsplash.com/photo-1575311373934-08f331d2ba22?w=800'},
+  {id: 'p4', name: 'Classic Aviator Sunglasses', category: 'Fashion', description: 'Protect your eyes in style.', selling_price: 799, original_price: 1299, image_url: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800'}
+]
 
 interface ShopSettingsFormProps {
   profile: {
@@ -43,7 +52,7 @@ export default function ShopSettingsForm({
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useState('general')
-
+  const [showPreview, setShowPreview] = useState(false)
   const theme = profile.shop_theme || {}
 
   const [formData, setFormData] = useState({
@@ -74,7 +83,7 @@ export default function ShopSettingsForm({
     // Social Links
     socialInstagram: theme.socialInstagram || '',
     socialFacebook: theme.socialFacebook || '',
-    socialTwitter: theme.socialTwitter || '',
+    socialYoutube: theme.socialYoutube || '',
     socialWhatsApp: theme.socialWhatsApp || '',
     // SEO
     seoTitle: theme.seoTitle || '',
@@ -609,7 +618,7 @@ export default function ShopSettingsForm({
               <div className="grid sm:grid-cols-2 gap-4">
                 <SocialInput icon={Instagram} label="Instagram" name="socialInstagram" value={formData.socialInstagram} onChange={handleChange} placeholder="@yourbusiness" disabled={isPending || !isEligible} />
                 <SocialInput icon={Facebook} label="Facebook" name="socialFacebook" value={formData.socialFacebook} onChange={handleChange} placeholder="facebook.com/yourbusiness" disabled={isPending || !isEligible} />
-                <SocialInput icon={Twitter} label="Twitter / X" name="socialTwitter" value={formData.socialTwitter} onChange={handleChange} placeholder="@yourbusiness" disabled={isPending || !isEligible} />
+                <SocialInput icon={Youtube} label="YouTube" name="socialYoutube" value={formData.socialYoutube} onChange={handleChange} placeholder="youtube.com/@yourbusiness" disabled={isPending || !isEligible} />
                 <SocialInput icon={MessageCircle} label="WhatsApp" name="socialWhatsApp" value={formData.socialWhatsApp} onChange={handleChange} placeholder="+91 98765 43210" disabled={isPending || !isEligible} />
               </div>
             </Section>
@@ -692,9 +701,9 @@ export default function ShopSettingsForm({
         <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 -mx-6 px-6 py-4 flex items-center justify-between z-20 rounded-b-2xl">
           <div className="text-xs text-slate-500">
             {formData.shop_slug && isEligible && (
-              <a href={`/${formData.shop_slug}`} target="_blank" rel="noreferrer" className="text-indigo-600 font-bold hover:underline flex items-center gap-1">
-                <Eye className="w-3.5 h-3.5" /> Preview Store <ExternalLink className="w-3 h-3" />
-              </a>
+              <button type="button" onClick={() => setShowPreview(true)} className="text-indigo-600 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                <Eye className="w-4 h-4" /> Live Theme Preview
+              </button>
             )}
           </div>
           <div className="flex gap-3">
@@ -705,6 +714,34 @@ export default function ShopSettingsForm({
           </div>
         </div>
       </form>
+
+      {/* ═══════════════ LIVE PREVIEW MODAL ═══════════════ */}
+      {showPreview && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-2 md:p-6">
+          <div className="bg-white w-full max-w-[1400px] h-full md:h-[90vh] rounded-2xl md:rounded-[2rem] overflow-hidden flex flex-col shadow-2xl relative animate-in zoom-in-95 duration-300">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0 z-50">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1.5 ml-2">
+                  <div className="w-3 h-3 rounded-full bg-red-400" />
+                  <div className="w-3 h-3 rounded-full bg-amber-400" />
+                  <div className="w-3 h-3 rounded-full bg-emerald-400" />
+                </div>
+                <span className="ml-4 text-xs font-mono text-slate-500 bg-white px-3 py-1 rounded-md shadow-sm border border-slate-200">resellerpro.in/{formData.shop_slug || 'preview'}</span>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowPreview(false)} className="rounded-full hover:bg-slate-200 w-8 h-8">
+                <X className="w-4 h-4 text-slate-600" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto w-full relative bg-slate-50">
+               <ShopClient 
+                 profile={{...profile, business_name: profile.business_name || 'My Store', shop_theme: formData}} 
+                 products={MOCK_PRODUCTS} 
+                 categories={MOCK_CATEGORIES} 
+               />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

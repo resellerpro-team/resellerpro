@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { MessageCircle, Share2, ArrowRight, ShieldCheck, Tag, ShoppingBag, Box, CheckCircle2, Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { ReviewSection } from '../shop/ReviewSection'
 
 interface PremiumProductViewProps {
   product: any
@@ -401,6 +402,15 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
           </div>
         </section>
       </main>
+
+      {/* 
+        ======================================================================
+        REVIEW SECTION 
+        ======================================================================
+      */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24 lg:-mt-6">
+        <ReviewSection primaryColor="#4f46e5" />
+      </div>
 
       {/* 
         ======================================================================
