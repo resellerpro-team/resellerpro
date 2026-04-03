@@ -12,7 +12,7 @@ import {
   Loader2, Palette, Globe, Info, ExternalLink, Sparkles,
   Crown, Lock, ShoppingBag, Layout, Type, Image as ImageIcon,
   Share2, Search, Bell, Eye, Rocket, ArrowRight, Check,
-  Instagram, Facebook, Twitter, MessageCircle,
+  Instagram, Facebook, Youtube, MessageCircle,
   Star, MapPin, Mail, Phone, Clock, Zap,
   Monitor, Smartphone, PanelTop, Quote, Shield,
   Truck, RotateCcw, HeartHandshake, ChevronRight,
@@ -74,7 +74,7 @@ export default function ShopSettingsForm({
     // Social Links
     socialInstagram: theme.socialInstagram || '',
     socialFacebook: theme.socialFacebook || '',
-    socialTwitter: theme.socialTwitter || '',
+    socialYoutube: theme.socialYoutube || '',
     socialWhatsApp: theme.socialWhatsApp || '',
     // SEO
     seoTitle: theme.seoTitle || '',
@@ -609,7 +609,7 @@ export default function ShopSettingsForm({
               <div className="grid sm:grid-cols-2 gap-4">
                 <SocialInput icon={Instagram} label="Instagram" name="socialInstagram" value={formData.socialInstagram} onChange={handleChange} placeholder="@yourbusiness" disabled={isPending || !isEligible} />
                 <SocialInput icon={Facebook} label="Facebook" name="socialFacebook" value={formData.socialFacebook} onChange={handleChange} placeholder="facebook.com/yourbusiness" disabled={isPending || !isEligible} />
-                <SocialInput icon={Twitter} label="Twitter / X" name="socialTwitter" value={formData.socialTwitter} onChange={handleChange} placeholder="@yourbusiness" disabled={isPending || !isEligible} />
+                <SocialInput icon={Youtube} label="YouTube" name="socialYoutube" value={formData.socialYoutube} onChange={handleChange} placeholder="youtube.com/@yourbusiness" disabled={isPending || !isEligible} />
                 <SocialInput icon={MessageCircle} label="WhatsApp" name="socialWhatsApp" value={formData.socialWhatsApp} onChange={handleChange} placeholder="+91 98765 43210" disabled={isPending || !isEligible} />
               </div>
             </Section>
