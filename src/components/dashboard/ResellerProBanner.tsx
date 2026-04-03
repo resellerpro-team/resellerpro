@@ -1,4 +1,3 @@
-import { Sparkles, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -36,9 +35,6 @@ export function ResellerProBanner({
 
             <div className="relative z-10 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                    <div className="rounded-lg bg-white/20 p-1 backdrop-blur-sm">
-                        <Zap className="h-3.5 w-3.5 text-yellow-300" />
-                    </div>
                     <h3 className="font-bold text-sm tracking-tight text-white">{title}</h3>
                 </div>
 
@@ -53,7 +49,7 @@ export function ResellerProBanner({
                     asChild
                 >
                     <Link href="/settings/subscription">
-                        Upgrade Plan <Sparkles className="ml-1.5 h-3 w-3 text-yellow-300" />
+                        Upgrade Plan
                     </Link>
                 </Button>
             </div>

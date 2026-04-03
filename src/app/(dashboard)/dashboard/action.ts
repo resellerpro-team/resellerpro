@@ -596,7 +596,7 @@ export async function getUserProfile() {
   try {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('email, email_verified')
+      .select('email, email_verified, shop_slug, shop_theme')
       .eq('id', user.id)
       .single()
 
