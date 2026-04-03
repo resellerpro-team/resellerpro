@@ -35,6 +35,7 @@ import { WelcomeToast } from './DashboardClient'
 import { VerificationBanner } from '@/components/dashboard/VerificationBanner'
 import { getUserProfile } from './action'
 import { RequireVerification } from '@/components/shared/RequireVerification'
+import { StoreShareWidget } from '@/components/dashboard/StoreShareWidget'
 
 export const metadata = {
   title: 'Dashboard - ResellerPro',
@@ -71,6 +72,13 @@ export default async function DashboardPage() {
           Welcome back! Here's what's happening with your business today.
         </p>
       </div>
+
+      {profile?.shop_slug && (
+        <StoreShareWidget 
+          shopSlug={profile.shop_slug} 
+          storeStatus={profile.shop_theme?.storeStatus || 'open'} 
+        />
+      )}
 
       {/* Quick Stats */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-2 text-nowrap">

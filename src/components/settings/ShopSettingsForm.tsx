@@ -15,7 +15,7 @@ import {
   Instagram, Facebook, Youtube, MessageCircle,
   Star, MapPin, Mail, Phone, Clock, Zap,
   Monitor, Smartphone, PanelTop, Quote, Shield,
-  Truck, RotateCcw, HeartHandshake, ChevronRight,
+  Truck, RotateCcw, HeartHandshake, ChevronRight, Copy
 } from 'lucide-react'
 import { updateShopSettings } from '@/app/(dashboard)/settings/actions'
 import Link from 'next/link'
@@ -233,28 +233,43 @@ export default function ShopSettingsForm({
 
       {/* ═══════════════ LIVE STATUS ═══════════════ */}
       {isEligible && formData.shop_slug && (
-        <div className={cn("flex items-center gap-4 p-4 rounded-2xl border",
-          formData.storeStatus === 'open' ? 'border-emerald-200 bg-emerald-50' :
-          formData.storeStatus === 'vacation' ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50')}>
-          <div className={cn("p-2 rounded-xl",
-            formData.storeStatus === 'open' ? 'bg-emerald-100' : formData.storeStatus === 'vacation' ? 'bg-amber-100' : 'bg-red-100')}>
-            {formData.storeStatus === 'open' ? <Globe className="h-5 w-5 text-emerald-600" /> :
-             formData.storeStatus === 'vacation' ? <Clock className="h-5 w-5 text-amber-600" /> :
-             <Lock className="h-5 w-5 text-red-600" />}
+        <div className={cn("flex flex-col md:flex-row items-start md:items-center gap-4 p-5 rounded-2xl border",
+          formData.storeStatus === 'open' ? 'border-emerald-200 bg-emerald-50/50' :
+          formData.storeStatus === 'vacation' ? 'border-amber-200 bg-amber-50/50' : 'border-red-200 bg-red-50/50')}>
+          <div className="flex flex-1 items-center gap-4 w-full">
+            <div className={cn("p-2.5 rounded-xl shrink-0 shadow-sm",
+              formData.storeStatus === 'open' ? 'bg-emerald-500 text-white' : formData.storeStatus === 'vacation' ? 'bg-amber-500 text-white' : 'bg-red-500 text-white')}>
+              {formData.storeStatus === 'open' ? <Globe className="h-6 w-6" /> :
+               formData.storeStatus === 'vacation' ? <Clock className="h-6 w-6" /> :
+               <Lock className="h-6 w-6" />}
+            </div>
+            <div className="flex-1">
+              <p className={cn("text-base font-bold",
+                formData.storeStatus === 'open' ? 'text-emerald-800' : formData.storeStatus === 'vacation' ? 'text-amber-800' : 'text-red-800')}>
+                {formData.storeStatus === 'open' ? '🟢 Store is LIVE' : formData.storeStatus === 'vacation' ? '🟡 Vacation Mode' : '🔴 Store Closed'}
+              </p>
+              <p className={cn("text-xs font-medium mt-0.5", formData.storeStatus === 'open' ? 'text-emerald-600' : formData.storeStatus === 'vacation' ? 'text-amber-600' : 'text-red-600')}>
+                {productCount} products synced & ready
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <p className={cn("text-sm font-bold",
-              formData.storeStatus === 'open' ? 'text-emerald-800' : formData.storeStatus === 'vacation' ? 'text-amber-800' : 'text-red-800')}>
-              {formData.storeStatus === 'open' ? '🟢 Store is LIVE' : formData.storeStatus === 'vacation' ? '🟡 Vacation Mode' : '🔴 Store Closed'}
-            </p>
-            <p className={cn("text-xs", formData.storeStatus === 'open' ? 'text-emerald-600' : formData.storeStatus === 'vacation' ? 'text-amber-600' : 'text-red-600')}>
-              resellerpro.in/{formData.shop_slug} · {productCount} products
-            </p>
+          
+          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm shrink-0">
+             <div className="flex items-center px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg max-w-[200px] sm:max-w-[240px] overflow-hidden">
+                <span className="text-xs font-mono text-slate-500 truncate select-all">{`resellerpro.in/${formData.shop_slug}`}</span>
+             </div>
+             <div className="flex gap-1.5 shrink-0">
+               <Button type="button" variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(`https://resellerpro.in/${formData.shop_slug}`); toast({title: 'Link Copied ✨'}) }} className="h-8 gap-1.5 text-xs bg-slate-50 hover:bg-slate-100 shrink-0">
+                 <Copy className="w-3.5 h-3.5" /> Copy
+               </Button>
+               <Button type="button" variant="outline" size="sm" onClick={() => window.open(`https://wa.me/?text=Check%20out%20my%20store:%20https://resellerpro.in/${formData.shop_slug}`, '_blank')} className="h-8 gap-1.5 text-xs text-green-700 hover:text-green-800 hover:bg-green-50 border-green-200 shrink-0">
+                 <MessageCircle className="w-3.5 h-3.5" /> Share
+               </Button>
+               <Button type="button" size="sm" onClick={() => window.open(`/${formData.shop_slug}`, '_blank')} className="h-8 gap-1 text-xs shrink-0">
+                 Visit <ExternalLink className="w-3 h-3" />
+               </Button>
+             </div>
           </div>
-          <a href={`/${formData.shop_slug}`} target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-bold bg-white/80 hover:bg-white px-3 py-1.5 rounded-lg transition-colors border border-slate-200">
-            <Eye className="w-3.5 h-3.5" /> Visit <ExternalLink className="w-3 h-3" />
-          </a>
         </div>
       )}
 
