@@ -20,7 +20,8 @@ const DEFAULT_BANNER = {
   image_url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&q=80',
   title: 'Discover Premium Quality',
   subtitle: 'Elevate your lifestyle with our exclusive collection.',
-  ctaText: 'Shop Collection'
+  ctaText: 'Shop Collection',
+  ctaLink: '#products',
 }
 
 export function ShopClient({ profile, products, categories }: ShopClientProps) {
@@ -115,6 +116,14 @@ export function ShopClient({ profile, products, categories }: ShopClientProps) {
   }
 
   const categoryNames = categories.map(c => c.name)
+  const fallbackBanner = {
+    ...DEFAULT_BANNER,
+    image_url: theme.heroBackgroundImage || DEFAULT_BANNER.image_url,
+    title: theme.heroTitle || DEFAULT_BANNER.title,
+    subtitle: theme.heroSubtitle || DEFAULT_BANNER.subtitle,
+    ctaText: theme.heroCtaText || DEFAULT_BANNER.ctaText,
+    ctaLink: theme.heroCtaLink || DEFAULT_BANNER.ctaLink,
+  }
 
   return (
     <div className={`min-h-screen bg-slate-50 relative ${colorScheme === 'dark' ? 'dark bg-slate-950' : ''}`}>
@@ -133,7 +142,7 @@ export function ShopClient({ profile, products, categories }: ShopClientProps) {
         {/* Dynamic Hero Slider */}
         {heroEnabled && !searchQuery && (
           <HeroSlider 
-            banners={theme.bannerImages && theme.bannerImages.length > 0 ? theme.bannerImages : [{...DEFAULT_BANNER, title: theme.heroTitle || DEFAULT_BANNER.title}]} 
+            banners={theme.bannerImages && theme.bannerImages.length > 0 ? theme.bannerImages : [fallbackBanner]}
             primaryColor={primaryColor} 
           />
         )}

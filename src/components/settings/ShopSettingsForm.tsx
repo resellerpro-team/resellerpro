@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +17,7 @@ import {
   Monitor, Smartphone, PanelTop, Quote, Shield,
   Truck, RotateCcw, HeartHandshake, ChevronRight, Copy
 } from 'lucide-react'
-import { updateShopSettings } from '@/app/(dashboard)/settings/actions'
+import { updateShopSettings, uploadShopHeroImage } from '@/app/(dashboard)/settings/actions'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { ShopClient } from '@/components/shop/ShopClient'
@@ -53,6 +53,7 @@ export default function ShopSettingsForm({
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useState('general')
   const [showPreview, setShowPreview] = useState(false)
+  const [isUploadingHeroImage, setIsUploadingHeroImage] = useState(false)
   const theme = profile.shop_theme || {}
 
   const [formData, setFormData] = useState({
@@ -73,6 +74,7 @@ export default function ShopSettingsForm({
     heroEnabled: theme.heroEnabled || false,
     heroTitle: theme.heroTitle || '',
     heroSubtitle: theme.heroSubtitle || '',
+    heroBackgroundImage: theme.heroBackgroundImage || '',
     heroCtaText: theme.heroCtaText || 'Shop Now',
     heroCtaLink: theme.heroCtaLink || '#products',
     heroBgColor: theme.heroBgColor || '#4f46e5',
@@ -131,6 +133,47 @@ export default function ShopSettingsForm({
     const updated = [...formData.testimonials]
     updated[index] = { ...updated[index], [field]: value }
     setFormData(prev => ({ ...prev, testimonials: updated }))
+  }
+
+  const handleHeroImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file', description: 'Please upload an image file.', variant: 'destructive' })
+      e.target.value = ''
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Image must be less than 5MB.', variant: 'destructive' })
+      e.target.value = ''
+      return
+    }
+
+    setIsUploadingHeroImage(true)
+    try {
+      const data = new FormData()
+      data.append('userId', profile.id)
+      data.append('file', file)
+
+      const result = await uploadShopHeroImage(data)
+      if (!result.success || !result.imageUrl) {
+        throw new Error(result.message || 'Upload failed')
+      }
+
+      setFormData(prev => ({ ...prev, heroBackgroundImage: result.imageUrl }))
+      toast({ title: 'Image uploaded', description: 'Hero background image updated.' })
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message || 'Could not upload image.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsUploadingHeroImage(false)
+      e.target.value = ''
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -463,6 +506,55 @@ export default function ShopSettingsForm({
                     <Input name="heroSubtitle" value={formData.heroSubtitle} onChange={handleChange}
                       placeholder="Discover premium products at the best prices" disabled={isPending || !isEligible} className="mt-1.5" />
                   </div>
+                  <div>
+                    <Label>Background Image URL</Label>
+                    <Input
+                      name="heroBackgroundImage"
+                      value={formData.heroBackgroundImage}
+                      onChange={handleChange}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      disabled={isPending || !isEligible}
+                      className="mt-1.5"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Tip: Use an Unsplash or Supabase image URL for best compatibility.</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <label htmlFor="hero-image-upload">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          disabled={isPending || !isEligible || isUploadingHeroImage}
+                          asChild
+                        >
+                          <span>
+                            {isUploadingHeroImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
+                            {isUploadingHeroImage ? 'Uploading...' : 'Upload from device'}
+                          </span>
+                        </Button>
+                      </label>
+                      <input
+                        id="hero-image-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleHeroImageUpload}
+                        disabled={isPending || !isEligible || isUploadingHeroImage}
+                      />
+                      {formData.heroBackgroundImage && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-slate-600"
+                          onClick={() => setFormData(prev => ({ ...prev, heroBackgroundImage: '' }))}
+                          disabled={isPending || !isEligible || isUploadingHeroImage}
+                        >
+                          Remove image
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label>Button Text</Label>
@@ -497,7 +589,16 @@ export default function ShopSettingsForm({
                   </div>
                   {/* Preview */}
                   <div className="rounded-xl overflow-hidden border border-slate-200">
-                    <div className="py-10 px-6 text-center relative overflow-hidden" style={{ backgroundColor: formData.heroBgColor }}>
+                    <div
+                      className="py-10 px-6 text-center relative overflow-hidden"
+                      style={{
+                        backgroundColor: formData.heroBgColor,
+                        backgroundImage: formData.heroBackgroundImage ? `url(${formData.heroBackgroundImage})` : undefined,
+                        backgroundSize: formData.heroBackgroundImage ? 'cover' : undefined,
+                        backgroundPosition: formData.heroBackgroundImage ? 'center' : undefined,
+                      }}
+                    >
+                      {formData.heroBackgroundImage && <div className="absolute inset-0 bg-black/35" />}
                       {formData.heroPattern === 'dots' && <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px'}} />}
                       {formData.heroPattern === 'waves' && <div className="absolute inset-0 opacity-10" style={{backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21.184 20c.357-.13.72-.264 1.088-.402l1.768-.661C33.64 15.347 39.647 14 50 14c10.271 0 15.362 1.222 24.629 4.928.955.383 1.869.74 2.75 1.072h6.225c-2.51-.73-5.139-1.691-8.233-2.928C65.888 13.278 60.562 12 50 12c-10.626 0-16.855 1.397-26.66 5.063l-1.767.662c-2.475.923-4.66 1.674-6.724 2.275h6.335zm0-20C13.258 2.892 8.077 4 0 4V2c5.744 0 9.951-.574 14.85-2h6.334zM77.38 0C85.239 2.966 90.502 4 100 4V2c-6.842 0-11.386-.542-16.396-2h-6.225zM0 14c8.44 0 13.718-1.21 22.272-4.402l1.768-.661C33.64 5.347 39.647 4 50 4c10.271 0 15.362 1.222 24.629 4.928C84.112 12.722 89.438 14 100 14v-2c-10.271 0-15.362-1.222-24.629-4.928C65.888 3.278 60.562 2 50 2 39.374 2 33.145 3.397 23.34 7.063l-1.767.662C13.223 10.84 8.163 12 0 12v2z' fill='%23ffffff' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")`}} />}
                       {formData.heroPattern === 'gradient' && <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />}
