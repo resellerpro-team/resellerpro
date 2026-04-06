@@ -22,9 +22,19 @@ interface PremiumProductViewProps {
   allImages: string[]
   // Pre-select a specific image on load (used when navigating from /p/[id]/[imgIndex])
   initialActiveImage?: number
+  colorScheme?: 'light' | 'dark'
 }
 
-export function PremiumProductView({ product, businessName, businessLogo, businessPhone, productPageUrl, allImages, initialActiveImage = 0 }: PremiumProductViewProps) {
+export function PremiumProductView({
+  product,
+  businessName,
+  businessLogo,
+  businessPhone,
+  productPageUrl,
+  allImages,
+  initialActiveImage = 0,
+  colorScheme = 'light',
+}: PremiumProductViewProps) {
   const [activeImage, setActiveImage] = useState(initialActiveImage)
   const router = useRouter()
   const pathname = usePathname()
@@ -32,6 +42,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const isDark = colorScheme === 'dark'
 
   // Navigate lightbox images
   const nextImage = (e: React.MouseEvent) => {
@@ -131,14 +142,14 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
   const stockInfo = stockBadgeConfig[product.stock_status as keyof typeof stockBadgeConfig] || stockBadgeConfig['out_of_stock']
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+    <div className={`min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900 ${isDark ? 'dark bg-slate-950 text-slate-100' : ''}`}>
 
       {/* 
         ======================================================================
         DYNAMIC HEADER (Visible on both Mobile + Desktop)
         ======================================================================
       */}
-      <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 border-b border-transparent ${isScrolled ? 'bg-white/90 backdrop-blur-xl shadow-sm border-slate-200/50 py-3' : 'bg-transparent py-5 lg:py-6 lg:bg-transparent bg-gradient-to-b from-black/50 to-transparent'}`}>
+      <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 border-b border-transparent ${isScrolled ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl shadow-sm border-slate-200/50 dark:border-slate-800/60 py-3' : 'bg-transparent py-5 lg:py-6 lg:bg-transparent bg-gradient-to-b from-black/50 to-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-900 flex items-center justify-center text-white font-bold tracking-tighter shadow-lg text-sm border border-indigo-400/30 overflow-hidden relative">
@@ -149,16 +160,16 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
               )}
             </div>
             <div>
-              <p className={`font-black tracking-tight leading-none text-lg ${isScrolled ? 'text-slate-900' : 'text-white lg:text-slate-900 drop-shadow-md lg:drop-shadow-none'}`}>
+              <p className={`font-black tracking-tight leading-none text-lg ${isScrolled ? 'text-slate-900 dark:text-slate-100' : 'text-white lg:text-slate-900 dark:lg:text-slate-100 drop-shadow-md lg:drop-shadow-none'}`}>
                 {businessName}
               </p>
-              <p className={`text-[10px] uppercase font-bold tracking-widest mt-0.5 ${isScrolled ? 'text-slate-500' : 'text-white/80 lg:text-slate-500'}`}>Official Store</p>
+              <p className={`text-[10px] uppercase font-bold tracking-widest mt-0.5 ${isScrolled ? 'text-slate-500 dark:text-slate-400' : 'text-white/80 lg:text-slate-500 dark:lg:text-slate-400'}`}>Official Store</p>
             </div>
           </div>
           <Button
             variant="outline"
             size="sm"
-            className={`rounded-full transition-colors duration-300 gap-2 border-0 ${isScrolled ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md lg:bg-slate-100 lg:hover:bg-slate-200 lg:text-slate-700'}`}
+            className={`rounded-full transition-colors duration-300 gap-2 border-0 ${isScrolled ? 'bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200' : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md lg:bg-slate-100 lg:hover:bg-slate-200 lg:text-slate-700 dark:lg:bg-slate-800 dark:lg:hover:bg-slate-700 dark:lg:text-slate-200'}`}
             onClick={handleNativeShare}
           >
             <Share2 className="w-4 h-4" />
@@ -175,7 +186,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
       <main className="max-w-7xl mx-auto min-h-screen lg:pt-28 lg:px-8 lg:pb-12 flex flex-col lg:flex-row gap-0 lg:gap-12 xl:gap-20">
 
         {/* --- LEFT COL: IMAGE GALLERY --- */}
-        <section className="relative w-full lg:w-[55%] xl:w-[60%] flex-shrink-0 h-[65vh] sm:h-[70vh] lg:h-[calc(100vh-8rem)] lg:max-h-[800px] bg-slate-100 lg:rounded-[2rem] overflow-hidden lg:shadow-2xl border border-transparent lg:border-slate-200/50 group">
+        <section className="relative w-full lg:w-[55%] xl:w-[60%] flex-shrink-0 h-[65vh] sm:h-[70vh] lg:h-[calc(100vh-8rem)] lg:max-h-[800px] bg-slate-100 dark:bg-slate-900 lg:rounded-[2rem] overflow-hidden lg:shadow-2xl border border-transparent lg:border-slate-200/50 dark:lg:border-slate-800/60 group">
 
           {allImages.length > 0 ? (
             <>
@@ -199,13 +210,13 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
                       src={img}
                       alt={`${product.name} - Image ${idx + 1}`}
                       fill
-                      className="object-cover lg:object-contain bg-slate-50 transition-transform duration-500 group-hover:scale-105"
+                      className="object-cover lg:object-contain bg-slate-50 dark:bg-slate-900 transition-transform duration-500 group-hover:scale-105"
                       priority={idx === 0}
                       quality={90}
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-center justify-center">
-                      <div className="bg-white/80 backdrop-blur-sm p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-xl transform scale-90 group-hover:scale-100 hidden lg:flex">
-                        <Maximize2 className="w-5 h-5 text-slate-700" />
+                      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-xl transform scale-90 group-hover:scale-100 hidden lg:flex">
+                        <Maximize2 className="w-5 h-5 text-slate-700 dark:text-slate-200" />
                       </div>
                     </div>
                   </div>
@@ -241,9 +252,9 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
               )}
             </>
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-300">
+            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600">
               <ShoppingBag className="w-24 h-24 mb-6 opacity-40" />
-              <p className="text-lg font-medium text-slate-400 tracking-tight">No image available</p>
+              <p className="text-lg font-medium text-slate-400 dark:text-slate-500 tracking-tight">No image available</p>
             </div>
           )}
 
@@ -257,37 +268,37 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
         </section>
 
         {/* --- RIGHT COL: PRODUCT DETAILS --- */}
-        <section className="flex-1 px-5 pt-8 pb-32 sm:px-8 lg:px-0 lg:py-4 flex flex-col justify-between relative z-20 bg-slate-50 lg:bg-transparent -mt-8 lg:mt-0 rounded-t-[2.5rem] lg:rounded-none">
+        <section className="flex-1 px-5 pt-8 pb-32 sm:px-8 lg:px-0 lg:py-4 flex flex-col justify-between relative z-20 bg-slate-50 dark:bg-slate-950 lg:bg-transparent -mt-8 lg:mt-0 rounded-t-[2.5rem] lg:rounded-none">
 
           <div className="space-y-8">
             {/* Title & Price Headings */}
             <div className="space-y-4">
               {product.category && (
-                <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs uppercase font-extrabold tracking-widest">
+                <span className="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs uppercase font-extrabold tracking-widest">
                   {product.category}
                 </span>
               )}
-              <h1 className="text-4xl sm:text-5xl lg:text-5xl font-black text-slate-900 leading-[1.1] tracking-tight">
+              <h1 className="text-4xl sm:text-5xl lg:text-5xl font-black text-slate-900 dark:text-slate-100 leading-[1.1] tracking-tight">
                 {product.name}
               </h1>
 
               <div className="flex items-baseline gap-3 pt-2">
-                <span className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tighter">
+                <span className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-slate-100 tracking-tighter">
                   {formatPrice(product.selling_price)}
                 </span>
-                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Pricing</span>
+                <span className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Pricing</span>
               </div>
             </div>
 
-            <div className="w-full h-px bg-gradient-to-r from-slate-200 to-transparent" />
+            <div className="w-full h-px bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
 
             {/* Description */}
             {product.description && (
               <div className="space-y-4">
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <h2 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
                   <Box className="w-4 h-4" /> Product Details
                 </h2>
-                <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
+                <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
                   {product.description}
                 </p>
               </div>
@@ -295,15 +306,15 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
 
             {/* Spec Grid */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Item Code / SKU</p>
-                <p className="font-mono text-base font-bold text-slate-800">{product.sku || 'N/A'}</p>
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Item Code / SKU</p>
+                <p className="font-mono text-base font-bold text-slate-800 dark:text-slate-100">{product.sku || 'N/A'}</p>
               </div>
-              <div className="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Availability</p>
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Availability</p>
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full shadow-sm ${product.stock_status === 'in_stock' ? 'bg-emerald-500' : product.stock_status === 'low_stock' ? 'bg-amber-500' : 'bg-rose-500'}`} />
-                  <p className="text-base font-bold text-slate-800">{stockInfo.label}</p>
+                  <p className="text-base font-bold text-slate-800 dark:text-slate-100">{stockInfo.label}</p>
                 </div>
               </div>
             </div>
@@ -317,11 +328,11 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
 
               return (
                 <div className="space-y-3">
-                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <h2 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
                     Product Video
                   </h2>
-                  <div className="rounded-2xl overflow-hidden border border-slate-200/60 shadow-sm bg-black aspect-video">
+                  <div className="rounded-2xl overflow-hidden border border-slate-200/60 dark:border-slate-800 shadow-sm bg-black aspect-video">
                     {isYouTube ? (
                       <iframe
                         src={`https://www.youtube.com/embed/${youtubeMatch![1]}?rel=0&modestbranding=1`}
@@ -349,11 +360,11 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
             {/* Audio Section */}
             {product.audio_url && (
               <div className="space-y-3">
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <h2 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
                   Audio Description
                 </h2>
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-200/60 shadow-sm">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-slate-900 dark:to-slate-900 rounded-2xl p-4 border border-purple-200/60 dark:border-slate-800 shadow-sm">
                   <audio
                     src={product.audio_url}
                     controls
@@ -368,14 +379,14 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
             )}
 
             {/* Trust Banner */}
-            <div className="bg-gradient-to-r from-slate-100 to-white rounded-2xl p-5 border border-slate-200 flex items-center gap-5 relative overflow-hidden group">
-              <div className="absolute right-0 top-0 w-32 h-32 bg-slate-200 rounded-full blur-3xl opacity-50 group-hover:bg-indigo-100 transition-colors" />
-              <div className="w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center text-slate-700 shrink-0 relative z-10">
+            <div className="bg-gradient-to-r from-slate-100 to-white dark:from-slate-900 dark:to-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 flex items-center gap-5 relative overflow-hidden group">
+              <div className="absolute right-0 top-0 w-32 h-32 bg-slate-200 dark:bg-slate-800 rounded-full blur-3xl opacity-50 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 transition-colors" />
+              <div className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0 relative z-10">
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div className="relative z-10">
-                <p className="text-sm font-black text-slate-900 tracking-tight">Verified Merchant</p>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">Ordering directly via WhatsApp is fast and secure with {businessName}.</p>
+                <p className="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tight">Verified Merchant</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mt-1">Ordering directly via WhatsApp is fast and secure with {businessName}.</p>
               </div>
             </div>
           </div>
@@ -409,7 +420,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
         ======================================================================
       */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24 lg:-mt-6">
-        <ReviewSection primaryColor="#4f46e5" />
+        <ReviewSection primaryColor="#4f46e5" colorScheme={colorScheme} />
       </div>
 
       {/* 
@@ -417,7 +428,7 @@ export function PremiumProductView({ product, businessName, businessLogo, busine
         MOBILE FLOATING ACTION BAR (Hidden on Desktop)
         ======================================================================
       */}
-      <div className="fixed bottom-0 inset-x-0 p-4 pb-6 bg-gradient-to-t from-white via-white to-transparent pt-12 z-50 lg:hidden pointer-events-none">
+      <div className="fixed bottom-0 inset-x-0 p-4 pb-6 bg-gradient-to-t from-white via-white to-transparent dark:from-slate-950 dark:via-slate-950 pt-12 z-50 lg:hidden pointer-events-none">
         {/* We place the button explicitly ABOVE the gradient to avoid touch issues */}
         <div className="max-w-lg w-full mx-auto pointer-events-auto shadow-2xl rounded-2xl">
           <Link href={waLink} target="_blank" className="block group">

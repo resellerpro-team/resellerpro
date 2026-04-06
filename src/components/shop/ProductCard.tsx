@@ -10,16 +10,14 @@ import { cn } from '@/lib/utils'
 
 interface ProductCardProps {
   product: any
-  businessPhone: string
-  businessName: string
   theme?: any
   layout?: string
 }
 
-export function ProductCard({ product, businessPhone, businessName, theme, layout = 'grid' }: ProductCardProps) {
+export function ProductCard({ product, theme, layout = 'grid' }: ProductCardProps) {
   const primaryColor = theme?.primaryColor || '#4f46e5'
   const showPrices = theme?.showPrices !== false
-  const showWhatsApp = theme?.showWhatsApp !== false
+  const showBuyButton = theme?.showWhatsApp !== false
   const buttonStyle = theme?.buttonStyle || 'rounded'
   const shadowLevel = theme?.shadow || 'default' // 'none', 'sm', 'default', 'lg', 'xl'
 
@@ -46,10 +44,6 @@ export function ProductCard({ product, businessPhone, businessName, theme, layou
   const originalPrice = product.original_price || sellingPrice * 1.25 // Fake original price if not provided for demo aesthetic
   const hasDiscount = originalPrice > sellingPrice
   const discountPercent = hasDiscount ? Math.round(((originalPrice - sellingPrice) / originalPrice) * 100) : 0
-
-  const waMessage = `Hi ${businessName}, I want to buy "${product.name}"${showPrices ? ` (Price: ${formatPrice(sellingPrice)})` : ''}. Is it available?\n\nhttps://resellerpro.in/p/${product.id}`
-  const cleanPhone = businessPhone ? businessPhone.replace(/[^\d]/g, '') : ''
-  const waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`
 
   // ── LIST LAYOUT ──
   if (layout === 'list') {
@@ -98,8 +92,8 @@ export function ProductCard({ product, businessPhone, businessName, theme, layou
                  )}
                </div>
             )}
-            {showWhatsApp && (
-              <Link href={waLink} target="_blank" className="shrink-0 ml-4 relative z-10 block">
+            {showBuyButton && (
+              <Link href={`/p/${product.id}`} className="shrink-0 ml-4 relative z-10 block">
                 <div className={cn("flex items-center justify-center gap-2 font-bold h-10 md:h-11 px-5 shadow-sm hover:shadow-[0_8px_20px_rgb(0,0,0,0.12)] transition-all duration-300 active:scale-95 text-white hover:-translate-y-0.5", btnClass)}
                   style={{ backgroundColor: primaryColor }}>
                   <ShoppingBag className="w-4 h-4 md:w-[18px] md:h-[18px]" /> 
@@ -216,9 +210,9 @@ export function ProductCard({ product, businessPhone, businessName, theme, layou
         </div>
 
         {/* CTA Block */}
-        {showWhatsApp && (
+        {showBuyButton && (
           <div className="mt-5 pt-4 border-t border-slate-100/80">
-            <Link href={waLink} target="_blank" className="block w-full">
+            <Link href={`/p/${product.id}`} className="block w-full">
               <div
                 className={cn(
                   "w-full flex items-center justify-center gap-2 font-black h-[46px] text-xs transition-all duration-300 text-white shadow-sm hover:shadow-[0_8px_20px_rgb(0,0,0,0.15)] hover:-translate-y-0.5 active:scale-95 group/btn overflow-hidden relative", 

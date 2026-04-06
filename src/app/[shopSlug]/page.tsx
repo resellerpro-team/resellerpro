@@ -8,14 +8,14 @@ interface Props {
 }
 
 const RESERVED_SLUGS = [
-  'admin', 'api', 'auth', 'dashboard', 'settings', 'p', 'pricing', 
+  'admin', 'api', 'auth', 'dashboard', 'settings', 'p', 'pricing',
   'about', 'contact', 'features', 'privacy-policy', 'terms-and-conditions',
   'ekodrix-panel', 'login', 'signup', 'actions'
 ]
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { shopSlug } = params
-  
+
   if (RESERVED_SLUGS.includes(shopSlug)) return { title: 'ResellerPro' }
 
   const supabase = await createAdminClient()
@@ -62,18 +62,19 @@ export default async function ShopPage({ params }: Props) {
 
   const planName = (Array.isArray(subscription?.plan) ? subscription.plan[0]?.name : subscription?.plan?.name)?.toLowerCase() || 'free'
   const isEligible = ['professional', 'business'].includes(planName)
+  const isDarkStore = profile?.shop_theme?.colorScheme === 'dark'
 
-  // If not eligible, show a "Coming Soon" or "Upgrade" message for the owner, 
+  // If not eligible, show a "Coming Soon" or "Upgrade" message for the owner,
   // or just 404 for the public if you want strict enforcement.
-  // The prompt says "it only allow not free plpan users only professional or above that plan users only"
+  // The prompt says "it only allow not free plan users only professional or above that plan users only"
   if (!isEligible) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mb-6">
-          <span className="text-4xl">🚀</span>
+      <div className={`min-h-screen flex flex-col items-center justify-center p-6 text-center ${isDarkStore ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${isDarkStore ? 'bg-indigo-900/40' : 'bg-indigo-100'}`}>
+          <span className={`text-2xl font-black ${isDarkStore ? 'text-indigo-300' : 'text-indigo-600'}`}>RS</span>
         </div>
-        <h1 className="text-2xl font-black text-slate-900">Store Coming Soon!</h1>
-        <p className="text-slate-500 mt-2 max-w-md">
+        <h1 className={`text-2xl font-black ${isDarkStore ? 'text-slate-100' : 'text-slate-900'}`}>Store Coming Soon!</h1>
+        <p className={`mt-2 max-w-md ${isDarkStore ? 'text-slate-400' : 'text-slate-500'}`}>
           {profile.business_name} is currently setting up their store. Please check back later.
         </p>
       </div>
@@ -99,9 +100,9 @@ export default async function ShopPage({ params }: Props) {
   const categories = Array.from(categoriesMap.values())
 
   return (
-    <ShopClient 
-      profile={profile} 
-      products={products || []} 
+    <ShopClient
+      profile={profile}
+      products={products || []}
       categories={categories}
     />
   )
