@@ -88,6 +88,43 @@ export default async function ShopPage({ params }: Props) {
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false })
 
+  let productsWithRatings = products || []
+
+  if (productsWithRatings.length > 0) {
+    const productIds = productsWithRatings.map((product: any) => product.id)
+
+    const { data: reviewRows } = await supabase
+      .from('product_reviews')
+      .select('product_id, rating')
+      .in('product_id', productIds)
+
+    const ratingMap = new Map<string, { total: number; count: number }>()
+
+    ;(reviewRows || []).forEach((review: any) => {
+      const key = review.product_id
+      const prev = ratingMap.get(key) || { total: 0, count: 0 }
+      const next = {
+        total: prev.total + Number(review.rating || 0),
+        count: prev.count + 1,
+      }
+      ratingMap.set(key, next)
+    })
+
+    productsWithRatings = productsWithRatings.map((product: any) => {
+      const stats = ratingMap.get(product.id)
+      const review_count = stats?.count || 0
+      const average_rating = review_count > 0
+        ? Number((stats!.total / review_count).toFixed(1))
+        : 0
+
+      return {
+        ...product,
+        review_count,
+        average_rating,
+      }
+    })
+  }
+
   // Extract unique categories
   const categoriesMap = new Map()
   if (products) {
@@ -102,7 +139,7 @@ export default async function ShopPage({ params }: Props) {
   return (
     <ShopClient
       profile={profile}
-      products={products || []}
+      products={productsWithRatings}
       categories={categories}
     />
   )

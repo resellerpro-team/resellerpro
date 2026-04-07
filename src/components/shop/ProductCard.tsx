@@ -44,6 +44,10 @@ export function ProductCard({ product, theme, layout = 'grid' }: ProductCardProp
   const originalPrice = product.original_price || sellingPrice * 1.25 // Fake original price if not provided for demo aesthetic
   const hasDiscount = originalPrice > sellingPrice
   const discountPercent = hasDiscount ? Math.round(((originalPrice - sellingPrice) / originalPrice) * 100) : 0
+  const reviewCount = Number(product.review_count || 0)
+  const averageRating = Number(product.average_rating || 0)
+  const formattedRating = averageRating > 0 ? averageRating.toFixed(1) : '0.0'
+  const ratingLabel = reviewCount > 0 ? formattedRating : 'New'
 
   // ── LIST LAYOUT ──
   if (layout === 'list') {
@@ -72,7 +76,8 @@ export function ProductCard({ product, theme, layout = 'grid' }: ProductCardProp
                 </span>
               ) : <span className="h-3" />}
               <div className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded-md">
-                <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> 4.8
+                <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> {ratingLabel}
+                {reviewCount > 0 && <span className="text-slate-400">({reviewCount})</span>}
               </div>
             </div>
             <Link href={`/p/${product.id}`}>
@@ -131,6 +136,11 @@ export function ProductCard({ product, theme, layout = 'grid' }: ProductCardProp
           <Link href={`/p/${product.id}`} className="flex-1">
              <h3 className="text-[13px] font-bold text-slate-900 line-clamp-2 group-hover:text-indigo-600 transition-colors leading-snug tracking-tight">{product.name}</h3>
           </Link>
+          <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-slate-500">
+            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+            <span>{ratingLabel}</span>
+            {reviewCount > 0 && <span className="text-slate-400">({reviewCount})</span>}
+          </div>
           {showPrices && (
             <div className="mt-2 flex flex-col">
               {hasDiscount && (
@@ -189,7 +199,8 @@ export function ProductCard({ product, theme, layout = 'grid' }: ProductCardProp
             ) : <span className="h-4" />}
              
              <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100 group-hover:border-slate-200 transition-colors">
-               <Star className="w-[10px] h-[10px] text-amber-400 fill-amber-400" /> 4.8
+               <Star className="w-[10px] h-[10px] text-amber-400 fill-amber-400" /> {ratingLabel}
+               {reviewCount > 0 && <span className="text-slate-400">({reviewCount})</span>}
              </div>
           </div>
 
