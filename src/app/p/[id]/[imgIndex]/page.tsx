@@ -94,7 +94,7 @@ export default async function PublicProductImagePage({ params }: Props) {
   if (product.user_id) {
     const { data: p } = await supabase
       .from('profiles')
-      .select('business_name, phone, avatar_url')
+      .select('business_name, phone, avatar_url, shop_theme')
       .eq('id', product.user_id)
       .single()
     profile = p
@@ -103,6 +103,7 @@ export default async function PublicProductImagePage({ params }: Props) {
   const businessName = profile?.business_name || 'ResellerPro Store'
   const businessPhone = profile?.phone || ''
   const businessLogo = profile?.avatar_url || ''
+  const colorScheme = profile?.shop_theme?.colorScheme === 'dark' ? 'dark' : 'light'
   
   const headerList = await headers()
   const host = headerList.get('host') || 'www.resellerpro.in'
@@ -118,6 +119,7 @@ export default async function PublicProductImagePage({ params }: Props) {
       productPageUrl={productPageUrl}
       allImages={allImages}
       initialActiveImage={idx}
+      colorScheme={colorScheme}
     />
   )
 }

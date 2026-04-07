@@ -86,7 +86,7 @@ export default async function PublicProductPage({ params }: Props) {
   if (product.user_id) {
     const { data: p } = await supabase
       .from('profiles')
-      .select('business_name, phone, avatar_url')
+      .select('business_name, phone, avatar_url, shop_theme')
       .eq('id', product.user_id)
       .single()
     profile = p
@@ -95,6 +95,7 @@ export default async function PublicProductPage({ params }: Props) {
   const businessName = profile?.business_name || 'ResellerPro Store'
   const businessPhone = profile?.phone || ''
   const businessLogo = profile?.avatar_url || ''
+  const colorScheme = profile?.shop_theme?.colorScheme === 'dark' ? 'dark' : 'light'
 
   // Dynamically detect base URL to support dev/prod environments correctly
   const headerList = await headers()
@@ -110,6 +111,7 @@ export default async function PublicProductPage({ params }: Props) {
       businessLogo={businessLogo}
       productPageUrl={productPageUrl}
       allImages={allImages} 
+      colorScheme={colorScheme}
     />
   )
 }
