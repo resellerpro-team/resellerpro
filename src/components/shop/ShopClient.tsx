@@ -243,8 +243,6 @@ export function ShopClient({ profile, products, categories }: ShopClientProps) {
 
               <ProductGrid 
                 products={filteredProducts} 
-                businessPhone={profile.business_phone} 
-                businessName={profile.business_name}
                 theme={theme}
               />
             </div>

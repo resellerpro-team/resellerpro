@@ -6,12 +6,10 @@ import { cn } from '@/lib/utils'
 
 interface ProductGridProps {
   products: any[]
-  businessPhone: string
-  businessName: string
   theme?: any
 }
 
-export function ProductGrid({ products, businessPhone, businessName, theme }: ProductGridProps) {
+export function ProductGrid({ products, theme }: ProductGridProps) {
   const layout = theme?.layout || 'grid'
 
   if (!products || products.length === 0) {
@@ -41,8 +39,6 @@ export function ProductGrid({ products, businessPhone, businessName, theme }: Pr
         <ProductCard
           key={product.id}
           product={product}
-          businessPhone={businessPhone}
-          businessName={businessName}
           theme={theme}
           layout={layout}
         />
