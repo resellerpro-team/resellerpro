@@ -420,7 +420,7 @@ export function PremiumProductView({
         ======================================================================
       */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24 lg:-mt-6">
-        <ReviewSection primaryColor="#4f46e5" colorScheme={colorScheme} />
+        <ReviewSection productId={product.id} primaryColor="#4f46e5" colorScheme={colorScheme} />
       </div>
 
       {/* 
