@@ -586,6 +586,26 @@ export async function getEnquiries(): Promise<Enquiry[]> {
 }
 
 /**
+ * Fetches shop profile data for the dashboard store banner
+ */
+export async function getShopProfile() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('shop_slug, shop_name, business_name, whatsapp_number, onboarding_completed')
+      .eq('id', user.id)
+      .single()
+    return data
+  } catch {
+    return null
+  }
+}
+
+/**
  * Fetches user profile for verification status
  */
 export async function getUserProfile() {

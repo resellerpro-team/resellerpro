@@ -460,6 +460,7 @@ export async function updateShopSettings(formData: FormData) {
     const shop_description = formData.get('shop_description') as string
     const shop_theme = formData.get('shop_theme') as string // JSON string
     const shop_slug = formData.get('shop_slug') as string
+    const shop_logo_url = formData.get('shop_logo_url') as string
 
     // Verify user
     if (userId !== user.id) {
@@ -499,6 +500,10 @@ export async function updateShopSettings(formData: FormData) {
       updateData.shop_slug = shop_slug
     }
 
+    if (shop_logo_url !== undefined) {
+      updateData.shop_logo_url = shop_logo_url || null
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update(updateData)
@@ -509,12 +514,13 @@ export async function updateShopSettings(formData: FormData) {
       return { success: false, message: error.message }
     }
 
-    revalidatePath('/settings/shop')
-    revalidatePath('/[shopSlug]', 'layout')
+    revalidatePath('/my-store')
+    revalidatePath('/store/[shopSlug]', 'layout')
+    revalidatePath('/store/[shopSlug]', 'page')
 
     return { success: true, message: 'Shop settings updated successfully' }
   } catch (error: any) {
     console.error('Unexpected error:', error)
     return { success: false, message: error.message || 'Something went wrong' }
   }
-}
+}

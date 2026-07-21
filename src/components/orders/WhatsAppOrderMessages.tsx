@@ -31,6 +31,7 @@ interface WhatsAppOrderMessagesProps {
   courierService?: string
   shopName?: string
   expectedDeliveryDate?: string
+  upiId?: string | null
 }
 
 interface TemplateCustomization {
@@ -51,6 +52,7 @@ export function WhatsAppOrderMessages({
   courierService,
   shopName = 'Our Store',
   expectedDeliveryDate,
+  upiId,
 }: WhatsAppOrderMessagesProps) {
   const { toast } = useToast()
   const router = useRouter()
@@ -159,9 +161,9 @@ Your order #${orderNumber} is ready!
 ${productsFormatted}
 
 *PENDING PAYMENT*(including shipping cost): Rs.${totalAmount}
-
+${upiId ? `\n📱 *UPI ID:* ${upiId}\n` : ''}
 Please complete the payment so we can ship your order.
-
+${upiId ? `\nSend a screenshot of the payment receipt once paid. 📸\n` : ''}
 Need help? Just reply to this message!
 
 Thank you,
@@ -255,6 +257,7 @@ Best regards,
       .replace(/{deliveryDate}/g, getDeliveryDate())
       .replace(/{trackingNumber}/g, trackingNumber || 'Not available yet')
       .replace(/{shopName}/g, shopName)
+      .replace(/{upiId}/g, upiId || 'Contact seller')
   }
 
   const generateMessage = (template: MessageTemplate): string => {

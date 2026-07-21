@@ -30,20 +30,7 @@ import { MoreVertical, Edit, Eye, Trash, Copy, Package, Loader2, AlertTriangle }
 import { WhatsAppShare } from './WhatsAppShare'
 import { useToast } from '@/hooks/use-toast'
 
-type Product = {
-  id: string
-  name: string
-  description?: string
-  image_url: string | null
-  images?: string[]
-  cost_price: number
-  selling_price: number
-  stock_quantity?: number
-  stock_status: 'in_stock' | 'low_stock' | 'out_of_stock'
-  category?: string
-  sku?: string
-  created_at?: string
-}
+import type { Product } from '@/types'
 
 export function ProductCard({ product }: { product: Product }) {
   const router = useRouter()

@@ -32,6 +32,8 @@ type Order = {
     name: string
     phone: string
   } | null
+  customer_name?: string | null
+  customer_phone?: string | null
 }
 
 export function OrdersTable({ orders }: { orders: Order[] }) {
@@ -72,10 +74,13 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
   }
 
   const handleWhatsAppShare = (order: Order) => {
-    if (!order.customers?.phone) return
+    const phone = order.customers?.phone || order.customer_phone
+    if (!phone) return
+
+    const customerName = order.customers?.name || order.customer_name || 'Customer'
 
     const message = generateStatusMessage(
-      order.customers.name,
+      customerName,
       order.order_number.toString(),
       order.status,
       undefined, // Tracking - list view doesn't have it easily
@@ -88,7 +93,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
     )
 
     window.open(
-      `https://wa.me/${order.customers.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`,
+      `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`,
       '_blank'
     )
   }
@@ -183,6 +188,13 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                           {order.customers.phone}
                         </p>
                       </div>
+                    ) : order.customer_name ? (
+                      <div>
+                        <p className="font-medium">{order.customer_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {order.customer_phone}
+                        </p>
+                      </div>
                     ) : (
                       <span className="text-muted-foreground">No customer</span>
                     )}
@@ -214,7 +226,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {order.customers?.phone && order.status !== 'pending' && (
+                      {(order.customers?.phone || order.customer_phone) && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -316,6 +328,11 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                         <p className="font-medium text-sm">{order.customers.name}</p>
                         <p className="text-xs text-muted-foreground font-mono">{order.customers.phone}</p>
                       </div>
+                    ) : order.customer_name ? (
+                      <div>
+                        <p className="font-medium text-sm">{order.customer_name}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{order.customer_phone}</p>
+                      </div>
                     ) : (
                       <span className="text-sm text-muted-foreground italic">No customer</span>
                     )}
@@ -338,7 +355,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                     {order.payment_status}
                   </Badge>
                   <div className="flex items-center gap-2">
-                    {order.customers?.phone && order.status !== 'pending' && (
+                    {(order.customers?.phone || order.customer_phone) && (
                       <Button
                         variant="outline"
                         size="sm"

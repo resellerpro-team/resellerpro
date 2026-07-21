@@ -2,32 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 
-export type Enquiry = {
-    id: string;
-    customer_name: string;
-    phone: string;
-    message: string;
-    status: "new" | "needs_follow_up" | "converted" | "dropped";
-    created_at: string;
-    last_updated: string;
-    source?: string;
-    // Follow-up automation fields
-    follow_up_date?: string | null;
-    follow_up_notes?: string | null;
-    priority?: "low" | "medium" | "high" | "urgent";
-    last_contacted_at?: string | null;
-    follow_up_count?: number;
-};
-
-export type FollowUpActivity = {
-    id: string;
-    enquiry_id: string;
-    user_id: string;
-    action: "whatsapp_sent" | "called" | "note_added" | "status_changed" | "follow_up_scheduled";
-    note?: string | null;
-    whatsapp_message?: string | null;
-    created_at: string;
-};
+import type { Enquiry, FollowUpActivity } from "@/types";
+export type { Enquiry, FollowUpActivity };
 
 // --- QUERIES ---
 
