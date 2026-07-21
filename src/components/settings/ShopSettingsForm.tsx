@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, type ChangeEvent } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,24 +11,16 @@ import { Switch } from '@/components/ui/switch'
 import {
   Loader2, Palette, Globe, Info, ExternalLink, Sparkles,
   Crown, Lock, ShoppingBag, Layout, Type, Image as ImageIcon,
-  Share2, Search, Bell, Eye, Rocket, ArrowRight, Check, X,
-  Instagram, Facebook, Youtube, MessageCircle,
+  Share2, Search, Bell, Eye, Rocket, ArrowRight, Check,
+  Instagram, Facebook, Twitter, MessageCircle,
   Star, MapPin, Mail, Phone, Clock, Zap,
   Monitor, Smartphone, PanelTop, Quote, Shield,
-  Truck, RotateCcw, HeartHandshake, ChevronRight, Copy
+  Truck, RotateCcw, HeartHandshake, ChevronRight, Upload,
 } from 'lucide-react'
-import { updateShopSettings, uploadShopHeroImage } from '@/app/(dashboard)/settings/actions'
+import { createClient } from '@/lib/supabase/client'
+import { updateShopSettings } from '@/app/(dashboard)/settings/actions'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { ShopClient } from '@/components/shop/ShopClient'
-
-const MOCK_CATEGORIES = [{id: 'c1', name: 'Electronics'}, {id: 'c2', name: 'Fashion'}, {id: 'c3', name: 'Home'}]
-const MOCK_PRODUCTS = [
-  {id: 'p1', name: 'Premium Wireless Headphones', category: 'Electronics', description: 'Experience the ultimate sound.', selling_price: 2999, original_price: 4999, image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800'},
-  {id: 'p2', name: 'Minimalist Lether Watch', category: 'Fashion', description: 'Timeless elegance for your wrist.', selling_price: 1499, original_price: 2499, image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'},
-  {id: 'p3', name: 'Smart Fitness Band', category: 'Electronics', description: 'Track your health and stay active.', selling_price: 999, original_price: 1999, image_url: 'https://images.unsplash.com/photo-1575311373934-08f331d2ba22?w=800'},
-  {id: 'p4', name: 'Classic Aviator Sunglasses', category: 'Fashion', description: 'Protect your eyes in style.', selling_price: 799, original_price: 1299, image_url: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800'}
-]
 
 interface ShopSettingsFormProps {
   profile: {
@@ -38,6 +30,7 @@ interface ShopSettingsFormProps {
     shop_theme?: any
     business_name?: string
     avatar_url?: string
+    shop_logo_url?: string
   }
   isEligible?: boolean
   planName?: string
@@ -52,14 +45,16 @@ export default function ShopSettingsForm({
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useState('general')
-  const [showPreview, setShowPreview] = useState(false)
-  const [isUploadingHeroImage, setIsUploadingHeroImage] = useState(false)
+  const [uploadingField, setUploadingField] = useState<string | null>(null)
+  const supabase = createClient()
+
   const theme = profile.shop_theme || {}
 
   const [formData, setFormData] = useState({
     // Basic
     shop_slug: profile.shop_slug || '',
     shop_description: profile.shop_description || '',
+    shop_logo_url: profile.shop_logo_url || '',
     // Appearance
     primaryColor: theme.primaryColor || '#4f46e5',
     secondaryColor: theme.secondaryColor || '#f97316',
@@ -74,18 +69,18 @@ export default function ShopSettingsForm({
     heroEnabled: theme.heroEnabled || false,
     heroTitle: theme.heroTitle || '',
     heroSubtitle: theme.heroSubtitle || '',
-    heroBackgroundImage: theme.heroBackgroundImage || '',
     heroCtaText: theme.heroCtaText || 'Shop Now',
     heroCtaLink: theme.heroCtaLink || '#products',
     heroBgColor: theme.heroBgColor || '#4f46e5',
     heroPattern: theme.heroPattern || 'none',
+    heroImageUrl: theme.heroImageUrl || '',
     // Announcement Banner
     bannerText: theme.bannerText || '',
     bannerEnabled: theme.bannerEnabled || false,
     // Social Links
     socialInstagram: theme.socialInstagram || '',
     socialFacebook: theme.socialFacebook || '',
-    socialYoutube: theme.socialYoutube || '',
+    socialTwitter: theme.socialTwitter || '',
     socialWhatsApp: theme.socialWhatsApp || '',
     // SEO
     seoTitle: theme.seoTitle || '',
@@ -103,6 +98,13 @@ export default function ShopSettingsForm({
       { name: '', text: '', rating: 5 },
       { name: '', text: '', rating: 5 },
     ],
+    // Custom Promo / CTA Banner Section
+    ctaSectionEnabled: theme.ctaSectionEnabled || false,
+    ctaImageUrl: theme.ctaImageUrl || '',
+    ctaTitle: theme.ctaTitle || '',
+    ctaSubtitle: theme.ctaSubtitle || '',
+    ctaLink: theme.ctaLink || '',
+    ctaBtnText: theme.ctaBtnText || 'Explore More',
     // Footer
     footerAbout: theme.footerAbout || '',
     footerAddress: theme.footerAddress || '',
@@ -120,6 +122,59 @@ export default function ShopSettingsForm({
     customCss: theme.customCss || '',
   })
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Image must be less than 5MB',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setUploadingField(fieldName)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${fieldName}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `${profile.id}/${fileName}`
+
+      const { error } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (error) {
+        throw error
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath)
+
+      const uploadedUrl = urlData.publicUrl
+
+      setFormData(prev => ({ ...prev, [fieldName]: uploadedUrl }))
+      toast({
+        title: 'Upload Successful 🎉',
+        description: 'Image uploaded and updated in settings.',
+      })
+    } catch (err: any) {
+      console.error('Upload error:', err)
+      toast({
+        title: 'Upload Failed',
+        description: err.message || 'Failed to upload image.',
+        variant: 'destructive',
+      })
+    } finally {
+      setUploadingField(null)
+    }
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -135,47 +190,6 @@ export default function ShopSettingsForm({
     setFormData(prev => ({ ...prev, testimonials: updated }))
   }
 
-  const handleHeroImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file', description: 'Please upload an image file.', variant: 'destructive' })
-      e.target.value = ''
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Image must be less than 5MB.', variant: 'destructive' })
-      e.target.value = ''
-      return
-    }
-
-    setIsUploadingHeroImage(true)
-    try {
-      const data = new FormData()
-      data.append('userId', profile.id)
-      data.append('file', file)
-
-      const result = await uploadShopHeroImage(data)
-      if (!result.success || !result.imageUrl) {
-        throw new Error(result.message || 'Upload failed')
-      }
-
-      setFormData(prev => ({ ...prev, heroBackgroundImage: result.imageUrl }))
-      toast({ title: 'Image uploaded', description: 'Hero background image updated.' })
-    } catch (error: any) {
-      toast({
-        title: 'Upload failed',
-        description: error.message || 'Could not upload image.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsUploadingHeroImage(false)
-      e.target.value = ''
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(async () => {
@@ -183,8 +197,10 @@ export default function ShopSettingsForm({
       data.append('userId', profile.id)
       data.append('shop_slug', formData.shop_slug)
       data.append('shop_description', formData.shop_description)
+      data.append('shop_logo_url', formData.shop_logo_url)
+      
       // Pack everything else into shop_theme JSON
-      const { shop_slug, shop_description, ...themeData } = formData
+      const { shop_slug, shop_description, shop_logo_url, ...themeData } = formData
       data.append('shop_theme', JSON.stringify(themeData))
 
       const result = await updateShopSettings(data)
@@ -212,19 +228,19 @@ export default function ShopSettingsForm({
     <div className="space-y-6">
       {/* ═══════════════ PREMIUM UPSELL ═══════════════ */}
       {!isEligible && (
-        <div className="relative overflow-hidden rounded-2xl border-2 border-indigo-500/30 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6 md:p-8">
+        <div className="relative overflow-hidden rounded-2xl border-2 border-indigo-500/30 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-pink-950/20 p-6 md:p-8">
           <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-indigo-400/20 to-purple-400/20 rounded-full blur-3xl" />
           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-pink-400/20 to-orange-400/20 rounded-full blur-2xl" />
           <div className="relative flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 rounded-xl bg-indigo-100"><Crown className="h-6 w-6 text-indigo-600" /></div>
-                <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider bg-indigo-100 px-2 py-0.5 rounded-full">PRO Feature</span>
+                <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-950/30"><Crown className="h-6 w-6 text-indigo-600 dark:text-indigo-400" /></div>
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-indigo-100 dark:bg-indigo-950/30 px-2 py-0.5 rounded-full">PRO Feature</span>
               </div>
-              <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-2">Launch Your Online Store 🚀</h2>
-              <p className="text-sm text-slate-600 leading-relaxed mb-4">
+              <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">Launch Your Online Store 🚀</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
                 Build a <strong>Shopify-level online store</strong> with hero banners, testimonials, trust badges, custom footer, floating WhatsApp chat, and more — all with your own
-                <code className="bg-white/80 px-1.5 py-0.5 rounded mx-1 text-indigo-600 text-xs font-mono">resellerpro.in/{formData.shop_slug || 'your-store'}</code>
+                <code className="bg-white/80 dark:bg-slate-900/80 px-1.5 py-0.5 rounded mx-1 text-indigo-600 dark:text-indigo-400 text-xs font-mono">resellerpro.in/{formData.shop_slug || 'your-store'}</code>
                 URL!
               </p>
               <div className="grid grid-cols-2 gap-2 mb-5">
@@ -236,8 +252,8 @@ export default function ShopSettingsForm({
                   { icon: Search, text: 'SEO Optimization' },
                   { icon: Palette, text: 'Full Theme Control' },
                 ].map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-2 text-xs text-slate-700">
-                    <div className="w-5 h-5 rounded-md bg-indigo-100 flex items-center justify-center"><Icon className="w-3 h-3 text-indigo-600" /></div>
+                  <div key={text} className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                    <div className="w-5 h-5 rounded-md bg-indigo-100 dark:bg-indigo-950/30 flex items-center justify-center"><Icon className="w-3 h-3 text-indigo-600 dark:text-indigo-400" /></div>
                     <span className="font-medium">{text}</span>
                   </div>
                 ))}
@@ -249,7 +265,7 @@ export default function ShopSettingsForm({
               </Link>
             </div>
             <div className="hidden md:block w-64 shrink-0">
-              <div className="bg-white rounded-xl shadow-2xl shadow-indigo-500/10 border border-slate-200 overflow-hidden">
+              <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl shadow-indigo-500/10 border border-slate-200 dark:border-slate-800 overflow-hidden">
                 <div className="h-20 bg-gradient-to-r from-indigo-500 to-purple-500 flex flex-col items-center justify-center">
                   <span className="text-white font-black text-sm">{profile.business_name || 'Your Store'}</span>
                   <span className="text-white/70 text-[10px]">Premium Online Store</span>
@@ -257,15 +273,15 @@ export default function ShopSettingsForm({
                 <div className="p-3 space-y-2">
                   {[1, 2, 3].map(i => (
                     <div key={i} className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-slate-100 rounded-lg animate-pulse" />
-                      <div className="flex-1 space-y-1"><div className="h-2 bg-slate-100 rounded w-3/4" /><div className="h-2 bg-slate-100 rounded w-1/2" /></div>
+                      <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+                      <div className="flex-1 space-y-1"><div className="h-2 bg-slate-100 dark:bg-slate-800 rounded w-3/4" /><div className="h-2 bg-slate-100 dark:bg-slate-800 rounded w-1/2" /></div>
                     </div>
                   ))}
                 </div>
                 <div className="p-3 pt-0">
-                  <div className="h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center">
+                  <div className="h-8 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-lg flex items-center justify-center">
                     <Lock className="w-3 h-3 text-indigo-400 mr-1" />
-                    <span className="text-[10px] text-indigo-500 font-bold">Upgrade to Unlock</span>
+                    <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold">Upgrade to Unlock</span>
                   </div>
                 </div>
               </div>
@@ -276,55 +292,40 @@ export default function ShopSettingsForm({
 
       {/* ═══════════════ LIVE STATUS ═══════════════ */}
       {isEligible && formData.shop_slug && (
-        <div className={cn("flex flex-col md:flex-row items-start md:items-center gap-4 p-5 rounded-2xl border",
-          formData.storeStatus === 'open' ? 'border-emerald-200 bg-emerald-50/50' :
-          formData.storeStatus === 'vacation' ? 'border-amber-200 bg-amber-50/50' : 'border-red-200 bg-red-50/50')}>
-          <div className="flex flex-1 items-center gap-4 w-full">
-            <div className={cn("p-2.5 rounded-xl shrink-0 shadow-sm",
-              formData.storeStatus === 'open' ? 'bg-emerald-500 text-white' : formData.storeStatus === 'vacation' ? 'bg-amber-500 text-white' : 'bg-red-500 text-white')}>
-              {formData.storeStatus === 'open' ? <Globe className="h-6 w-6" /> :
-               formData.storeStatus === 'vacation' ? <Clock className="h-6 w-6" /> :
-               <Lock className="h-6 w-6" />}
-            </div>
-            <div className="flex-1">
-              <p className={cn("text-base font-bold",
-                formData.storeStatus === 'open' ? 'text-emerald-800' : formData.storeStatus === 'vacation' ? 'text-amber-800' : 'text-red-800')}>
-                {formData.storeStatus === 'open' ? '🟢 Store is LIVE' : formData.storeStatus === 'vacation' ? '🟡 Vacation Mode' : '🔴 Store Closed'}
-              </p>
-              <p className={cn("text-xs font-medium mt-0.5", formData.storeStatus === 'open' ? 'text-emerald-600' : formData.storeStatus === 'vacation' ? 'text-amber-600' : 'text-red-600')}>
-                {productCount} products synced & ready
-              </p>
-            </div>
+        <div className={cn("flex items-center gap-4 p-4 rounded-2xl border",
+          formData.storeStatus === 'open' ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-950/50 dark:bg-emerald-950/20' :
+          formData.storeStatus === 'vacation' ? 'border-amber-200 bg-amber-50 dark:border-amber-950/50 dark:bg-amber-950/20' : 'border-red-200 bg-red-50 dark:border-red-950/50 dark:bg-red-950/20')}>
+          <div className={cn("p-2 rounded-xl",
+            formData.storeStatus === 'open' ? 'bg-emerald-100 dark:bg-emerald-900/30' : formData.storeStatus === 'vacation' ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-red-100 dark:bg-red-900/30')}>
+            {formData.storeStatus === 'open' ? <Globe className="h-5 w-5 text-emerald-600 dark:text-emerald-400" /> :
+             formData.storeStatus === 'vacation' ? <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" /> :
+             <Lock className="h-5 w-5 text-red-600 dark:text-red-400" />}
           </div>
-          
-          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm shrink-0">
-             <div className="flex items-center px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg max-w-[200px] sm:max-w-[240px] overflow-hidden">
-                <span className="text-xs font-mono text-slate-500 truncate select-all">{`resellerpro.in/${formData.shop_slug}`}</span>
-             </div>
-             <div className="flex gap-1.5 shrink-0">
-               <Button type="button" variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(`https://resellerpro.in/${formData.shop_slug}`); toast({title: 'Link Copied ✨'}) }} className="h-8 gap-1.5 text-xs bg-slate-50 hover:bg-slate-100 shrink-0">
-                 <Copy className="w-3.5 h-3.5" /> Copy
-               </Button>
-               <Button type="button" variant="outline" size="sm" onClick={() => window.open(`https://wa.me/?text=Check%20out%20my%20store:%20https://resellerpro.in/${formData.shop_slug}`, '_blank')} className="h-8 gap-1.5 text-xs text-green-700 hover:text-green-800 hover:bg-green-50 border-green-200 shrink-0">
-                 <MessageCircle className="w-3.5 h-3.5" /> Share
-               </Button>
-               <Button type="button" size="sm" onClick={() => window.open(`/${formData.shop_slug}`, '_blank')} className="h-8 gap-1 text-xs shrink-0">
-                 Visit <ExternalLink className="w-3 h-3" />
-               </Button>
-             </div>
+          <div className="flex-1">
+            <p className={cn("text-sm font-bold",
+              formData.storeStatus === 'open' ? 'text-emerald-800 dark:text-emerald-300' : formData.storeStatus === 'vacation' ? 'text-amber-800 dark:text-amber-300' : 'text-red-800 dark:text-red-300')}>
+              {formData.storeStatus === 'open' ? '🟢 Store is LIVE' : formData.storeStatus === 'vacation' ? '🟡 Vacation Mode' : '🔴 Store Closed'}
+            </p>
+            <p className={cn("text-xs", formData.storeStatus === 'open' ? 'text-emerald-600 dark:text-emerald-400' : formData.storeStatus === 'vacation' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400')}>
+              resellerpro.in/{formData.shop_slug} · {productCount} products
+            </p>
           </div>
+          <a href={`/store/${formData.shop_slug}`} target="_blank" rel="noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-bold bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-colors border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+            <Eye className="w-3.5 h-3.5" /> Visit <ExternalLink className="w-3 h-3" />
+          </a>
         </div>
       )}
 
       {/* ═══════════════ TAB NAVIGATION ═══════════════ */}
       <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
-        <div className="flex gap-1 border-b border-slate-200 min-w-max">
+        <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800 min-w-max">
           {tabs.map(tab => {
             const Icon = tab.icon
             return (
               <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
                 className={cn("inline-flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap",
-                  activeTab === tab.id ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-700')}>
+                  activeTab === tab.id ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300')}>
                 <Icon className="w-3.5 h-3.5" />{tab.label}
               </button>
             )
@@ -340,7 +341,7 @@ export default function ShopSettingsForm({
               <div className="space-y-2">
                 <Label htmlFor="shop_slug">Custom Slug</Label>
                 <div className="flex items-center">
-                  <div className="px-3 py-2 bg-slate-50 border border-r-0 border-slate-200 rounded-l-lg text-slate-500 text-sm shrink-0">resellerpro.in/</div>
+                  <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-r-0 border-slate-200 dark:border-slate-800 rounded-l-lg text-slate-500 dark:text-slate-400 text-sm shrink-0">resellerpro.in/</div>
                   <Input id="shop_slug" name="shop_slug" value={formData.shop_slug} onChange={handleChange} placeholder="your-shop-name" className="rounded-l-none" disabled={isPending} />
                 </div>
                 <p className="text-xs text-muted-foreground">Lowercase letters, numbers, hyphens only.</p>
@@ -352,6 +353,47 @@ export default function ShopSettingsForm({
                 placeholder="Tell customers about your business..." rows={3} disabled={isPending} />
             </Section>
 
+            <Section icon={ImageIcon} title="Store Logo">
+              <div className="flex items-center gap-4">
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                  {formData.shop_logo_url ? (
+                    <img src={formData.shop_logo_url} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <ShoppingBag className="w-8 h-8 text-slate-300 dark:text-slate-750" />
+                  )}
+                  {uploadingField === 'shop_logo_url' && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <label htmlFor="shop_logo_file" className="cursor-pointer inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-250 transition-colors">
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload Logo
+                  </label>
+                  <input
+                    id="shop_logo_file"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, 'shop_logo_url')}
+                    className="hidden"
+                    disabled={isPending || uploadingField !== null}
+                  />
+                  {formData.shop_logo_url && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData(p => ({ ...p, shop_logo_url: '' }))}
+                      className="text-xs text-red-500 font-bold block hover:underline"
+                    >
+                      Remove Logo
+                    </button>
+                  )}
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">Square image (e.g. 500x500 px) recommended. Max 5MB.</p>
+                </div>
+              </div>
+            </Section>
+
             <Section icon={Clock} title="Store Status" pro={!isEligible}>
               <div className="grid grid-cols-3 gap-3">
                 {[
@@ -361,9 +403,12 @@ export default function ShopSettingsForm({
                 ].map(opt => (
                   <button key={opt.value} type="button" onClick={() => handleToggle('storeStatus', opt.value as any)}
                     className={cn("p-3 rounded-xl border-2 text-left transition-all",
-                      formData.storeStatus === opt.value ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-300')}>
-                    <p className="text-sm font-bold">{opt.label}</p>
-                    <p className="text-[10px] text-slate-500">{opt.desc}</p>
+                      formData.storeStatus === opt.value 
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' 
+                        : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700')}
+                    disabled={!isEligible}>
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{opt.label}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">{opt.desc}</p>
                   </button>
                 ))}
               </div>
@@ -419,9 +464,11 @@ export default function ShopSettingsForm({
                 ].map(opt => (
                   <button key={opt.value} type="button" onClick={() => setFormData(p => ({...p, layout: opt.value}))}
                     className={cn("p-3 rounded-xl border-2 text-left transition-all",
-                      formData.layout === opt.value ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-300')}>
-                    <p className="text-sm font-bold text-slate-900">{opt.label}</p>
-                    <p className="text-[10px] text-slate-500">{opt.desc}</p>
+                      formData.layout === opt.value 
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' 
+                        : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700')}>
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{opt.label}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">{opt.desc}</p>
                   </button>
                 ))}
               </div>
@@ -450,7 +497,7 @@ export default function ShopSettingsForm({
                 <div>
                   <Label htmlFor="fontFamily">Font Style</Label>
                   <select id="fontFamily" name="fontFamily" value={formData.fontFamily} onChange={handleChange}
-                    className="w-full h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white mt-1.5">
+                    className="w-full h-10 rounded-lg border border-slate-200 dark:border-slate-800 px-3 text-sm bg-white dark:bg-slate-900 dark:text-slate-100 mt-1.5">
                     <option value="default">System Default</option>
                     <option value="inter">Inter (Clean)</option>
                     <option value="poppins">Poppins (Friendly)</option>
@@ -469,9 +516,11 @@ export default function ShopSettingsForm({
                     ].map(opt => (
                       <button key={opt.value} type="button" onClick={() => setFormData(p => ({...p, headerStyle: opt.value}))}
                         className={cn("p-3 rounded-xl border-2 text-left transition-all",
-                          formData.headerStyle === opt.value ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200')}>
-                        <p className="text-xs font-bold text-slate-900">{opt.label}</p>
-                        <p className="text-[10px] text-slate-500">{opt.desc}</p>
+                          formData.headerStyle === opt.value 
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' 
+                            : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700')}>
+                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{opt.label}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">{opt.desc}</p>
                       </button>
                     ))}
                   </div>
@@ -495,7 +544,7 @@ export default function ShopSettingsForm({
             <Section icon={PanelTop} title="Hero Banner" pro={!isEligible}>
               <ToggleRow label="Enable Hero Banner" description="Full-width banner at the top of your store" checked={formData.heroEnabled} onChange={v => handleToggle('heroEnabled', v)} disabled={!isEligible} />
               {formData.heroEnabled && (
-                <div className="space-y-4 mt-4 pt-4 border-t border-slate-100">
+                <div className="space-y-4 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                   <div>
                     <Label>Headline</Label>
                     <Input name="heroTitle" value={formData.heroTitle} onChange={handleChange}
@@ -505,55 +554,6 @@ export default function ShopSettingsForm({
                     <Label>Subtitle</Label>
                     <Input name="heroSubtitle" value={formData.heroSubtitle} onChange={handleChange}
                       placeholder="Discover premium products at the best prices" disabled={isPending || !isEligible} className="mt-1.5" />
-                  </div>
-                  <div>
-                    <Label>Background Image URL</Label>
-                    <Input
-                      name="heroBackgroundImage"
-                      value={formData.heroBackgroundImage}
-                      onChange={handleChange}
-                      placeholder="https://images.unsplash.com/photo-..."
-                      disabled={isPending || !isEligible}
-                      className="mt-1.5"
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Tip: Use an Unsplash or Supabase image URL for best compatibility.</p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <label htmlFor="hero-image-upload">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5"
-                          disabled={isPending || !isEligible || isUploadingHeroImage}
-                          asChild
-                        >
-                          <span>
-                            {isUploadingHeroImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
-                            {isUploadingHeroImage ? 'Uploading...' : 'Upload from device'}
-                          </span>
-                        </Button>
-                      </label>
-                      <input
-                        id="hero-image-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleHeroImageUpload}
-                        disabled={isPending || !isEligible || isUploadingHeroImage}
-                      />
-                      {formData.heroBackgroundImage && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-slate-600"
-                          onClick={() => setFormData(prev => ({ ...prev, heroBackgroundImage: '' }))}
-                          disabled={isPending || !isEligible || isUploadingHeroImage}
-                        >
-                          Remove image
-                        </Button>
-                      )}
-                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -568,10 +568,52 @@ export default function ShopSettingsForm({
                     </div>
                   </div>
                   <div>
+                    <Label>Hero Background Image (Optional)</Label>
+                    <div className="flex items-center gap-4 mt-1.5">
+                      <div className="relative w-28 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                        {formData.heroImageUrl ? (
+                          <img src={formData.heroImageUrl} alt="Hero Banner" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-slate-300 dark:text-slate-700" />
+                        )}
+                        {uploadingField === 'heroImageUrl' && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Loader2 className="w-5 h-5 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        <label htmlFor="hero_image_file" className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-250 transition-colors">
+                          <Upload className="w-3.5 h-3.5" />
+                          Upload Image
+                        </label>
+                        <input
+                          id="hero_image_file"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileUpload(e, 'heroImageUrl')}
+                          className="hidden"
+                          disabled={!isEligible || uploadingField !== null}
+                        />
+                        {formData.heroImageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData(p => ({ ...p, heroImageUrl: '' }))}
+                            className="text-xs text-red-500 font-bold block hover:underline"
+                          >
+                            Remove Image
+                          </button>
+                        )}
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500">Wide banner (e.g. 1920x600 px) recommended. Max 5MB.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
                     <Label>Background Color</Label>
                     <div className="flex items-center gap-3 mt-1.5">
                       <input type="color" name="heroBgColor" value={formData.heroBgColor} onChange={handleChange}
-                        className="w-10 h-10 rounded-lg border-2 border-slate-200 cursor-pointer p-0.5" disabled={!isEligible} />
+                        className="w-10 h-10 rounded-lg border-2 border-slate-200 dark:border-slate-800 cursor-pointer p-0.5 bg-white dark:bg-slate-900" disabled={!isEligible} />
                       <Input value={formData.heroBgColor} name="heroBgColor" onChange={handleChange} className="w-28 font-mono uppercase" maxLength={7} disabled={!isEligible} />
                     </div>
                   </div>
@@ -581,31 +623,25 @@ export default function ShopSettingsForm({
                       {['none', 'dots', 'waves', 'gradient'].map(p => (
                         <button key={p} type="button" onClick={() => setFormData(prev => ({...prev, heroPattern: p}))}
                           className={cn("py-2 text-xs font-bold rounded-lg border-2 capitalize transition-all",
-                            formData.heroPattern === p ? 'border-indigo-500 bg-indigo-50 text-indigo-600' : 'border-slate-200 text-slate-600')}>
+                            formData.heroPattern === p 
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400' 
+                              : 'border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-400 dark:hover:border-slate-700')}
+                          disabled={!isEligible}>
                           {p}
                         </button>
                       ))}
                     </div>
                   </div>
                   {/* Preview */}
-                  <div className="rounded-xl overflow-hidden border border-slate-200">
-                    <div
-                      className="py-10 px-6 text-center relative overflow-hidden"
-                      style={{
-                        backgroundColor: formData.heroBgColor,
-                        backgroundImage: formData.heroBackgroundImage ? `url(${formData.heroBackgroundImage})` : undefined,
-                        backgroundSize: formData.heroBackgroundImage ? 'cover' : undefined,
-                        backgroundPosition: formData.heroBackgroundImage ? 'center' : undefined,
-                      }}
-                    >
-                      {formData.heroBackgroundImage && <div className="absolute inset-0 bg-black/35" />}
-                      {formData.heroPattern === 'dots' && <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px'}} />}
-                      {formData.heroPattern === 'waves' && <div className="absolute inset-0 opacity-10" style={{backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21.184 20c.357-.13.72-.264 1.088-.402l1.768-.661C33.64 15.347 39.647 14 50 14c10.271 0 15.362 1.222 24.629 4.928.955.383 1.869.74 2.75 1.072h6.225c-2.51-.73-5.139-1.691-8.233-2.928C65.888 13.278 60.562 12 50 12c-10.626 0-16.855 1.397-26.66 5.063l-1.767.662c-2.475.923-4.66 1.674-6.724 2.275h6.335zm0-20C13.258 2.892 8.077 4 0 4V2c5.744 0 9.951-.574 14.85-2h6.334zM77.38 0C85.239 2.966 90.502 4 100 4V2c-6.842 0-11.386-.542-16.396-2h-6.225zM0 14c8.44 0 13.718-1.21 22.272-4.402l1.768-.661C33.64 5.347 39.647 4 50 4c10.271 0 15.362 1.222 24.629 4.928C84.112 12.722 89.438 14 100 14v-2c-10.271 0-15.362-1.222-24.629-4.928C65.888 3.278 60.562 2 50 2 39.374 2 33.145 3.397 23.34 7.063l-1.767.662C13.223 10.84 8.163 12 0 12v2z' fill='%23ffffff' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")`}} />}
-                      {formData.heroPattern === 'gradient' && <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />}
-                      <div className="relative z-10">
+                  <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                    <div className="py-10 px-6 text-center relative overflow-hidden bg-cover bg-center" style={formData.heroImageUrl ? { backgroundImage: `url(${formData.heroImageUrl})` } : { backgroundColor: formData.heroBgColor }}>
+                      {formData.heroPattern === 'dots' && !formData.heroImageUrl && <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px'}} />}
+                      {formData.heroPattern === 'waves' && !formData.heroImageUrl && <div className="absolute inset-0 opacity-10" style={{backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21.184 20c.357-.13.72-.264 1.088-.402l1.768-.661C33.64 15.347 39.647 14 50 14c10.271 0 15.362 1.222 24.629 4.928.955.383 1.869.74 2.75 1.072h6.225c-2.51-.73-5.139-1.691-8.233-2.928C65.888 13.278 60.562 12 50 12c-10.626 0-16.855 1.397-26.66 5.063l-1.767.662c-2.475.923-4.66 1.674-6.724 2.275h6.335zm0-20C13.258 2.892 8.077 4 0 4V2c5.744 0 9.951-.574 14.85-2h6.334zM77.38 0C85.239 2.966 90.502 4 100 4V2c-6.842 0-11.386-.542-16.396-2h-6.225zM0 14c8.44 0 13.718-1.21 22.272-4.402l1.768-.661C33.64 5.347 39.647 4 50 4c10.271 0 15.362 1.222 24.629 4.928C84.112 12.722 89.438 14 100 14v-2c-10.271 0-15.362-1.222-24.629-4.928C65.888 3.278 60.562 2 50 2 39.374 2 33.145 3.397 23.34 7.063l-1.767.662C13.223 10.84 8.163 12 0 12v2z' fill='%23ffffff' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")`}} />}
+                      {formData.heroPattern === 'gradient' && !formData.heroImageUrl && <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />}
+                      <div className="relative z-10 bg-slate-950/40 p-4 rounded-xl inline-block max-w-full backdrop-blur-[1px]">
                         <h2 className="text-xl font-black text-white">{formData.heroTitle || 'Your Headline'}</h2>
                         <p className="text-sm text-white/80 mt-1">{formData.heroSubtitle || 'Your subtitle text'}</p>
-                        <button className="mt-4 px-6 py-2 bg-white text-sm font-bold rounded-full" style={{color: formData.heroBgColor}}>
+                        <button className="mt-4 px-6 py-2 bg-white text-sm font-bold rounded-full text-slate-950">
                           {formData.heroCtaText || 'Shop Now'}
                         </button>
                       </div>
@@ -638,22 +674,127 @@ export default function ShopSettingsForm({
             <Section icon={Quote} title="Customer Testimonials" pro={!isEligible}>
               <ToggleRow label="Enable Testimonials" description="Show customer reviews on your store" checked={formData.testimonialsEnabled} onChange={v => handleToggle('testimonialsEnabled', v)} disabled={!isEligible} />
               {formData.testimonialsEnabled && (
-                <div className="space-y-4 mt-4 pt-4 border-t border-slate-100">
+                <div className="space-y-4 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                   {formData.testimonials.map((t: any, i: number) => (
-                    <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Testimonial {i + 1}</p>
+                    <div key={i} className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
+                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Testimonial {i + 1}</p>
                       <Input placeholder="Customer name" value={t.name} onChange={e => updateTestimonial(i, 'name', e.target.value)} disabled={!isEligible} />
                       <Textarea placeholder="What they said about your products..." value={t.text} onChange={e => updateTestimonial(i, 'text', e.target.value)} rows={2} disabled={!isEligible} />
                       <div className="flex items-center gap-1">
                         <Label className="text-xs mr-2">Rating:</Label>
                         {[1,2,3,4,5].map(star => (
                           <button key={star} type="button" onClick={() => updateTestimonial(i, 'rating', star)} disabled={!isEligible}>
-                            <Star className={cn("w-5 h-5 transition-colors", star <= t.rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300')} />
+                            <Star className={cn("w-5 h-5 transition-colors", star <= t.rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300 dark:text-slate-700')} />
                           </button>
                         ))}
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </Section>
+ 
+            <Section icon={ImageIcon} title="Custom Promo / CTA Banner" pro={!isEligible}>
+              <ToggleRow 
+                label="Enable Promo Banner Section" 
+                description="Show a custom call-to-action banner section on your homepage" 
+                checked={formData.ctaSectionEnabled} 
+                onChange={v => handleToggle('ctaSectionEnabled', v)} 
+                disabled={!isEligible} 
+              />
+              {formData.ctaSectionEnabled && (
+                <div className="space-y-4 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div>
+                    <Label>Promo Banner Image</Label>
+                    <div className="flex items-center gap-4 mt-1.5">
+                      <div className="relative w-28 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                        {formData.ctaImageUrl ? (
+                          <img src={formData.ctaImageUrl} alt="CTA Promo" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-slate-300 dark:text-slate-700" />
+                        )}
+                        {uploadingField === 'ctaImageUrl' && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Loader2 className="w-5 h-5 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        <label htmlFor="cta_image_file" className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-250 transition-colors">
+                          <Upload className="w-3.5 h-3.5" />
+                          Upload Banner Image
+                        </label>
+                        <input
+                          id="cta_image_file"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileUpload(e, 'ctaImageUrl')}
+                          className="hidden"
+                          disabled={!isEligible || uploadingField !== null}
+                        />
+                        {formData.ctaImageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData(p => ({ ...p, ctaImageUrl: '' }))}
+                            className="text-xs text-red-500 font-bold block hover:underline"
+                          >
+                            Remove Image
+                          </button>
+                        )}
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500">Wide banner (e.g. 1200x400 px) recommended. Max 5MB.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Section Title</Label>
+                      <Input 
+                        name="ctaTitle" 
+                        value={formData.ctaTitle} 
+                        onChange={handleChange}
+                        placeholder="Special Festive Collection!" 
+                        disabled={isPending || !isEligible} 
+                        className="mt-1.5" 
+                      />
+                    </div>
+                    <div>
+                      <Label>Section Subtitle / Description</Label>
+                      <Input 
+                        name="ctaSubtitle" 
+                        value={formData.ctaSubtitle} 
+                        onChange={handleChange}
+                        placeholder="Get flat 20% off on all items. Limited time offer." 
+                        disabled={isPending || !isEligible} 
+                        className="mt-1.5" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Button Text</Label>
+                      <Input 
+                        name="ctaBtnText" 
+                        value={formData.ctaBtnText} 
+                        onChange={handleChange}
+                        placeholder="Explore More" 
+                        disabled={isPending || !isEligible} 
+                        className="mt-1.5" 
+                      />
+                    </div>
+                    <div>
+                      <Label>Button Link / URL</Label>
+                      <Input 
+                        name="ctaLink" 
+                        value={formData.ctaLink} 
+                        onChange={handleChange}
+                        placeholder="#products" 
+                        disabled={isPending || !isEligible} 
+                        className="mt-1.5" 
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </Section>
@@ -680,9 +821,11 @@ export default function ShopSettingsForm({
                           setFormData(p => ({...p, trustBadges: updated}))
                         }}
                         className={cn("p-3 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all",
-                          isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200')}>
-                        <badge.icon className={cn("w-5 h-5", isSelected ? 'text-indigo-600' : 'text-slate-400')} />
-                        <span className="text-[10px] font-bold text-slate-700">{badge.label}</span>
+                          isSelected 
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' 
+                            : 'border-slate-200 dark:border-slate-800 dark:hover:border-slate-700')}>
+                        <badge.icon className={cn("w-5 h-5", isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500')} />
+                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{badge.label}</span>
                       </button>
                     )
                   })}
@@ -717,13 +860,13 @@ export default function ShopSettingsForm({
                   <Label>Pre-filled Message</Label>
                   <Input name="chatWidgetMessage" value={formData.chatWidgetMessage} onChange={handleChange}
                     placeholder="Hi! I found your store online..." disabled={isPending || !isEligible} className="mt-1.5" />
-                  <div className="mt-3 flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-200">
+                  <div className="mt-3 flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-900/30">
                     <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30">
                       <MessageCircle className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-green-800">Chat Preview</p>
-                      <p className="text-[10px] text-green-600">This floating button appears on your store</p>
+                      <p className="text-xs font-bold text-green-800 dark:text-green-300">Chat Preview</p>
+                      <p className="text-[10px] text-green-600 dark:text-green-400">This floating button appears on your store</p>
                     </div>
                   </div>
                 </div>
@@ -734,7 +877,7 @@ export default function ShopSettingsForm({
               <div className="grid sm:grid-cols-2 gap-4">
                 <SocialInput icon={Instagram} label="Instagram" name="socialInstagram" value={formData.socialInstagram} onChange={handleChange} placeholder="@yourbusiness" disabled={isPending || !isEligible} />
                 <SocialInput icon={Facebook} label="Facebook" name="socialFacebook" value={formData.socialFacebook} onChange={handleChange} placeholder="facebook.com/yourbusiness" disabled={isPending || !isEligible} />
-                <SocialInput icon={Youtube} label="YouTube" name="socialYoutube" value={formData.socialYoutube} onChange={handleChange} placeholder="youtube.com/@yourbusiness" disabled={isPending || !isEligible} />
+                <SocialInput icon={Twitter} label="Twitter / X" name="socialTwitter" value={formData.socialTwitter} onChange={handleChange} placeholder="@yourbusiness" disabled={isPending || !isEligible} />
                 <SocialInput icon={MessageCircle} label="WhatsApp" name="socialWhatsApp" value={formData.socialWhatsApp} onChange={handleChange} placeholder="+91 98765 43210" disabled={isPending || !isEligible} />
               </div>
             </Section>
@@ -760,11 +903,11 @@ export default function ShopSettingsForm({
                 <p className="text-xs text-muted-foreground mt-1">{formData.seoDescription.length}/160</p>
               </div>
               {(formData.seoTitle || formData.seoDescription) && (
-                <div className="p-4 bg-white rounded-xl border">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Google Preview</p>
-                  <p className="text-blue-700 text-sm font-medium">{formData.seoTitle || `${profile.business_name} | ResellerPro Store`}</p>
-                  <p className="text-emerald-700 text-xs">resellerpro.in/{formData.shop_slug || 'your-store'}</p>
-                  <p className="text-slate-600 text-xs mt-0.5 line-clamp-2">{formData.seoDescription || `Products from ${profile.business_name}`}</p>
+                <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Google Preview</p>
+                  <p className="text-blue-700 dark:text-blue-400 text-sm font-medium">{formData.seoTitle || `${profile.business_name} | ResellerPro Store`}</p>
+                  <p className="text-emerald-700 dark:text-emerald-400 text-xs">resellerpro.in/{formData.shop_slug || 'your-store'}</p>
+                  <p className="text-slate-600 dark:text-slate-350 text-xs mt-0.5 line-clamp-2">{formData.seoDescription || `Products from ${profile.business_name}`}</p>
                 </div>
               )}
             </div>
@@ -814,12 +957,12 @@ export default function ShopSettingsForm({
         )}
 
         {/* ═══════════════ SAVE BAR ═══════════════ */}
-        <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 -mx-6 px-6 py-4 flex items-center justify-between z-20 rounded-b-2xl">
-          <div className="text-xs text-slate-500">
+        <div className="sticky bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800 -mx-6 px-6 py-4 flex items-center justify-between z-20 rounded-b-2xl">
+          <div className="text-xs text-slate-500 dark:text-slate-400">
             {formData.shop_slug && isEligible && (
-              <button type="button" onClick={() => setShowPreview(true)} className="text-indigo-600 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors">
-                <Eye className="w-4 h-4" /> Live Theme Preview
-              </button>
+              <a href={`/store/${formData.shop_slug}`} target="_blank" rel="noreferrer" className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1">
+                <Eye className="w-3.5 h-3.5" /> Preview Store <ExternalLink className="w-3 h-3" />
+              </a>
             )}
           </div>
           <div className="flex gap-3">
@@ -830,85 +973,57 @@ export default function ShopSettingsForm({
           </div>
         </div>
       </form>
-
-      {/* ═══════════════ LIVE PREVIEW MODAL ═══════════════ */}
-      {showPreview && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-2 md:p-6">
-          <div className="bg-white w-full max-w-[1400px] h-full md:h-[90vh] rounded-2xl md:rounded-[2rem] overflow-hidden flex flex-col shadow-2xl relative animate-in zoom-in-95 duration-300">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0 z-50">
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1.5 ml-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400" />
-                  <div className="w-3 h-3 rounded-full bg-amber-400" />
-                  <div className="w-3 h-3 rounded-full bg-emerald-400" />
-                </div>
-                <span className="ml-4 text-xs font-mono text-slate-500 bg-white px-3 py-1 rounded-md shadow-sm border border-slate-200">resellerpro.in/{formData.shop_slug || 'preview'}</span>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setShowPreview(false)} className="rounded-full hover:bg-slate-200 w-8 h-8">
-                <X className="w-4 h-4 text-slate-600" />
-              </Button>
-            </div>
-            <div className="flex-1 overflow-y-auto w-full relative bg-slate-50">
-               <ShopClient 
-                 profile={{...profile, business_name: profile.business_name || 'My Store', shop_theme: formData}} 
-                 products={MOCK_PRODUCTS} 
-                 categories={MOCK_CATEGORIES} 
-               />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
-
+ 
 // ─── Helper Components ──────────────────────────────────────
 function Section({ icon: Icon, title, children, pro }: { icon: any; title: string; children: React.ReactNode; pro?: boolean }) {
   return (
-    <div className={cn("bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative", pro && 'opacity-60 pointer-events-none select-none')}>
+    <div className={cn("bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative", pro && 'opacity-60 pointer-events-none select-none')}>
       {pro && (
-        <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center">
-          <div className="p-3 rounded-full bg-indigo-100 mb-3"><Lock className="w-6 h-6 text-indigo-600" /></div>
-          <p className="text-sm font-bold text-slate-900 mb-1">Professional Plan Required</p>
+        <div className="absolute inset-0 z-10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center">
+          <div className="p-3 rounded-full bg-indigo-100 dark:bg-indigo-950/30 mb-3"><Lock className="w-6 h-6 text-indigo-600 dark:text-indigo-400" /></div>
+          <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Professional Plan Required</p>
           <Link href="/settings/subscription"><Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white"><Crown className="w-3.5 h-3.5 mr-1.5" /> Upgrade Now</Button></Link>
         </div>
       )}
-      <div className="flex items-center gap-2 mb-4"><Icon className="h-5 w-5 text-indigo-600" /><h2 className="text-base font-bold text-slate-900">{title}</h2></div>
+      <div className="flex items-center gap-2 mb-4"><Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" /><h2 className="text-base font-bold text-slate-900 dark:text-slate-100">{title}</h2></div>
       {children}
     </div>
   )
 }
-
+ 
 function ToggleRow({ label, description, checked, onChange, disabled }: { label: string; description: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <div><p className="text-sm font-medium text-slate-900">{label}</p><p className="text-xs text-slate-500">{description}</p></div>
+      <div><p className="text-sm font-medium text-slate-900 dark:text-slate-100">{label}</p><p className="text-xs text-slate-500 dark:text-slate-400">{description}</p></div>
       <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </div>
   )
 }
-
+ 
 function SocialInput({ icon: Icon, label, name, value, onChange, placeholder, disabled }: { icon: any; label: string; name: string; value: string; onChange: any; placeholder: string; disabled?: boolean }) {
   return (
     <div className="space-y-1.5">
-      <Label className="flex items-center gap-1.5 text-xs"><Icon className="w-3.5 h-3.5 text-slate-500" /> {label}</Label>
+      <Label className="flex items-center gap-1.5 text-xs"><Icon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" /> {label}</Label>
       <Input name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled} className="text-sm" />
     </div>
   )
 }
-
+ 
 function ColorPicker({ label, name, value, onChange, onSet, presets }: { label: string; name: string; value: string; onChange: any; onSet: (v: string) => void; presets: string[] }) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
       <div className="flex items-center gap-3">
-        <input type="color" name={name} value={value} onChange={onChange} className="w-10 h-10 rounded-lg border-2 border-slate-200 cursor-pointer p-0.5" />
+        <input type="color" name={name} value={value} onChange={onChange} className="w-10 h-10 rounded-lg border-2 border-slate-200 dark:border-slate-800 cursor-pointer p-0.5 bg-white dark:bg-slate-900" />
         <Input value={value} onChange={onChange} name={name} className="w-28 uppercase font-mono" maxLength={7} />
       </div>
       <div className="flex gap-1.5">
         {presets.map(c => (
           <button key={c} type="button" onClick={() => onSet(c)}
-            className={cn("w-6 h-6 rounded-md border-2 transition-all hover:scale-110", value === c ? 'border-slate-900 scale-110' : 'border-transparent')}
+            className={cn("w-6 h-6 rounded-md border-2 transition-all hover:scale-110", value === c ? 'border-slate-900 dark:border-slate-100 scale-110' : 'border-transparent')}
             style={{ backgroundColor: c }} />
         ))}
       </div>

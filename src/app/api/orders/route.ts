@@ -83,29 +83,32 @@ export async function GET(req: NextRequest) {
 
                 const matchedIds = matchedCustomers?.map((c) => c.id) || []
                 if (matchedIds.length > 0) {
-                    query = query.in('customer_id', matchedIds)
+                    // Match either linked customer_id OR guest order phone number
+                    query = query.or(`customer_id.in.(${matchedIds.join(',')}),customer_phone.ilike.%${cleanPhone}%`)
                 } else {
-                    // fallback: no match
-                    query = query.eq('id', '00000000-0000-0000-0000-000000000000') // empty result
+                    // Search in guest customer phone directly
+                    query = query.ilike('customer_phone', `%${cleanPhone}%`)
                 }
             } else if (isName) {
                 // ------------------------------
                 // 👤 Search by Customer Name
                 // ------------------------------
+                const sanitizedTerm = term.replace(/,/g, '')
                 const { data: matchedCustomers, error: nameError } = await supabase
                     .from('customers')
                     .select('id')
                     .eq('user_id', user.id)
-                    .ilike('name', term)
+                    .ilike('name', sanitizedTerm)
 
                 if (nameError) console.error('Name search error:', nameError)
 
                 const matchedIds = matchedCustomers?.map((c) => c.id) || []
                 if (matchedIds.length > 0) {
-                    query = query.in('customer_id', matchedIds)
+                    // Match either linked customer_id OR guest order customer_name
+                    query = query.or(`customer_id.in.(${matchedIds.join(',')}),customer_name.ilike.${sanitizedTerm}`)
                 } else {
-                    // fallback: no match
-                    query = query.eq('id', '00000000-0000-0000-0000-000000000000')
+                    // Search in guest customer name directly
+                    query = query.ilike('customer_name', sanitizedTerm)
                 }
             }
         }

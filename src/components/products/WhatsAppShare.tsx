@@ -19,19 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
-type Product = {
-  id: string;
-  name: string;
-  description?: string;
-  image_url: string | null;
-  images?: string[];
-  cost_price: number;
-  selling_price: number;
-  stock_quantity?: number;
-  stock_status: "in_stock" | "low_stock" | "out_of_stock";
-  category?: string;
-  sku?: string;
-};
+import type { Product } from "@/types";
 
 interface WhatsAppShareProps {
   product: Product;

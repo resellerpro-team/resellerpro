@@ -145,8 +145,8 @@ export function EnquiryRow({ enquiry, businessName = "Our Store" }: EnquiryRowPr
             const match = note.match(pattern);
             if (match?.[1] && match[1].trim().length > 1 && match[1].trim().length < 50) {
                 product = match[1].trim().split(' ')
-                    .filter(w => !['he', 'she', 'they', 'it', 'customer', 'also', 'very'].includes(w.toLowerCase()))
-                    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                    .filter((w: string) => !['he', 'she', 'they', 'it', 'customer', 'also', 'very'].includes(w.toLowerCase()))
+                    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
                     .join(' ');
                 break;
             }

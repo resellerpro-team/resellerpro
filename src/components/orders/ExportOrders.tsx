@@ -81,19 +81,19 @@ export function ExportOrders({ orders, dateRange, businessName = 'ResellerPro', 
         'Date': getDate(order.created_at),
         'Month': getMonthName(order.created_at),
         'Year': getYear(order.created_at),
-        'Customer Name': order.customers?.name || 'N/A',
-        'Customer Phone': order.customers?.phone || 'N/A',
+        'Customer Name': order.customer?.name || order.customer_name || 'N/A',
+        'Customer Phone': order.customer?.phone || order.customer_phone || 'N/A',
         'Product Details': getProductSummary(order),
         'Total Quantity': getTotalQuantity(order),
         'Total Amount': formatCurrency(parseFloat(String(order.total_amount || 0))),
-        'Cost Price': formatCurrency(parseFloat(String(order.cost_price || order.total_cost || (parseFloat(String(order.total_amount || 0)) - parseFloat(String(order.profit || 0)))))),
+        'Cost Price': formatCurrency(parseFloat(String(order.total_amount || 0)) - parseFloat(String(order.profit || 0))),
         'Profit': formatCurrency(parseFloat(String(order.profit || 0))),
         'Profit %': `${getProfitPercentage(order)}%`,
         'Status': order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'N/A',
-        'Payment Status': order.payment_status ? order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1) : 'N/A',
-        'Payment Method': order.payment_method ? order.payment_method.charAt(0).toUpperCase() + order.payment_method.slice(1) : 'N/A',
-        'Shipping Address': getFullAddress(order.customers),
-        'Notes': order.notes || '-'
+        'Payment Status': order.payment_status_v2 ? order.payment_status_v2.charAt(0).toUpperCase() + order.payment_status_v2.slice(1) : 'N/A',
+        'Payment Method': order.payment_method_v2 ? order.payment_method_v2.charAt(0).toUpperCase() + order.payment_method_v2.slice(1) : 'N/A',
+        'Shipping Address': getFullAddress(order.customer),
+        'Notes': order.order_notes || '-'
       }))
 
       // Generate readable filename

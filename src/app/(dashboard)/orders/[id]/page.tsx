@@ -42,7 +42,7 @@ export default async function OrderDetailsPage({
   //  Fetch user profile with business details
   const { data: profile } = await supabase
     .from('profiles')
-    .select('business_name, business_email, full_name, avatar_url')
+    .select('business_name, business_email, full_name, avatar_url, upi_id')
     .eq('id', user?.id)
     .single()
 
@@ -333,7 +333,7 @@ export default async function OrderDetailsPage({
         <div className="lg:col-span-1">
           <div className="space-y-6 relative lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {/* Customer Info */}
-            {order.customers && (
+            {(order.customers || order.customer_name) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -342,18 +342,18 @@ export default async function OrderDetailsPage({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="font-semibold">{order.customers.name}</div>
+                  <div className="font-semibold">{order.customers?.name || order.customer_name}</div>
 
-                  {order.customers.address_line1 && (
+                  {(order.customers?.address_line1 || order.shipping_line1) && (
                     <>
                       <div className="text-sm text-muted-foreground space-y-1">
-                        <p>{order.customers.address_line1}</p>
-                        {order.customers.address_line2 && (
-                          <p>{order.customers.address_line2}</p>
+                        <p>{order.customers?.address_line1 || order.shipping_line1}</p>
+                        {(order.customers?.address_line2 || order.shipping_line2) && (
+                          <p>{order.customers?.address_line2 || order.shipping_line2}</p>
                         )}
                         <p>
-                          {order.customers.city}, {order.customers.state} -{' '}
-                          {order.customers.pincode}
+                          {order.customers?.city || order.shipping_city}, {order.customers?.state || order.shipping_state} -{' '}
+                          {order.customers?.pincode || order.shipping_pincode}
                         </p>
                       </div>
                       <Separator />
@@ -363,27 +363,29 @@ export default async function OrderDetailsPage({
                   <div className="text-sm space-y-2">
                     <p className="flex items-center gap-2">
                       <Phone className="h-4 w-4" />
-                      {order.customers.phone}
+                      {order.customers?.phone || order.customer_phone}
                     </p>
-                    {order.customers.email && (
+                    {(order.customers?.email || order.customer_email) && (
                       <p className="flex items-center gap-2">
                         <Mail className="h-4 w-4" />
-                        {order.customers.email}
+                        {order.customers?.email || order.customer_email}
                       </p>
                     )}
                   </div>
 
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href={`/customers/${order.customers.id}`}>
-                      View Customer
-                    </Link>
-                  </Button>
+                  {order.customers?.id && (
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link href={`/customers/${order.customers.id}`}>
+                        View Customer
+                      </Link>
+                    </Button>
+                  )}
 
                   {/* WhatsApp Order Messages */}
                   <WhatsAppOrderMessages
                     orderNumber={order.order_number}
-                    customerName={order.customers.name}
-                    customerPhone={order.customers.phone}
+                    customerName={order.customers?.name || order.customer_name}
+                    customerPhone={order.customers?.phone || order.customer_phone}
                     orderStatus={order.status}
                     paymentStatus={order.payment_status}
                     totalAmount={parseFloat(order.total_amount).toFixed(2)}
@@ -399,6 +401,7 @@ export default async function OrderDetailsPage({
                     trackingNumber={order.tracking_number}
                     courierService={order.courier_service}
                     shopName={businessName}
+                    upiId={profile?.upi_id}
                   />
                 </CardContent>
               </Card>
@@ -495,8 +498,8 @@ export default async function OrderDetailsPage({
                   orderId={order.id}
                   currentStatus={order.status}
                   orderNumber={order.order_number}
-                  customerName={order.customers?.name}
-                  customerPhone={order.customers?.phone}
+                  customerName={order.customers?.name || order.customer_name}
+                  customerPhone={order.customers?.phone || order.customer_phone}
                   orderItems={order.order_items?.map((item: any) => item.product_name) || []}
                   totalAmount={parseFloat(order.total_amount)}
                   shopName={businessName}

@@ -13,10 +13,11 @@ import {
   Settings,
   Menu,
   X,
-  Sparkles,
   ChevronDown,
   User,
   MessageSquare,
+  Store,
+  CreditCard,
 } from 'lucide-react'
 import NextImage from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -41,11 +42,13 @@ type NavItem = {
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'My Store', href: '/my-store', icon: Store, badge: 'LIVE' },
   { name: 'Enquiries', href: '/enquiries', icon: MessageSquare },
   { name: 'Products', href: '/products', icon: Package },
   { name: 'Customers', href: '/customers', icon: Users },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
@@ -146,6 +149,7 @@ export default function Sidebar({ user }: { user: UserData }) {
         <nav className="flex-1 space-y-1 p-4 overflow-y-auto scrollbar-custom">
           {navigation.map((item) => {
             const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+            const isStore = item.name === 'My Store'
             return (
               <Link
                 key={item.name}
@@ -162,12 +166,16 @@ export default function Sidebar({ user }: { user: UserData }) {
                 <item.icon className="h-5 w-5 shrink-0" />
                 <span className="flex-1">{item.name}</span>
                 {item.badge && (
-                  <Badge
-                    variant={isActive ? 'secondary' : 'default'}
-                    className="h-5 min-w-5 px-1 text-xs"
-                  >
+                  <span className={cn(
+                    'text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none',
+                    isStore && !isActive
+                      ? 'bg-green-100 text-green-700 animate-pulse'
+                      : isActive
+                      ? 'bg-white/20 text-white'
+                      : 'bg-primary/10 text-primary'
+                  )}>
                     {item.badge}
-                  </Badge>
+                  </span>
                 )}
               </Link>
             )
@@ -204,9 +212,9 @@ export default function Sidebar({ user }: { user: UserData }) {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings/subscription">
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Upgrade Plan
+                <Link href="/billing">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Billing & Plans
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

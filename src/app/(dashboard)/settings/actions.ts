@@ -172,73 +172,6 @@ export async function uploadAvatar(formData: FormData) {
 }
 
 // ========================================================
-// UPLOAD SHOP HERO IMAGE
-// ========================================================
-export async function uploadShopHeroImage(formData: FormData) {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, message: 'Authentication required' }
-  }
-
-  try {
-    const file = formData.get('file') as File
-    const userId = formData.get('userId') as string
-
-    if (!file) {
-      return { success: false, message: 'No file provided' }
-    }
-
-    if (userId !== user.id) {
-      return { success: false, message: 'Unauthorized' }
-    }
-
-    // Keep uploads lightweight for faster storefront loading.
-    if (file.size > 5 * 1024 * 1024) {
-      return { success: false, message: 'Image size must be less than 5MB' }
-    }
-
-    if (!file.type.startsWith('image/')) {
-      return { success: false, message: 'File must be an image' }
-    }
-
-    const rawExt = file.name.split('.').pop()?.toLowerCase()
-    const safeExt = rawExt && /^[a-z0-9]+$/.test(rawExt) ? rawExt : 'jpg'
-    const fileName = `hero-${Date.now()}.${safeExt}`
-    const filePath = `${userId}/shop/${fileName}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      })
-
-    if (uploadError) {
-      console.error('Hero image upload error:', uploadError)
-      return { success: false, message: uploadError.message }
-    }
-
-    const { data: urlData } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath)
-
-    revalidatePath('/settings/shop')
-    revalidatePath('/[shopSlug]', 'layout')
-
-    return {
-      success: true,
-      message: 'Hero image uploaded successfully',
-      imageUrl: urlData.publicUrl,
-    }
-  } catch (error: any) {
-    console.error('Unexpected error:', error)
-    return { success: false, message: error.message || 'Upload failed' }
-  }
-}
-
-// ========================================================
 // UPDATE BUSINESS INFORMATION
 // ========================================================
 export async function updateBusinessInfo(formData: FormData) {
@@ -527,6 +460,7 @@ export async function updateShopSettings(formData: FormData) {
     const shop_description = formData.get('shop_description') as string
     const shop_theme = formData.get('shop_theme') as string // JSON string
     const shop_slug = formData.get('shop_slug') as string
+    const shop_logo_url = formData.get('shop_logo_url') as string
 
     // Verify user
     if (userId !== user.id) {
@@ -566,6 +500,10 @@ export async function updateShopSettings(formData: FormData) {
       updateData.shop_slug = shop_slug
     }
 
+    if (shop_logo_url !== undefined) {
+      updateData.shop_logo_url = shop_logo_url || null
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update(updateData)
@@ -576,12 +514,13 @@ export async function updateShopSettings(formData: FormData) {
       return { success: false, message: error.message }
     }
 
-    revalidatePath('/settings/shop')
-    revalidatePath('/[shopSlug]', 'layout')
+    revalidatePath('/my-store')
+    revalidatePath('/store/[shopSlug]', 'layout')
+    revalidatePath('/store/[shopSlug]', 'page')
 
     return { success: true, message: 'Shop settings updated successfully' }
   } catch (error: any) {
     console.error('Unexpected error:', error)
     return { success: false, message: error.message || 'Something went wrong' }
   }
-}
+}
