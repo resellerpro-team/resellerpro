@@ -55,21 +55,7 @@ import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { useToast } from "@/hooks/use-toast";
 import { LimitReachedModal } from "@/components/subscription/LimitReachedModal";
 
-// ---------------- TYPES ----------------
-export type Product = {
-  id: string;
-  name: string;
-  description?: string;
-  image_url: string | null;
-  images?: string[];
-  category?: string;
-  cost_price: number;
-  selling_price: number;
-  stock_quantity?: number;
-  stock_status: "in_stock" | "low_stock" | "out_of_stock";
-  sku?: string;
-  created_at?: string;
-};
+import type { Product } from "@/types";
 
 
 // ---------------------------------------------------------

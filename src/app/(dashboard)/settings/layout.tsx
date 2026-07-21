@@ -30,17 +30,6 @@ const settingsNavItems = [
     icon: Building,
   },
   {
-    title: "Shop Store",
-    href: "/settings/shop",
-    icon: Store,
-    badge: "NEW",
-  },
-  {
-    title: "Subscription",
-    href: "/settings/subscription",
-    icon: CreditCard,
-  },
-  {
     title: "Wallet",
     href: "/settings/wallet",
     icon: Wallet,

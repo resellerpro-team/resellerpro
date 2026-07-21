@@ -137,6 +137,14 @@ export async function createOrder(
     }
 
 
+    // Determine payment_status_v2 based on paymentStatus
+    let paymentStatusV2 = 'pending'
+    if (paymentStatus === 'paid') {
+      paymentStatusV2 = 'confirmed'
+    } else if (paymentStatus === 'refunded') {
+      paymentStatusV2 = 'refunded'
+    }
+
     // INSERT ORDER - WITH .select().single() TO GET THE CREATED ORDER!
     const { data: newOrder, error: orderError } = await supabase
       .from('orders')
@@ -149,6 +157,7 @@ export async function createOrder(
         total_amount: totalAmount,
         total_cost: totalCost,
         payment_status: paymentStatus,
+        payment_status_v2: paymentStatusV2,
         payment_method: paymentMethod || null,
         notes: notes || null,
         status: 'pending',
@@ -440,8 +449,16 @@ export async function updatePaymentStatus(formData: FormData) {
       return { success: false, message: 'Invalid data.' }
     }
 
+    let paymentStatusV2 = 'pending'
+    if (paymentStatus === 'paid') {
+      paymentStatusV2 = 'confirmed'
+    } else if (paymentStatus === 'refunded') {
+      paymentStatusV2 = 'refunded'
+    }
+
     const updateData: any = {
       payment_status: paymentStatus,
+      payment_status_v2: paymentStatusV2,
       updated_at: new Date().toISOString(),
     }
 

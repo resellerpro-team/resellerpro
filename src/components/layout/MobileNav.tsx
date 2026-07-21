@@ -3,14 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
-import { LayoutDashboard, Package, Users, ShoppingCart, Menu, User } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingCart, Store, Settings } from 'lucide-react'
+
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Store', href: '/my-store', icon: Store },
   { name: 'Products', href: '/products', icon: Package },
-  { name: 'Customers', href: '/customers', icon: Users },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
-  { name: 'Profile', href: '/settings', icon: User },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 export default function MobileNav() {
